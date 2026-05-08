@@ -247,8 +247,8 @@ export function HomeTab() {
       <div className="space-y-6">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden">
-          {/* Parallax rotating gradient pseudo-element */}
-          <div className="absolute inset-0 animate-parallax-rotate opacity-30" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.15), transparent, rgba(255,255,255,0.08), transparent)', transformOrigin: 'center center' }} />
+          {/* Subtle shimmer gradient overlay */}
+          <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
           {/* Shimmer overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full [animation:shimmer_3s_infinite]" />
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
@@ -423,7 +423,7 @@ export function HomeTab() {
               {shifts.map((shift) => (
                 <Card
                   key={shift.id}
-                  className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
+                  className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 shift-card-hover"
                   onClick={() => handleShiftClick(shift.id)}
                 >
                   <CardContent className="p-4">
@@ -475,15 +475,11 @@ export function HomeTab() {
   // Logged in - dashboard
   return (
     <div className="space-y-5">
-      {/* Welcome - with shimmer border wrapper & decorative gradient orbs */}
-      <div className="shimmer-border relative">
-        {/* Decorative gradient orbs for depth */}
-        <div className="gradient-orb w-48 h-48 bg-emerald-400/50 -top-16 -left-16 z-0" />
-        <div className="gradient-orb w-32 h-32 bg-teal-400/40 -bottom-8 right-8 z-0" />
-        <div className="gradient-orb w-24 h-24 bg-emerald-300/30 top-1/2 left-1/2 z-0" />
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-[14px] p-5 text-white relative overflow-hidden">
-        {/* Parallax rotating gradient pseudo-element */}
-        <div className="absolute inset-0 animate-parallax-rotate opacity-20" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.12), transparent, rgba(255,255,255,0.06), transparent)', transformOrigin: 'center center' }} />
+      {/* Welcome card with gradient border & decorative elements */}
+      <div className="gradient-border-card relative">
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-xl p-5 text-white relative overflow-hidden">
+        {/* Subtle animated gradient shimmer overlay */}
+        <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
         <div className="relative z-10">
@@ -546,7 +542,7 @@ export function HomeTab() {
 
       {/* Stats with ripple effect and animated counters */}
       <div className="grid grid-cols-4 gap-2">
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -555,7 +551,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500 dark:text-gray-400">Disponíveis</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Briefcase className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
@@ -564,7 +560,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500 dark:text-gray-400">Publicados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
               <DollarSign className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -573,7 +569,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500 dark:text-gray-400">Comprados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -656,7 +652,7 @@ export function HomeTab() {
             {recommendedShifts.map((shift, index) => (
               <Card
                 key={shift.id}
-                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500"
+                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 shift-card-hover"
                 style={{ animationDelay: `${index * 80}ms`, opacity: 0, animation: 'slideUp 0.4s ease forwards', animationDelay: `${index * 80}ms` }}
                 onClick={() => handleShiftClick(shift.id)}
               >
@@ -764,7 +760,7 @@ export function HomeTab() {
             {shifts.map((shift, index) => (
               <Card
                 key={shift.id}
-                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 animate-slideUp"
+                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 animate-slideUp shift-card-hover"
                 style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
                 onClick={() => handleShiftClick(shift.id)}
               >

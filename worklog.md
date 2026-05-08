@@ -1,8 +1,8 @@
 # Plantão Help - Worklog
 
 ## Project Status
-**Status**: Production-ready marketplace with rich features, enhanced styling, analytics, admin tools, smart recommendations, and onboarding
-**Last Updated**: 2025-05-08 (Phase 12 - Onboarding Modal + Enhanced Styling + Quick Actions)
+**Status**: Production-ready marketplace with beautiful landing page, rich features, enhanced styling, analytics, admin tools, smart recommendations, and onboarding
+**Last Updated**: 2025-05-08 (Phase 13 - Landing Page + Bug Fixes + Enhanced Styling + New Features)
 
 ## Current State
 - Complete marketplace for healthcare shifts (plantões) with all core features working
@@ -1026,3 +1026,242 @@ Stage Summary:
   6. 11 new CSS utility classes added to globals.css
 - No bugs found during QA
 - All features verified working via API testing
+
+
+## Phase 14 Changes (Task 4 - Frontend Styling Polish)
+
+### Bug Fixes
+- **Shimmer-border spinning animation**: Fixed `.shimmer-border` class in globals.css that was using `animation: parallax-rotate 4s linear infinite` (a spinning/rotating animation). Replaced with `animation: shimmer-slow 6s linear infinite` and `background-size: 300% 300%` for a subtle gradient shift effect instead of rotation.
+
+### Global CSS Enhancements (`src/app/globals.css`)
+- **Fixed `.shimmer-border`**: Changed from `conic-gradient` + `parallax-rotate` to `linear-gradient` + `shimmer-slow` animation with 300% background-size for a non-rotating, smooth gradient sweep
+- **`.animate-hero-float`**: New keyframe + class for hero image floating animation (4s translateY -8px)
+- **`.cta-glow`**: New emerald glow animation for CTA buttons with pulsing box-shadow (3s ease-in-out)
+- **`.testimonial-card`**: Hover effect with emerald border glow + shadow transition
+- **`.pricing-card` / `.pricing-card-highlight`**: Hover effects with emerald glow and shadow
+- **`.search-gradient`**: Gradient background for search bar container with slow shimmer
+- **`.shimmer-value-subtle`**: Less distracting shimmer effect for shift value (6s duration, lighter gradient)
+- **`.verified-glow`**: Emerald glow effect on verified seller badge with hover intensification
+- **`.buy-btn-hover`**: Hover effect on buy button (translateY + emerald shadow)
+- **`.shift-card-hover`**: Micro-interaction on shift card hover (slight scale + emerald shadow)
+- **`.interactive-transition`**: Base 300ms transition for interactive elements
+
+### Landing Page (`src/components/landing-page.tsx`)
+- **Hero image floating animation**: Added `animate-hero-float` class on hero image container
+- **CTA button glow**: Added `cta-glow` class on "Começar Gratuitamente" button with `duration-300`
+- **Testimonial cards**: Added border + `testimonial-card` hover class with emerald glow on hover
+- **Pricing cards**: Added `pricing-card` / `pricing-card-highlight` classes with hover glow
+- **Smooth scroll anchor links**: Added `duration-300` + `focus-visible` styles on navbar links
+- **CTA section button**: Added `transition-all duration-300 hover:scale-[1.02] cta-glow` on "Criar Conta" button
+
+### Plantoes Tab (`src/components/plantoes-tab.tsx`)
+- **Search bar gradient background**: Added `search-gradient` class with `rounded-xl p-1` wrapper
+- **Filter panel animation**: Added `animate-slideUp` class on filter card for smoother toggle animation
+- **Shift card micro-interaction**: Added `shift-card-hover` class replacing `hover:-translate-y-1`, changed `duration-200` to `duration-300`
+- **Search input transition**: Changed from `duration-200` to `duration-300`
+
+### Shift Detail (`src/components/shift-detail.tsx`)
+- **Subtle shimmer value**: Replaced `animate-shimmer-slow` gradient clip-text with `.shimmer-value-subtle` for less distracting price animation
+- **Verified seller emerald glow**: Replaced `shadow-sm shadow-emerald-200/50` with `verified-glow` class for hover-intensifying emerald glow
+- **Buy button hover**: Added `buy-btn-hover` class for translateY + shadow effect on hover
+
+### Home Tab (`src/components/home-tab.tsx`)
+- **Consistent 300ms transitions**: Updated stat cards and shift cards from `duration-200` to `duration-300`
+- **Shift card hover**: Added `shift-card-hover` class on all shift card elements for micro-interaction (scale + shadow)
+
+### Meus Plantões Tab (`src/components/meus-plantoes-tab.tsx`)
+- **Consistent transitions**: Updated view mode toggle and tab transitions from `duration-200` to `duration-300`
+- **Shift card hover**: Added `shift-card-hover` class on shift cards in selected date panel
+
+### Concursos Tab (`src/components/concursos-tab.tsx`)
+- **Filter button transition**: Updated from `duration-200` to `duration-300`
+
+### Testing
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ No compilation errors in dev log
+- ✅ All changes maintain emerald/green healthcare theme
+- ✅ No spinning/rotating animations used (parallax-rotate removed from shimmer-border)
+- ✅ All transitions are 300ms duration
+
+## Phase 15 Changes (Task 5 - Quick Shift Create + Shift Comparison + Profile Completion)
+
+### Feature 1: Quick Shift Create (Enhanced)
+
+#### API Changes (`src/app/api/shifts/route.ts`)
+- **POST handler notification**: After creating a shift, a notification is now sent to the seller confirming the publication with the message "Seu plantão \"{title}\" foi publicado com sucesso e já está disponível para compra." (type: SUCCESS)
+
+#### Plantoes Tab Changes (`src/components/plantoes-tab.tsx`)
+- **Complete rewrite of CreateShiftInline → CreateShiftDialog**: Enhanced bottom-sheet style dialog with:
+  - **Title auto-suggest**: `generateTitleSuggestion()` function creates a title based on professional type + selected hospital (e.g., "Plantão Médico - Hospital XYZ")
+  - **"Usar sugestão" button**: When title is empty, shows clickable suggestion to auto-fill
+  - **Currency input**: R$ prefix with formatted display (locale pt-BR), proper decimal handling
+  - **Date picker**: Native date input with `min` attribute set to today's date
+  - **Shift type badge preview**: When start/end time filled, shows the Diurno/Noturno/Misto badge live
+  - **Hospital dropdown**: Shows hospital name with city/state, auto-fills city/state on selection
+  - **Professional type auto-fill**: Pre-filled from user profile role, shows "(preenchido automaticamente)" hint
+  - **Drag handle**: Mobile-style drag indicator at top for bottom sheet
+  - **Better header**: Icon + title + subtitle with close button
+  - **Location auto-fill**: When hospital selected, location placeholder changes to hospital name
+  - **Submit button**: Enhanced with spinner animation (no spinning/rotating, uses border animation) and icon
+
+### Feature 2: Shift Comparison Visual View
+
+#### Plantoes Tab Changes (`src/components/plantoes-tab.tsx`)
+- **Replaced `ShiftComparisonTable` with `ShiftVisualComparison`**: New visual comparison component with 4 sections:
+  - **Price Comparison Bar Chart**: Horizontal bars showing relative prices with emerald/teal/cyan colors, "Melhor" badge on lowest price, percentage labels
+  - **Duration Comparison**: Horizontal bars comparing shift durations, time range display, "Mais longo" badge, cross-midnight handling
+  - **Location Comparison**: Side-by-side location cards with MapPin icons, city/state + hospital, "Mesma cidade" badge when applicable
+  - **Seller Rating Comparison**: Star ratings with gradient amber bars, "Melhor" badge on highest rated, "Sem avaliações" for unrated sellers
+  - **Detailed Table Comparison**: The original comparison table is still included at the bottom as "Tabela Detalhada"
+- **New helper functions**:
+  - `getDurationMinutes(startTime, endTime)`: Calculates duration in minutes, handles midnight crossing
+  - `formatDuration(mins)`: Formats as "Xh" or "XhYmin"
+- **Bar colors**: emerald-500, teal-500, cyan-500 for up to 3 shifts
+- **New icon imports**: `Calendar, DollarSign, Timer, BarChart3, Building2` from lucide-react
+
+### Feature 3: Profile Completion Nudges
+
+#### Perfil Tab Changes (`src/components/perfil-tab.tsx`)
+- **New `ProfileCompletionNudge` component**: Placed between Profile Header and Tabs
+- **Weighted completion calculation**: 7 fields with different importance weights:
+  - Name (15%), Email (15%), Phone (15%), City (12%), State (8%), Professional Doc (20%), Bio (15%)
+- **Visual elements**:
+  - **Progress bar**: Gradient-colored (red→amber for <50%, amber→emerald for 50-80%, emerald for ≥80%)
+  - **Percentage display**: Large bold number with color matching progress level
+  - **Field completion indicators**: Pill badges for each field showing ✓ or ⚠ with emerald/gray styling
+  - **Missing field suggestions**: Up to 3 clickable suggestions with icons and descriptive text
+  - **"Complete seu Perfil" / "Perfil Completo!" header**: Changes based on completion
+  - **Left border accent**: Amber for incomplete, emerald for complete
+- **Actionable suggestions** (Portuguese):
+  - "Adicione seu nome completo"
+  - "Adicione seu telefone para contato rápido"
+  - "Adicione sua cidade para receber recomendações melhores"
+  - "Adicione seu estado para ver plantões na sua região"
+  - "Adicione seu documento profissional para verificação"
+  - "Adicione uma bio para que outros conheçam você"
+- **Click-to-edit**: All suggestions are clickable and navigate to the profile edit form
+- **"+N mais sugestões" link**: When more than 3 fields are missing, shows count of remaining suggestions
+- **New icon imports**: `AlertCircle, CheckCircle2, ArrowRight` from lucide-react
+
+### Files Modified
+- `src/app/api/shifts/route.ts` - Added notification creation on POST shift
+- `src/components/plantoes-tab.tsx` - Complete rewrite: CreateShiftDialog, ShiftVisualComparison, enhanced comparison features
+- `src/components/perfil-tab.tsx` - Added ProfileCompletionNudge component, new icon imports
+
+### Testing
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ No compilation errors in dev log
+- ✅ All new code in TypeScript
+- ✅ Emerald/green healthcare theme maintained
+- ✅ No spinning/rotating animations
+
+## Phase 13 Changes (Landing Page + Bug Fixes + Styling + Features)
+
+### Bug Fixes
+- **Spinning/rotating animation removed from all green cards**: The `animate-parallax-rotate` (360deg rotation) was causing the welcome card and other green gradient cards to visually spin. Replaced with subtle `shimmer-slow` animation on all instances:
+  - `home-tab.tsx` - Both hero section and logged-in welcome card
+  - `shift-detail.tsx` - Main info card gradient overlay
+  - `onboarding-modal.tsx` - Header gradient overlay
+- **shimmer-border CSS class fixed**: Changed from `animation: parallax-rotate 4s linear infinite` (spinning) to `animation: shimmer-slow 6s linear infinite` with `background-size: 300% 300%` for a subtle gradient sweep effect
+- **Dialog accessibility warnings fixed**: Added `aria-describedby={undefined}` to `DialogContent` in `onboarding-modal.tsx` and `create-shift-modal.tsx` to suppress Radix UI accessibility warnings
+
+### New Features
+
+#### 1. Beautiful Landing Page (`src/components/landing-page.tsx`)
+Complete landing page with the following sections:
+- **Fixed navbar**: Logo, navigation links (Recursos, Como Funciona, Depoimentos, Planos), Login/Register buttons
+- **Hero section**: Large heading with gradient text "Repasse de plantões com segurança e praticidade", AI-generated hero image with overlay card, trust indicators, CTA buttons
+- **Stats bar**: Animated counters showing active shifts, professionals, cities, average rating
+- **Features section**: 6 feature cards (Publique Plantões, Busque Oportunidades, Transações Seguras, Concursos & Editais, Sistema de Avaliação, Calendário Integrado)
+- **How it Works**: 4-step process with connector lines between steps
+- **Featured Shifts**: Dynamic cards loaded from API showing latest available shifts
+- **Testimonials**: 3 professional testimonials with star ratings
+- **Pricing**: 3 plans (Gratuito R$0, Profissional R$29, Institucional R$99) with highlighted professional plan
+- **CTA Section**: Green gradient background with action buttons
+- **Footer**: Brand, Platform links, Support links, Contact info
+- **Scroll animations**: IntersectionObserver-based section reveal animations
+- **AI-generated images**: `hero-medical.png` and `logo-icon.png` created with z-ai SDK
+
+#### 2. Landing Page Integration (`src/app/page.tsx`)
+- Landing page shows when user is NOT logged in
+- After login, automatically transitions to the app dashboard
+- Landing page has its own navigation (separate from app's top header/bottom nav)
+
+#### 3. Quick Shift Create (Enhanced in plantoes-tab.tsx)
+- Title auto-suggest based on professional type + hospital
+- Currency input with R$ prefix
+- Date picker with min date set to today
+- Shift type badge preview (Diurno/Noturno/Misto) when times entered
+- Hospital dropdown with city/state info, auto-fills location on selection
+- Professional type auto-filled from user profile
+- Notification sent to seller on publication
+
+#### 4. Visual Shift Comparison (plantoes-tab.tsx)
+- `ShiftVisualComparison` component with:
+  - Price comparison horizontal bar chart with percentage labels
+  - Duration comparison with time ranges
+  - Location comparison with "Mesma cidade" badge
+  - Seller rating comparison with star display
+  - "Melhor" badge on best value
+  - Detailed comparison table as collapsible section
+
+#### 5. Profile Completion Nudges (perfil-tab.tsx)
+- `ProfileCompletionNudge` component:
+  - Weighted progress bar with color coding (red→amber→emerald)
+  - 7 tracked fields: Name, Email, Phone, City, State, Professional Doc, Bio
+  - Field indicator badges (✓ filled / ⚠ missing)
+  - Up to 3 actionable suggestions with click-to-edit
+  - "Perfil Completo!" message when 100%
+
+### Enhanced Styling
+
+#### New CSS Utility Classes (globals.css)
+- `.animate-hero-float` - Subtle floating animation for hero image
+- `.cta-glow` - Pulsing emerald shadow on CTA buttons
+- `.testimonial-card` - Emerald border glow on hover for testimonial cards
+- `.pricing-card` / `.pricing-card-highlight` - Emerald glow on hover for pricing cards
+- `.search-gradient` - Animated gradient background for search bar container
+- `.shimmer-value-subtle` - Less distracting shimmer on price display (6s instead of 3s)
+- `.verified-glow` - Emerald glow that intensifies on hover for verified badges
+- `.buy-btn-hover` - translateY + emerald shadow on buy button hover
+- `.shift-card-hover` - Subtle scale + shadow on shift card hover
+- `.interactive-transition` - Consistent 300ms transition for interactive elements
+
+#### Component-Specific Enhancements
+- **Landing page**: Hero image floating animation, CTA button glow, testimonial card hover glow, pricing card hover effects, smooth scroll anchor links
+- **Plantoes tab**: Search bar with animated gradient container, filter panel slide-up animation, shift card micro-interactions (scale + shadow)
+- **Shift detail**: Subtle shimmer on value, verified seller emerald glow on hover, buy button hover with translateY
+- **All components**: Consistent 300ms transition durations, proper focus-visible states
+
+### Files Created
+- `src/components/landing-page.tsx` - Complete landing page component
+- `public/hero-medical.png` - AI-generated hero image
+- `public/logo-icon.png` - AI-generated logo icon
+
+### Files Modified
+- `src/app/page.tsx` - Landing page integration with conditional rendering
+- `src/components/home-tab.tsx` - Removed spinning animations, replaced with shimmer-slow
+- `src/components/shift-detail.tsx` - Removed spinning animation, added shimmer, glow effects
+- `src/components/onboarding-modal.tsx` - Removed spinning animation, added aria-describedby
+- `src/components/create-shift-modal.tsx` - Added aria-describedby
+- `src/components/plantoes-tab.tsx` - Search gradient container, visual comparison, quick create enhancements
+- `src/components/perfil-tab.tsx` - Profile completion nudges
+- `src/app/globals.css` - Fixed shimmer-border, added 10+ new utility classes
+
+### QA Testing Summary (via agent-browser)
+- ✅ Landing page loads correctly with all sections (Hero, Stats, Features, How It Works, Shifts, Testimonials, Pricing, CTA, Footer)
+- ✅ Login from landing page works - transitions to app dashboard
+- ✅ No spinning/rotating animations anywhere (confirmed zero spin/rotate in computed styles)
+- ✅ Welcome card shows time-appropriate greeting without spinning
+- ✅ Quick Shift Create form opens with all fields
+- ✅ Profile completion progress bar visible
+- ✅ Visual shift comparison with charts works
+- ✅ Search bar has gradient background
+- ✅ Dark mode works correctly across all pages
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ⚠️ Minor: Dialog accessibility warnings (DialogContent requires DialogTitle) - addressed with aria-describedby
+
+### Unresolved Issues
+- Search gradient may not be visible on some browsers due to CSS animation compatibility
+- Some dialogs still show accessibility warnings in development mode (non-blocking)
+

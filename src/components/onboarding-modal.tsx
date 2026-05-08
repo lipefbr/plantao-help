@@ -114,14 +114,14 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleSkip() }}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 rounded-2xl">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 rounded-2xl" aria-describedby={undefined}>
         {/* Header gradient */}
         <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 pb-8 text-white overflow-hidden">
           {/* Decorative orbs */}
           <div className="gradient-orb w-32 h-32 bg-emerald-300/40 -top-8 -right-8" />
           <div className="gradient-orb w-20 h-20 bg-teal-300/30 bottom-2 left-4" />
-          {/* Parallax gradient */}
-          <div className="absolute inset-0 animate-parallax-rotate opacity-10" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.1), transparent, rgba(255,255,255,0.05), transparent)', transformOrigin: 'center center' }} />
+          {/* Subtle shimmer gradient */}
+          <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
 
           {/* Skip button */}
           <button

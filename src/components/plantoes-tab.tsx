@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/lib/store'
 import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -23,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles, Heart, Eye } from 'lucide-react'
+import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles, Heart, Eye, Calendar, DollarSign, Timer, BarChart3, Building2, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ShiftItem {
@@ -49,6 +51,20 @@ interface ShiftItem {
     totalRatings: number
   }
   hospital: { id: string; name: string } | null
+}
+
+// Title auto-suggest helper
+function generateTitleSuggestion(professionalType: string, hospitalName: string | null): string {
+  const typeLabels: Record<string, string> = {
+    MEDICO: 'Plantão Médico',
+    ENFERMEIRO: 'Plantão Enfermagem',
+    TECNICO_ENFERMAGEM: 'Plantão Téc. Enfermagem',
+  }
+  const base = typeLabels[professionalType] || 'Plantão'
+  if (hospitalName) {
+    return `${base} - ${hospitalName}`
+  }
+  return base
 }
 
 export function PlantoesTab() {
@@ -190,13 +206,13 @@ export function PlantoesTab() {
     <div className="space-y-4">
       {/* Search Bar */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="relative flex-1 search-gradient rounded-xl p-[2px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
           <Input
             placeholder="Buscar plantões..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 rounded-xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-emerald-400/50 transition-all duration-200"
+            className="pl-9 rounded-[10px] bg-white dark:bg-gray-800 border-0 focus-visible:ring-2 focus-visible:ring-emerald-400/50 transition-all duration-200"
           />
         </div>
         <div className="relative">
@@ -508,7 +524,7 @@ export function PlantoesTab() {
         </div>
       )}
 
-      {/* Comparison Dialog */}
+      {/* Enhanced Comparison Dialog */}
       <Dialog open={showComparisonDialog} onOpenChange={setShowComparisonDialog}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -522,7 +538,7 @@ export function PlantoesTab() {
           </DialogHeader>
 
           {comparisonShifts.length >= 2 && (
-            <ShiftComparisonTable shifts={comparisonShifts} />
+            <ShiftVisualComparison shifts={comparisonShifts} />
           )}
 
           <div className="flex items-center justify-between pt-2 border-t">
@@ -563,9 +579,9 @@ export function PlantoesTab() {
         </button>
       )}
 
-      {/* Create Shift Modal - rendered inline */}
+      {/* Create Shift Modal - enhanced bottom sheet dialog */}
       {showCreateShift && (
-        <CreateShiftInline
+        <CreateShiftDialog
           onClose={() => setShowCreateShift(false)}
           onCreated={loadShifts}
         />
@@ -574,13 +590,225 @@ export function PlantoesTab() {
   )
 }
 
+// ─── Visual Shift Comparison Component ───
+function ShiftVisualComparison({ shifts }: { shifts: ShiftItem[] }) {
+  const bestValue = Math.min(...shifts.map(s => s.value))
+  const bestRating = Math.max(...shifts.map(s => s.seller.avgRating))
+  const maxValue = Math.max(...shifts.map(s => s.value))
+
+  // Duration calculation helper
+  const getDurationMinutes = (startTime: string, endTime: string): number => {
+    const [sh, sm] = startTime.split(':').map(Number)
+    const [eh, em] = endTime.split(':').map(Number)
+    let startMins = sh * 60 + sm
+    let endMins = eh * 60 + em
+    if (endMins <= startMins) endMins += 24 * 60 // crosses midnight
+    return endMins - startMins
+  }
+
+  const formatDuration = (mins: number): string => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    return m > 0 ? `${h}h${m}min` : `${h}h`
+  }
+
+  const maxDuration = Math.max(...shifts.map(s => getDurationMinutes(s.startTime, s.endTime)))
+
+  // Color mapping for chart bars
+  const barColors = [
+    'bg-emerald-500',
+    'bg-teal-500',
+    'bg-cyan-500',
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* ── Price Comparison Bar Chart ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-md flex items-center justify-center">
+            <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Preço</h4>
+        </div>
+        <div className="space-y-3">
+          {shifts.map((shift, idx) => {
+            const isBest = shift.value === bestValue && shifts.length > 1
+            const barWidth = maxValue > 0 ? (shift.value / maxValue) * 100 : 0
+            return (
+              <div key={shift.id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate max-w-[50%]">{shift.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      'text-sm font-bold',
+                      isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+                    )}>
+                      {formatCurrency(shift.value)}
+                    </span>
+                    {isBest && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full font-medium">Melhor</span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-6 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative">
+                  <div
+                    className={cn('h-full rounded-lg transition-all duration-500', barColors[idx])}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                    {Math.round(barWidth)}%
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Duration Comparison ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-md flex items-center justify-center">
+            <Timer className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Duração</h4>
+        </div>
+        <div className="space-y-3">
+          {shifts.map((shift, idx) => {
+            const duration = getDurationMinutes(shift.startTime, shift.endTime)
+            const barWidth = maxDuration > 0 ? (duration / maxDuration) * 100 : 0
+            const isLongest = duration === maxDuration && shifts.length > 1
+            return (
+              <div key={shift.id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate max-w-[50%]">{shift.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{formatDuration(duration)}</span>
+                    <span className="text-[10px] text-gray-400">{shift.startTime}-{shift.endTime}</span>
+                    {isLongest && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-medium">Mais longo</span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                  <div
+                    className={cn('h-full rounded-lg transition-all duration-500 opacity-80', barColors[idx])}
+                    style={{ width: `${barWidth}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Location Comparison ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-md flex items-center justify-center">
+            <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Localização</h4>
+        </div>
+        <div className="grid gap-2">
+          {shifts.map((shift) => {
+            const sameLocation = shifts.filter(s => s.city === shift.city && s.state === shift.state).length > 1
+            return (
+              <div key={shift.id} className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{shift.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {shift.city}/{shift.state}
+                    {shift.hospital && <span className="ml-1.5">• {shift.hospital.name}</span>}
+                  </p>
+                </div>
+                {sameLocation && (
+                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-medium shrink-0">Mesma cidade</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Seller Rating Comparison ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-md flex items-center justify-center">
+            <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Avaliação dos Vendedores</h4>
+        </div>
+        <div className="space-y-3">
+          {shifts.map((shift, idx) => {
+            const isBest = shift.seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+            const barWidth = bestRating > 0 ? (shift.seller.avgRating / 5) * 100 : 0
+            return (
+              <div key={shift.id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                      <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{shift.seller.name.charAt(0)}</span>
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate">{shift.seller.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {shift.seller.avgRating > 0 ? (
+                      <>
+                        <span className="text-amber-500 text-xs">{renderStars(shift.seller.avgRating)}</span>
+                        <span className={cn(
+                          'text-sm font-bold',
+                          isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+                        )}>
+                          {shift.seller.avgRating.toFixed(1)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">Sem avaliações</span>
+                    )}
+                    {isBest && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-medium">Melhor</span>
+                    )}
+                  </div>
+                </div>
+                {shift.seller.avgRating > 0 && (
+                  <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500"
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Detailed Table Comparison ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+            <BarChart3 className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+          </div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tabela Detalhada</h4>
+        </div>
+        <ShiftComparisonTable shifts={shifts} />
+      </div>
+    </div>
+  )
+}
+
 // Comparison Table Component
 function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
-  // Find best values for highlighting
   const bestValue = Math.min(...shifts.map(s => s.value))
   const bestRating = Math.max(...shifts.map(s => s.seller.avgRating))
 
-  const rows: { label: string; icon: React.ReactNode; values: React.ReactNode[]; compareFn?: (values: (number | string)[]) => number[] }[] = [
+  const rows: { label: string; icon: React.ReactNode; values: React.ReactNode[] }[] = [
     {
       label: 'Título',
       icon: <Sparkles className="w-3.5 h-3.5" />,
@@ -590,7 +818,7 @@ function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
     },
     {
       label: 'Data',
-      icon: <Clock className="w-3.5 h-3.5" />,
+      icon: <Calendar className="w-3.5 h-3.5" />,
       values: shifts.map(s => (
         <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{formatDate(s.date)}</span>
       )),
@@ -617,11 +845,6 @@ function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
           </span>
         )
       }),
-      compareFn: (values) => {
-        const nums = values.map(Number)
-        const min = Math.min(...nums)
-        return nums.map(n => n === min ? 1 : 0)
-      }
     },
     {
       label: 'Cidade/Estado',
@@ -632,7 +855,7 @@ function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
     },
     {
       label: 'Hospital',
-      icon: <span className="text-xs">🏥</span>,
+      icon: <Building2 className="w-3.5 h-3.5" />,
       values: shifts.map(s => (
         <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.hospital?.name || '—'}</span>
       )),
@@ -715,7 +938,6 @@ function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
         </thead>
         <tbody>
           {rows.map((row, idx) => {
-            // Determine which cells should be highlighted (best value per row)
             const isValueRow = row.label === 'Valor'
             const isRatingRow = row.label === 'Avaliação Vendedor'
 
@@ -779,11 +1001,11 @@ function getShiftStatusLabel(status: string): string {
   return labels[status] || status
 }
 
-// Inline create shift component (opens as overlay)
-function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+// ─── Enhanced Create Shift Dialog (Bottom Sheet style) ───
+function CreateShiftDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { user } = useAppStore()
   const [loading, setLoading] = useState(false)
-  const [hospitals, setHospitals] = useState<{ id: string; name: string }[]>([])
+  const [hospitals, setHospitals] = useState<{ id: string; name: string; city: string; state: string }[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
@@ -795,6 +1017,12 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
   const [state, setState] = useState(user?.state || '')
   const [professionalType, setProfessionalType] = useState(user?.role === 'EMPRESA' ? 'MEDICO' : (user?.role || 'MEDICO'))
   const [hospitalId, setHospitalId] = useState('')
+
+  // Auto-suggest title based on professional type + selected hospital
+  const selectedHospital = hospitals.find(h => h.id === hospitalId)
+  const suggestedTitle = useMemo(() => {
+    return generateTitleSuggestion(professionalType, selectedHospital?.name || null)
+  }, [professionalType, selectedHospital])
 
   useEffect(() => {
     const loadHospitals = async () => {
@@ -809,6 +1037,30 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
     loadHospitals()
   }, [user])
 
+  // Auto-fill city/state when hospital changes
+  useEffect(() => {
+    if (selectedHospital && !city) {
+      setCity(selectedHospital.city)
+      setState(selectedHospital.state)
+    }
+  }, [selectedHospital, city])
+
+  // Format currency input
+  const handleValueChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '')
+    if (digits === '') {
+      setValue('')
+      return
+    }
+    const num = parseInt(digits, 10) / 100
+    setValue(num.toFixed(2))
+  }
+
+  const displayValue = useMemo(() => {
+    if (!value) return ''
+    return `R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }, [value])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
@@ -818,8 +1070,15 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title, description, date, startTime, endTime,
-          value: parseFloat(value), location, city, state,
+          title: title || suggestedTitle,
+          description,
+          date,
+          startTime,
+          endTime,
+          value: parseFloat(value),
+          location: location || (selectedHospital ? selectedHospital.name : ''),
+          city,
+          state,
           professionalType,
           hospitalId: hospitalId || undefined,
           sellerId: user.id,
@@ -843,61 +1102,225 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+        </div>
+
         <div className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Publicar Plantão</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Publicar Plantão</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Preencha os dados do plantão</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <X className="w-4 h-4 text-gray-500" />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Título *</label>
-              <Input placeholder="Plantão UTI Adulto" value={title} onChange={e => setTitle(e.target.value)} required className="rounded-lg" />
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Title with auto-suggest */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3" />
+                Título *
+              </Label>
+              <Input
+                placeholder={suggestedTitle}
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                className="rounded-lg"
+              />
+              {!title && suggestedTitle && (
+                <button
+                  type="button"
+                  onClick={() => setTitle(suggestedTitle)}
+                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Usar sugestão: &quot;{suggestedTitle}&quot;
+                </button>
+              )}
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Descrição</label>
-              <textarea placeholder="Detalhes do plantão..." value={description} onChange={e => setDescription(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none" rows={2} />
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Descrição</Label>
+              <Textarea
+                placeholder="Detalhes do plantão, requisitos, informações adicionais..."
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="rounded-lg resize-none min-h-[60px]"
+                rows={2}
+              />
             </div>
+
+            {/* Date */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                <Calendar className="w-3 h-3" />
+                Data *
+              </Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                required
+                className="rounded-lg"
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            {/* Start/End Time */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Data *</label>
-                <Input type="date" value={date} onChange={e => setDate(e.target.value)} required className="rounded-lg" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  Início *
+                </Label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={e => setStartTime(e.target.value)}
+                  required
+                  className="rounded-lg"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Valor (R$) *</label>
-                <Input type="number" step="0.01" placeholder="500.00" value={value} onChange={e => setValue(e.target.value)} required className="rounded-lg" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  Fim *
+                </Label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={e => setEndTime(e.target.value)}
+                  required
+                  className="rounded-lg"
+                />
               </div>
             </div>
+
+            {/* Shift type badge preview */}
+            {startTime && endTime && (
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  'text-[11px] px-2.5 py-1 rounded-full font-medium border border-current/20',
+                  getShiftTypeColor(getShiftType(startTime, endTime))
+                )}>
+                  {getShiftTypeIcon(getShiftType(startTime, endTime))} {getShiftType(startTime, endTime)}
+                </span>
+              </div>
+            )}
+
+            {/* Value - Currency input */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                <DollarSign className="w-3 h-3" />
+                Valor (R$) *
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">R$</span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={displayValue || value}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/^R\$\s*/, '')
+                    const cleaned = raw.replace(/[^\d.,]/g, '').replace(',', '.')
+                    setValue(cleaned)
+                  }}
+                  onBlur={() => {
+                    if (value) {
+                      const num = parseFloat(value)
+                      if (!isNaN(num)) {
+                        setValue(num.toFixed(2))
+                      }
+                    }
+                  }}
+                  required
+                  className="rounded-lg pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Hospital dropdown */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                <Building2 className="w-3 h-3" />
+                Hospital
+              </Label>
+              <Select value={hospitalId} onValueChange={setHospitalId}>
+                <SelectTrigger className="rounded-lg">
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {hospitals.map(h => (
+                    <SelectItem key={h.id} value={h.id}>{h.name} - {h.city}/{h.state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                <MapPin className="w-3 h-3" />
+                Local *
+              </Label>
+              <Input
+                placeholder={selectedHospital ? selectedHospital.name : "Hospital XYZ - Ala A"}
+                value={location}
+                onChange={e => setLocation(e.target.value)}
+                required={!selectedHospital}
+                className="rounded-lg"
+              />
+            </div>
+
+            {/* City / State */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Início *</label>
-                <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="rounded-lg" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Cidade *</Label>
+                <Input
+                  placeholder="São Paulo"
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  required
+                  className="rounded-lg"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Fim *</label>
-                <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="rounded-lg" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Estado *</Label>
+                <Input
+                  placeholder="SP"
+                  value={state}
+                  onChange={e => setState(e.target.value)}
+                  required
+                  className="rounded-lg"
+                  maxLength={2}
+                />
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Local *</label>
-              <Input placeholder="Hospital XYZ - Ala A" value={location} onChange={e => setLocation(e.target.value)} required className="rounded-lg" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Cidade *</label>
-                <Input placeholder="São Paulo" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Estado *</label>
-                <Input placeholder="SP" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg" maxLength={2} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Tipo de Profissional *</label>
+
+            {/* Professional Type - auto-filled */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                🩺 Tipo de Profissional *
+                {user?.role && user.role !== 'EMPRESA' && user.role !== 'ADMIN' && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">(preenchido automaticamente)</span>
+                )}
+              </Label>
               <Select value={professionalType} onValueChange={setProfessionalType}>
                 <SelectTrigger className="rounded-lg">
                   <SelectValue />
@@ -909,24 +1332,20 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
                 </SelectContent>
               </Select>
             </div>
-            {hospitals.length > 0 && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-600">Hospital</label>
-                <Select value={hospitalId} onValueChange={setHospitalId}>
-                  <SelectTrigger className="rounded-lg">
-                    <SelectValue placeholder="Selecione (opcional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {hospitals.map(h => (
-                      <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg" disabled={loading}>
-              {loading ? 'Publicando...' : 'Publicar Plantão'}
+
+            {/* Submit */}
+            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg h-11 text-sm font-semibold gap-2" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Publicando...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Publicar Plantão
+                </>
+              )}
             </Button>
           </form>
         </div>

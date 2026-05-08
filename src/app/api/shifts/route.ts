@@ -167,6 +167,16 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Send notification to the seller confirming the shift was published
+    await db.notification.create({
+      data: {
+        userId: sellerId,
+        title: 'Plantão Publicado!',
+        message: `Seu plantão "${title}" foi publicado com sucesso e já está disponível para compra.`,
+        type: 'SUCCESS',
+      },
+    })
+
     return NextResponse.json(shift, { status: 201 })
   } catch (error) {
     console.error('Create shift error:', error)

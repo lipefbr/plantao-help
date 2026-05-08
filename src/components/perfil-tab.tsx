@@ -24,7 +24,7 @@ import {
   Star, MessageSquare, Settings, LogIn, ChevronRight,
   Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2,
   ScrollText, TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer,
-  Bell, Plus, Trash2, Sun, MoonStar, Sunrise
+  Bell, Plus, Trash2, Sun, MoonStar, Sunrise, AlertCircle, CheckCircle2, ArrowRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -511,6 +511,12 @@ export function PerfilTab() {
           </CardContent>
         )}
       </Card>
+
+      {/* Profile Completion Nudges */}
+      <ProfileCompletionNudge
+        user={user}
+        onEdit={handleStartEdit}
+      />
 
       {/* Profile Details */}
       <Tabs defaultValue="info" className="w-full">
@@ -1563,5 +1569,194 @@ export function PerfilTab() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+// ─── Profile Completion Nudge Component ───
+interface ProfileField {
+  key: string
+  label: string
+  filled: boolean
+  suggestion: string
+  icon: React.ReactNode
+  weight: number // importance weight
+}
+
+function ProfileCompletionNudge({ user, onEdit }: { user: AuthUser; onEdit: () => void }) {
+  const fields: ProfileField[] = [
+    {
+      key: 'name',
+      label: 'Nome',
+      filled: !!user.name,
+      suggestion: 'Adicione seu nome completo',
+      icon: <User className="w-3.5 h-3.5" />,
+      weight: 15,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      filled: !!user.email,
+      suggestion: 'Adicione seu email',
+      icon: <Mail className="w-3.5 h-3.5" />,
+      weight: 15,
+    },
+    {
+      key: 'phone',
+      label: 'Telefone',
+      filled: !!user.phone,
+      suggestion: 'Adicione seu telefone para contato rápido',
+      icon: <Phone className="w-3.5 h-3.5" />,
+      weight: 15,
+    },
+    {
+      key: 'city',
+      label: 'Cidade',
+      filled: !!user.city,
+      suggestion: 'Adicione sua cidade para receber recomendações melhores',
+      icon: <MapPin className="w-3.5 h-3.5" />,
+      weight: 12,
+    },
+    {
+      key: 'state',
+      label: 'Estado',
+      filled: !!user.state,
+      suggestion: 'Adicione seu estado para ver plantões na sua região',
+      icon: <MapPin className="w-3.5 h-3.5" />,
+      weight: 8,
+    },
+    {
+      key: 'professionalDoc',
+      label: user.role === 'MEDICO' ? 'CRM' : user.role === 'ENFERMEIRO' || user.role === 'TECNICO_ENFERMAGEM' ? 'COREN' : 'Documento Profissional',
+      filled: !!user.professionalDoc,
+      suggestion: 'Adicione seu documento profissional para verificação',
+      icon: <FileText className="w-3.5 h-3.5" />,
+      weight: 20,
+    },
+    {
+      key: 'bio',
+      label: 'Bio',
+      filled: !!user.bio,
+      suggestion: 'Adicione uma bio para que outros conheçam você',
+      icon: <MessageSquare className="w-3.5 h-3.5" />,
+      weight: 15,
+    },
+  ]
+
+  const totalWeight = fields.reduce((sum, f) => sum + f.weight, 0)
+  const filledWeight = fields.filter(f => f.filled).reduce((sum, f) => sum + f.weight, 0)
+  const completionPercent = Math.round((filledWeight / totalWeight) * 100)
+
+  const missingFields = fields.filter(f => !f.filled)
+  const isComplete = completionPercent === 100
+
+  // Get color based on completion
+  const getProgressColor = () => {
+    if (completionPercent >= 80) return 'from-emerald-400 to-emerald-500'
+    if (completionPercent >= 50) return 'from-amber-400 to-emerald-400'
+    return 'from-red-400 to-amber-400'
+  }
+
+  const getProgressTextColor = () => {
+    if (completionPercent >= 80) return 'text-emerald-600 dark:text-emerald-400'
+    if (completionPercent >= 50) return 'text-amber-600 dark:text-amber-400'
+    return 'text-red-600 dark:text-red-400'
+  }
+
+  return (
+    <Card className={cn(
+      "rounded-xl shadow-sm border-0 overflow-hidden transition-all duration-300",
+      isComplete ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-400'
+    )}>
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {isComplete ? (
+              <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            ) : (
+              <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                {isComplete ? 'Perfil Completo!' : 'Complete seu Perfil'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isComplete
+                  ? 'Seu perfil está completo. Continue atualizando!'
+                  : `${completionPercent}% preenchido`}
+              </p>
+            </div>
+          </div>
+          <span className={cn('text-2xl font-bold', getProgressTextColor())}>
+            {completionPercent}%
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-3">
+          <div
+            className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-700', getProgressColor())}
+            style={{ width: `${completionPercent}%` }}
+          />
+        </div>
+
+        {/* Field completion indicators */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {fields.map(field => (
+            <div
+              key={field.key}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-200',
+                field.filled
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+              )}
+            >
+              {field.filled ? (
+                <CheckCircle2 className="w-2.5 h-2.5" />
+              ) : (
+                <AlertCircle className="w-2.5 h-2.5" />
+              )}
+              {field.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Missing field suggestions */}
+        {missingFields.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">
+              Sugestões para melhorar seu perfil
+            </p>
+            {missingFields.slice(0, 3).map(field => (
+              <div
+                key={field.key}
+                className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors cursor-pointer"
+                onClick={onEdit}
+              >
+                <div className="w-5 h-5 bg-white dark:bg-gray-700 rounded flex items-center justify-center text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0">
+                  {field.icon}
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">{field.suggestion}</p>
+                <ArrowRight className="w-3 h-3 text-gray-300 dark:text-gray-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 shrink-0" />
+              </div>
+            ))}
+            {missingFields.length > 3 && (
+              <button
+                onClick={onEdit}
+                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 ml-1"
+              >
+                +{missingFields.length - 3} mais sugestões
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

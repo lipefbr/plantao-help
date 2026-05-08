@@ -144,7 +144,7 @@ export function ConcursosTab() {
           variant="outline"
           size="sm"
           className={cn(
-            'rounded-lg transition-all duration-200',
+            'rounded-lg transition-all duration-300',
             showFilters ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : ''
           )}
           onClick={() => setShowFilters(!showFilters)}

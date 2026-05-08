@@ -204,7 +204,7 @@ export function MeusPlantoesTab() {
     return (
     <Card
       className={cn(
-        'rounded-xl shadow-sm border-0 hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500',
+        'rounded-xl shadow-sm border-0 hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 shift-card-hover',
         isGoldRated && 'border-l-amber-400 hover:border-l-amber-500 ring-1 ring-amber-200 dark:ring-amber-800/40'
       )}
       onClick={() => handleShiftClick(shift.id)}
@@ -328,7 +328,7 @@ export function MeusPlantoesTab() {
         <button
           onClick={() => setViewMode('list')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-300',
             viewMode === 'list'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
@@ -340,7 +340,7 @@ export function MeusPlantoesTab() {
         <button
           onClick={() => setViewMode('calendar')}
           className={cn(
-            'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+            'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-300',
             viewMode === 'calendar'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
@@ -501,7 +501,7 @@ export function MeusPlantoesTab() {
                   {selectedDateShifts.map(shift => (
                     <Card
                       key={shift.id}
-                      className="rounded-xl shadow-sm border-0 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                      className="rounded-xl shadow-sm border-0 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] shift-card-hover"
                       onClick={() => handleShiftClick(shift.id)}
                     >
                       <CardContent className="p-3">

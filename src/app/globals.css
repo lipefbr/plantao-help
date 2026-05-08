@@ -611,8 +611,9 @@ textarea::placeholder {
   position: relative;
   border-radius: 1rem;
   padding: 2px;
-  background: conic-gradient(from 0deg, oklch(0.696 0.17 162.48), oklch(0.508 0.118 165.612), oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48));
-  animation: parallax-rotate 4s linear infinite;
+  background: linear-gradient(135deg, oklch(0.696 0.17 162.48), oklch(0.508 0.118 165.612), oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48));
+  background-size: 300% 300%;
+  animation: shimmer-slow 6s linear infinite;
 }
 .shimmer-border > * {
   border-radius: calc(1rem - 2px);
@@ -620,7 +621,8 @@ textarea::placeholder {
   z-index: 1;
 }
 .dark .shimmer-border {
-  background: conic-gradient(from 0deg, oklch(0.696 0.17 162.48), oklch(0.432 0.095 166.913), oklch(0.596 0.145 163.225), oklch(0.696 0.17 162.48));
+  background: linear-gradient(135deg, oklch(0.696 0.17 162.48), oklch(0.432 0.095 166.913), oklch(0.596 0.145 163.225), oklch(0.696 0.17 162.48));
+  background-size: 300% 300%;
 }
 
 /* ===== Emerald glow with breathing ===== */
@@ -902,4 +904,133 @@ textarea::placeholder {
 }
 .counter-pulse {
   animation: counterPulse 0.3s ease-out;
+}
+
+/* ===== Landing page hero float animation ===== */
+@keyframes heroFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.animate-hero-float {
+  animation: heroFloat 4s ease-in-out infinite;
+}
+
+/* ===== CTA emerald glow accent ===== */
+@keyframes ctaGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.3), 0 0 40px rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.45), 0 0 56px rgba(16, 185, 129, 0.2);
+  }
+}
+.cta-glow {
+  animation: ctaGlow 3s ease-in-out infinite;
+}
+.dark .cta-glow {
+  animation: none;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2), 0 0 40px rgba(16, 185, 129, 0.1);
+}
+
+/* ===== Testimonial card hover glow ===== */
+.testimonial-card {
+  transition: all 0.3s ease;
+}
+.testimonial-card:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 8px 24px rgba(16, 185, 129, 0.1);
+}
+.dark .testimonial-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 8px 24px rgba(16, 185, 129, 0.08);
+}
+
+/* ===== Pricing card hover glow ===== */
+.pricing-card-highlight:hover {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 16px 40px rgba(16, 185, 129, 0.2);
+}
+.dark .pricing-card-highlight:hover {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3), 0 16px 40px rgba(16, 185, 129, 0.12);
+}
+.pricing-card:hover {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 12px 32px rgba(16, 185, 129, 0.08);
+}
+
+/* ===== Search bar gradient background ===== */
+.search-gradient {
+  background: linear-gradient(135deg, oklch(0.979 0.021 166.113) 0%, oklch(0.995 0.01 166.113) 50%, oklch(0.979 0.021 166.113) 100%);
+  background-size: 200% 200%;
+  animation: shimmer-slow 8s linear infinite;
+}
+.dark .search-gradient {
+  background: linear-gradient(135deg, oklch(0.18 0.025 166.113) 0%, oklch(0.22 0.03 166.113) 50%, oklch(0.18 0.025 166.113) 100%);
+  background-size: 200% 200%;
+  animation: shimmer-slow 8s linear infinite;
+}
+
+/* ===== Subtle shimmer value (less distracting) ===== */
+.shimmer-value-subtle {
+  background: linear-gradient(90deg, oklch(1 0 0), oklch(0.905 0.093 164.15 / 0.6), oklch(1 0 0));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-slow 6s linear infinite;
+}
+.dark .shimmer-value-subtle {
+  background: linear-gradient(90deg, oklch(0.985 0.005 166.113), oklch(0.765 0.177 163.223 / 0.4), oklch(0.985 0.005 166.113));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-slow 6s linear infinite;
+}
+
+/* ===== Verified seller emerald glow ===== */
+.verified-glow {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3), 0 0 16px rgba(16, 185, 129, 0.15);
+  transition: box-shadow 0.3s ease;
+}
+.verified-glow:hover {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4), 0 0 24px rgba(16, 185, 129, 0.2);
+}
+.dark .verified-glow {
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.2), 0 0 12px rgba(16, 185, 129, 0.1);
+}
+.dark .verified-glow:hover {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3), 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+/* ===== Buy button hover effect ===== */
+.buy-btn-hover {
+  transition: all 0.3s ease;
+}
+.buy-btn-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+}
+.buy-btn-hover:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* ===== Shift card micro-interaction hover ===== */
+.shift-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.shift-card-hover:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(16, 185, 129, 0.1);
+}
+.dark .shift-card-hover:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+/* ===== Interactive element base transition ===== */
+.interactive-transition {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -323,8 +323,8 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
       {/* Main Info Card - with gradient border */}
       <Card className="gradient-border-card rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
         <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white relative overflow-hidden">
-          {/* Parallax scrolling background effect */}
-          <div className="absolute inset-0 animate-parallax-rotate opacity-10" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.1), transparent, rgba(255,255,255,0.05), transparent)', transformOrigin: 'center center' }} />
+          {/* Subtle shimmer background effect */}
+          <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
           {/* Decorative background pattern */}
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           <h3 className="text-xl font-bold relative z-10">{shift.title}</h3>
@@ -371,9 +371,9 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               </div>
             )
           })()}
-          {/* Gradient shimmer on value */}
+          {/* Gradient shimmer on value - subtle */}
           <div className="mt-3 relative z-10">
-            <span className="text-2xl font-bold bg-gradient-to-r from-white via-emerald-100 to-white bg-[length:200%_100%] animate-shimmer-slow bg-clip-text text-transparent">
+            <span className="text-2xl font-bold shimmer-value-subtle">
               {formatCurrency(shift.value)}
             </span>
           </div>
@@ -459,7 +459,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
                 <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{shift.seller.name}</p>
                 {/* Verified seller badge */}
                 {shift.seller.professionalDoc && (
-                  <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-800/30">
+                  <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 verified-glow">
                     <Shield className="w-2.5 h-2.5" />
                     Verificado
                   </span>
@@ -658,7 +658,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         {canBuy && (
           <Button
             onClick={() => setShowBuyConfirm(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold glow-emerald"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold glow-emerald buy-btn-hover"
             disabled={buying}
           >
             {buying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

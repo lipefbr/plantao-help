@@ -11,8 +11,9 @@ import { ConcursosTab } from '@/components/concursos-tab'
 import { MeusPlantoesTab } from '@/components/meus-plantoes-tab'
 import { PerfilTab } from '@/components/perfil-tab'
 import { AdminTab } from '@/components/admin-tab'
+import { LandingPage } from '@/components/landing-page'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, Suspense } from 'react'
+import { useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { OnboardingModal } from '@/components/onboarding-modal'
 
@@ -65,7 +66,7 @@ function DeepLinkHandler() {
 }
 
 export default function Home() {
-  const { darkMode } = useAppStore()
+  const { darkMode, user } = useAppStore()
 
   // Apply dark mode class to html element
   useEffect(() => {
@@ -75,6 +76,26 @@ export default function Home() {
       document.documentElement.classList.remove('dark')
     }
   }, [darkMode])
+
+  // Determine which view to show based on user state
+  // When user logs in, automatically switch from landing to app
+  const showLanding = useMemo(() => !user, [user])
+
+  // Show beautiful landing page when not logged in
+  if (showLanding) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-950">
+        <AuthModal />
+        <OnboardingModal />
+        <Suspense fallback={null}>
+          <DeepLinkHandler />
+        </Suspense>
+
+        {/* Landing page with its own navigation */}
+        <LandingPage />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">

@@ -118,7 +118,7 @@ export function CreateShiftModal({ open, onClose, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-emerald-700">Publicar Plantão</DialogTitle>
         </DialogHeader>
