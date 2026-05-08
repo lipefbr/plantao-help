@@ -51,8 +51,8 @@ interface AppState {
   setSelectedContestId: (id: string | null) => void
 
   // Admin sub-tab
-  adminSubTab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard'
-  setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard') => void
+  adminSubTab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard' | 'shifts'
+  setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard' | 'shifts') => void
 
   // Profile sub-tab
   profileSubTab: 'info' | 'ratings' | 'favorites'

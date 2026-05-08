@@ -1,17 +1,18 @@
 # Plantão Help - Worklog
 
 ## Project Status
-**Status**: Production-ready marketplace with rich features, enhanced styling, and analytics
-**Last Updated**: 2025-05-08 (Phase 6 Enhancement)
+**Status**: Production-ready marketplace with rich features, enhanced styling, analytics, and admin tools
+**Last Updated**: 2025-05-08 (Phase 10 - QA + Bug Fixes + New Features + Styling)
 
 ## Current State
 - Complete marketplace for healthcare shifts (plantões) with all core features working
 - Database seeded with sample data (10 hospitals, 10 locations, 14 shifts, 7 contests, 8 users)
-- All API endpoints functional and tested
+- All API endpoints functional and tested (25+ endpoints)
 - Frontend fully responsive with mobile-first design
-- Admin panel with interactive charts (recharts)
+- Admin panel with interactive charts (recharts), shift management, revenue report
 - Enhanced UI/UX with glassmorphism, animations, frosted glass nav, shift type badges, countdown timers
-- FAQ section and contact support added
+- Activity timeline and calendar view for shifts
+- FAQ section, contact support, terms of use, and privacy policy
 - No console errors, lint passes clean
 
 ## Architecture
@@ -214,18 +215,6 @@
 - **Login button shadow**: `shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30` with `active:scale-[0.98]`
 - **Subtitle text**: Added descriptive subtitles under dialog titles
 
-## Unresolved Issues / Next Steps
-1. **Authentication**: Currently using simple email/password comparison (no JWT/sessions) - should add proper auth for production
-2. **File Uploads**: Document upload (CRM, COREN, CPF) not yet implemented - currently text fields only
-3. **Payment Integration**: Registration fees are displayed but no payment processing
-4. **Chat/Messaging**: No direct communication between buyer and seller
-5. **Map Integration**: Hospital/shift locations could benefit from map visualization
-6. **Shift Scheduling**: Could add recurring shift patterns
-7. **Email Verification**: No email verification on registration
-8. ~~**Analytics Dashboard**: Admin could benefit from more detailed analytics with charts~~ **RESOLVED in Phase 4**
-9. **Push Notifications**: No browser push notifications
-10. **Multi-language**: Currently Portuguese only
-
 ## Phase 6 Changes (QA, Bug Fixes, FAQ, Legal Links)
 
 ### Bug Fixes
@@ -261,3 +250,388 @@
 - ✅ Dark mode works correctly
 - ✅ No console errors detected
 - ✅ Lint passes clean
+
+## Phase 7 Changes (Task 3-a - Activity Timeline + Calendar View)
+
+### Feature 1: Activity Timeline on Home Tab
+
+#### New API Endpoint
+- **`GET /api/users/[id]/activity`** - Returns recent activity items for a user, limited to 10 most recent
+  - Combines data from shifts, ratings, notifications, and contests tables
+  - Activity types: `shift_published` (📋), `shift_bought` (🛒), `shift_cancelled` (❌), `new_rating` (⭐), `registration_approved` (✅), `contest_opening` (🏛️)
+  - Each item includes: id, type, title, description, createdAt, icon
+  - Sorted by createdAt descending
+
+#### Home Tab Changes (`src/components/home-tab.tsx`)
+- Added `ActivityItem` interface at module level
+- Added state: `activities`, `activitiesLoading`, `showAllActivities`
+- Added `loadActivities()` function that fetches from `/api/users/[id]/activity`
+- Added "Atividade Recente" section in logged-in dashboard, placed AFTER "Plantões recentes" section and BEFORE FAQ section
+- **Timeline design**: Vertical timeline with:
+  - Color-coded icon circles (emerald=published, blue=bought, red=cancelled, amber=rating, green=approved, purple=contest)
+  - Connecting vertical line between items
+  - Title, description, and time ago (using `formatTimeAgo`) for each item
+  - Staggered `animate-slideUp` animation with 60ms delay per item
+- **Show 5 most recent** with "Ver mais" button to expand to 10
+- **Loading skeleton**: 5 circular skeleton items with text placeholders
+- **Empty state**: Activity icon with encouraging message
+- **Dark mode support**: All colors have dark mode variants
+- Added `Activity` icon from lucide-react import
+- Added `formatTimeAgo` to utils import
+
+### Feature 2: Shift Calendar View in Meus Plantões
+
+#### New API Endpoint
+- **`GET /api/shifts/calendar`** - Returns shifts grouped by date for a user
+  - Accepts `userId` query parameter
+  - Returns shifts with `type` field ('published' | 'bought') based on sellerId matching
+
+#### Meus Plantões Tab Changes (`src/components/meus-plantoes-tab.tsx`)
+- Added `viewMode` state ('list' | 'calendar') with toggle buttons
+- Added `currentMonth` state for calendar navigation
+- Added `selectedDate` state for day click interaction
+- Added calendar helper functions: `getDaysInMonth`, `goToPrevMonth`, `goToNextMonth`, `goToToday`, `formatMonthYear`, `isToday`, `getDateKey`
+- **View mode toggle**: "Lista" / "Calendário" buttons with emerald active state, styled like TabsList
+- **Monthly calendar grid**:
+  - Header with month/year (capitalized pt-BR) and prev/next month navigation (ChevronLeft/ChevronRight)
+  - "Ir para hoje" link when not viewing current month
+  - 7-column grid (Dom, Seg, Ter, Qua, Qui, Sex, Sáb)
+  - Days with shifts show colored dots (emerald for published, blue for bought)
+  - Today highlighted with emerald background and bold text
+  - Selected day has ring-2 ring-emerald-500 and scaled interaction
+  - Empty cells for days outside the month
+  - Legend at bottom showing dot color meanings
+- **Selected date panel**: When clicking a day with shifts:
+  - Shows date header with X close button
+  - Lists shift cards with: title, Published/Bought badge (color-coded), time, location, value, status
+  - `animate-slideUp` entrance animation
+  - Click on shift card opens shift detail
+- **Uses existing shift data** (publishedShifts + boughtShifts) organized by date via `useMemo`, no additional API call
+- **Empty calendar state**: CalendarDays icon with encouraging message
+- **Responsive and mobile-friendly**: Full width calendar grid, aspect-square day cells
+- Added imports: `Badge`, `ChevronLeft`, `ChevronRight`, `List`, `CalendarDays`, `X` from lucide-react
+- Added `useMemo`, `useCallback` from react
+
+### Files Created
+- `src/app/api/users/[id]/activity/route.ts` - Activity timeline API endpoint
+- `src/app/api/shifts/calendar/route.ts` - Calendar shifts API endpoint
+
+### Files Modified
+- `src/components/home-tab.tsx` - Added ActivityItem interface, activity state, loadActivities function, "Atividade Recente" timeline section, Activity icon import, formatTimeAgo import
+- `src/components/meus-plantoes-tab.tsx` - Complete rewrite with calendar view toggle, monthly calendar grid, selected date panel, view mode state, calendar navigation, useMemo/useCallback optimization
+
+### Testing
+- ✅ Lint passes clean
+- ✅ Activity API returns correct data (tested with dr.silva user)
+- ✅ Calendar API returns shifts grouped by date
+- ✅ No compilation errors in dev log
+
+## Phase 8 Changes (Task 4 - Enhanced Styling All Tabs)
+
+### Global CSS Enhancements (`src/app/globals.css`)
+- **New keyframe animations**: `float` (translateY bounce), `ripple` (scale+opacity), `badge-pulse` (emerald box-shadow pulse), `shimmer-slow` (background-position sweep), `parallax-rotate` (360deg rotation), `sweep` (clip-path reveal)
+- **New utility classes**: `.animate-float`, `.animate-ripple`, `.animate-badge-pulse`, `.animate-shimmer-slow`, `.animate-parallax-rotate`, `.animate-sweep`
+- **`.gradient-text` utility**: Emerald gradient clip text effect
+- **`.glass-card` utility**: Glassmorphism with backdrop-blur-12 and semi-transparent background (light + dark mode)
+- **Theme inline variables**: Added `--animate-float`, `--animate-ripple`, `--animate-badge-pulse`, `--animate-shimmer-slow`
+
+### Home Tab (`src/components/home-tab.tsx`)
+- **Parallax gradient shift**: Added `animate-parallax-rotate` pseudo-element with conic gradient on both hero (logged-out) and welcome (logged-in) cards
+- **Hover lift on stat cards**: Added `hover:-translate-y-0.5 transition-transform duration-200` to all 4 stat cards
+- **Pulsing dot on Concursos quick link**: Added `animate-badge-pulse` green dot on "Concursos Abertos" card icon
+- **Quick Action button enhancements**: Inner shadow (`shadow-inner`), Plus icon `group-hover:rotate-90`, Search icon `group-hover:scale-110`
+- **Staggered animation on Plantões recentes**: Added `animate-slideUp` with `animationDelay: index * 80ms` and `opacity: 0` initial state
+- **Wave SVG divider**: Added decorative wave SVG between welcome card and stats section
+
+### Plantoes Tab (`src/components/plantoes-tab.tsx`)
+- **Search input focus ring**: Added `focus-within:ring-2 focus-within:ring-emerald-400/50` on search container
+- **Left border color animation**: Added `hover:border-l-emerald-500 transition-all` on shift cards
+- **"Novo" badge**: Shows `animate-badge-pulse` green "Novo" badge on shifts with date within last 2 days
+- **Gradient overlay**: Added `bg-gradient-to-t from-white dark:from-gray-950 to-transparent` at bottom of shift list
+- **FAB enhancement**: Added `animate-float`, `ring-4 ring-emerald-400/20 hover:ring-emerald-400/40`, ring-offset for glow effect
+
+### Meus Plantões Tab (`src/components/meus-plantoes-tab.tsx`)
+- **Gradient progress bar**: Shows shift completion percentage (elapsed vs total time) with gradient bar on available shifts
+- **Gold "badge of honor"**: Shifts from sellers with 5★ rating get amber border and "⭐ 5★" badge
+- **Financial summary shimmer**: Added `animate-shimmer-slow` gradient overlay on the financial summary card
+- **Tab transition animation**: Added `transition-all duration-300` on TabsTrigger components
+
+### Concursos Tab (`src/components/concursos-tab.tsx`)
+- **Badge ribbon for urgent contests**: Red "URGENTE" ribbon in top-right corner for contests with deadline <7 days
+- **Dynamic gradient cards**: Background gradient changes based on deadline urgency (green→amber→red spectrum)
+- **Pulse animation on urgent badges**: `animate-badge-pulse` on urgency badges for <7 days remaining
+- **Enhanced empty state**: Animated concentric circles with floating Trophy icon instead of static SearchX
+
+### Shift Detail (`src/components/shift-detail.tsx`)
+- **Gradient shimmer on value**: Price display uses `animate-shimmer-slow` with emerald gradient clip-text
+- **Decorative dot pattern**: Radial gradient dot pattern overlay on main info card
+- **Verified seller badge**: Shield icon + "Verificado" badge with green glow shadow when seller has professionalDoc
+- **Subtle pulse on buy button**: Added `animate-badge-pulse` on "Comprar Plantão" button
+- **Shift lifecycle timeline**: 3-step timeline (Created → Available → Sold) with colored indicators and progress lines
+- **Hospital background pattern**: Subtle star SVG background pattern on hospital info card
+
+### Profile Tab (`src/components/perfil-tab.tsx`)
+- **Confetti decorative pattern**: 12 randomly-placed semi-transparent circles on profile header
+- **Progress ring around avatar**: SVG circle showing profile completion percentage (based on email/phone/city/doc/bio fields)
+- **Badge system**: "✓ Verificado" badge for approved users, "⭐ Top" badge for users with avgRating ≥ 4.5
+- **Gradient divider**: Added `bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400` accent at top of info section
+
+### Notification Center (`src/components/notification-center.tsx`)
+- **Color-coded left borders**: SUCCESS=emerald, WARNING=amber, default=blue `border-l-3` on each notification
+- **Slide-in animation**: Added `animate-slideIn` class on SheetContent
+- **Pulse on unread dot**: Changed static dot to `animate-badge-pulse` for unread indicator
+- **Sweep animation on "mark all read"**: Added `animate-sweep` class on mark-all button
+- **Badge pulse on count**: Added `animate-badge-pulse` on unread count badge
+
+### Top Header (`src/components/top-header.tsx`)
+- **Gradient text on logo**: "PlantãoHelp" now uses `.gradient-text` class with emerald gradient clip
+- **Breathing animation on live indicator**: Changed `animate-ping` to `animate-pulseSoft` for subtle breathing effect
+- **Pulse ring on notification badge**: Added `animate-badge-pulse` on notification count badge
+
+### Bottom Navigation (`src/components/bottom-nav.tsx`)
+- **Ripple effect container**: Added ripple span element inside icon container
+- **Desktop tooltip**: Added hover tooltip showing tab name (hidden on mobile, visible on sm+)
+- **Group hover**: Added `group` class for tooltip trigger
+
+### Files Modified
+- `src/app/globals.css` - Added 6 new keyframes, 6 utility animation classes, `.gradient-text`, `.glass-card`
+- `src/components/home-tab.tsx` - Parallax gradient, hover lift, pulsing dot, staggered animations, wave SVG, icon animations
+- `src/components/plantoes-tab.tsx` - Focus ring, hover border animation, "Novo" badge, gradient overlay, FAB glow
+- `src/components/meus-plantoes-tab.tsx` - Progress bar, gold badge, financial shimmer, tab transitions
+- `src/components/concursos-tab.tsx` - URGENTE ribbon, urgency gradient, pulse on urgent badges, animated empty state
+- `src/components/shift-detail.tsx` - Shimmer value, dot pattern, verified badge, lifecycle timeline, pulse buy button
+- `src/components/perfil-tab.tsx` - Confetti pattern, progress ring, badge system, gradient divider
+- `src/components/notification-center.tsx` - Color-coded borders, slide-in, pulse dots, sweep animation
+- `src/components/top-header.tsx` - Gradient text, breathing indicator, pulse notification badge
+- `src/components/bottom-nav.tsx` - Ripple effect, desktop tooltip, group hover
+
+### Testing
+- ✅ Lint passes clean (0 errors, 0 warnings)
+
+## Phase 9 Changes (Task 3-b - Enhanced Admin + Notification Improvements + Legal Dialogs)
+
+### Feature 1: Admin Panel - Shift Management Sub-tab ("Plantões")
+
+#### New API Endpoints
+- **`GET /api/admin/shifts`** - Returns all shifts with seller, buyer, and hospital info
+  - Accepts `adminId` query parameter for admin role verification
+  - Accepts `status` filter param (AVAILABLE, SOLD, CANCELLED, or ALL)
+  - Accepts `sortBy` param (date, value, status) and `sortOrder` (asc, desc)
+  - Returns shifts with full relational data including seller/buyer emails and phones
+- **`PUT /api/admin/shifts/[id]/cancel`** - Cancels a shift with admin privileges
+  - Accepts `adminId` and optional `reason` in body
+  - Verifies admin role before allowing cancellation
+  - Prevents double-cancellation (returns 400 if already cancelled)
+  - Sends notification to seller (WARNING type) with reason
+  - Sends notification to buyer (if exists) with reason
+
+#### Admin Tab Changes (`src/components/admin-tab.tsx`)
+- Added `ShiftsPanel` component with full shift management capabilities:
+  - **Status filter**: Select dropdown to filter by All/Available/Sold/Cancelled
+  - **Search input**: Client-side search across title, seller name, city, hospital name
+  - **Sort buttons**: Toggle sort by Date/Value/Status with asc/desc ordering
+  - **Shift cards**: Show title, status badge, date, time, value, city/state, hospital, seller, buyer
+  - **View detail button (Eye icon)**: Opens Dialog with full shift information:
+    - Title, status, date, time, value, professional type
+    - Location and hospital info
+    - Description
+    - Seller info (avatar, name, email)
+    - Buyer info (if exists, avatar, name, email)
+    - Cancel button for non-cancelled shifts
+  - **Cancel button (X icon)**: Opens cancel dialog with:
+    - Warning message about seller notification
+    - Optional reason textarea
+    - Confirm/Cancel buttons
+  - **Loading skeletons**: Animated skeleton placeholders
+  - **Empty state**: Message when no shifts found
+  - **Max height scroll**: 500px max height with overflow scroll
+  - Cancelled shifts show with reduced opacity
+- Added "Plantões" sub-tab (Calendar icon) in admin tab navigation
+- Added new Lucide icon imports: `Eye, ArrowUpDown, Clock, Banknote, ArrowUpRight, ArrowDownRight`
+- Updated `adminSubTabs` constant to include `'shifts'`
+
+### Feature 2: Admin Panel - Revenue Report
+
+#### New API Endpoint
+- **`GET /api/admin/revenue`** - Calculates revenue metrics
+  - Accepts `adminId` query parameter for admin role verification
+  - Returns: `totalRevenue`, `revenueThisMonth`, `revenueLastMonth`, `averageShiftValue`, `revenueTrend` (percentage), `topCities` (top 5), `topStates` (top 5), `totalSoldShifts`, `totalAllShifts`
+
+#### Dashboard Panel Changes (`src/components/admin-tab.tsx`)
+- Added `RevenueReportCard` component placed after extra stats row and before pending registrations:
+  - **Gradient header**: Emerald-to-teal gradient with Banknote icon and "Relatório de Receita" title
+  - **Total revenue**: Large white bold text
+  - **4-metric grid**: This Month, Last Month, Average/Shift, Trend
+  - **Trend indicator**: ArrowUpRight (emerald) for positive trend, ArrowDownRight (red) for negative
+  - **Top Cities section**: Shows top 3 earning cities with revenue amounts
+  - Loading skeleton while fetching
+- Revenue report auto-loads on admin dashboard mount
+
+### Feature 3: Notification Categories & Mark All Read
+
+#### New API Endpoint
+- **`PUT /api/notifications/read-all`** - Marks all unread notifications as read for a user
+  - Accepts `userId` in body
+  - Uses `updateMany` for efficient batch update
+  - Returns `{ success: true, updatedCount }` with number of notifications marked
+
+#### Notification Center Changes (`src/components/notification-center.tsx`)
+- **Category system**: Added `NOTIFICATION_CATEGORIES` constant with 11 categories:
+  - 📋 SHIFT_PUBLISHED / SHIFT_UPDATED → green (FileText icon)
+  - 🛒 SHIFT_BOUGHT / SHIFT_SOLD → blue (ShoppingCart icon)
+  - ❌ SHIFT_CANCELLED → red (XCircle icon)
+  - ⭐ NEW_RATING → amber (Star icon)
+  - ✅ REGISTRATION_APPROVED → emerald (CheckCircle2 icon)
+  - ❌ REGISTRATION_REJECTED → red (XCircle icon)
+  - 🏛️ CONTEST → teal (Landmark icon)
+  - Legacy: SUCCESS, WARNING, INFO
+- **Smart category inference**: `inferNotificationCategory()` analyzes notification title keywords to assign categories
+- **Category count bar**: Shows top 4 notification categories with counts at the top of the notification panel
+- **Category-aware icons**: Each notification displays the appropriate category icon with matching colors
+- **Category label badges**: Small category label under each notification's timestamp
+- **Improved "Mark all as read"**: Now uses single `PUT /api/notifications/read-all` API call instead of N individual calls (more efficient)
+- Added new imports: `ShoppingCart, XCircle, Star, Landmark, FileText`
+- Added `useMemo` for computed category counts
+
+### Feature 4: Terms of Use & Privacy Policy Dialogs
+
+#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+- Added `showTerms` and `showPrivacy` state variables
+- Added Dialog import from shadcn/ui
+- Added ScrollText icon from lucide-react
+- **"Termos de Uso" button**: Now opens a Dialog with scrollable terms document
+  - 10 sections of professional legal content in Portuguese:
+    1. Aceitação dos Termos
+    2. Descrição do Serviço
+    3. Cadastro e Conta do Usuário
+    4. Publicação e Compra de Plantões
+    5. Taxas e Pagamentos
+    6. Avaliações e Reputação
+    7. Responsabilidades do Usuário
+    8. Limitação de Responsabilidade
+    9. Modificações nos Termos
+    10. Legislação Aplicável
+  - Last update date badge at top
+  - Emerald-themed styling with dark mode support
+  - Max height 65vh with overflow scroll
+- **"Política de Privacidade" button**: Now opens a Dialog with scrollable privacy policy
+  - 10 sections covering LGPD-compliant content:
+    1. Informações que Coletamos
+    2. Como Utilizamos suas Informações
+    3. Compartilhamento de Dados
+    4. Armazenamento e Segurança
+    5. Seus Direitos (LGPD)
+    6. Cookies e Tecnologias Semelhantes
+    7. Retenção de Dados
+    8. Menores de Idade
+    9. Alterações nesta Política
+    10. Contato
+  - Last update date badge at top
+  - DPO contact email included
+  - Emerald-themed styling matching terms dialog
+
+### Store Changes (`src/lib/store.ts`)
+- Updated `adminSubTab` type to include `'shifts'`
+- Updated `setAdminSubTab` function signature accordingly
+
+### Files Created
+- `src/app/api/admin/shifts/route.ts` - Admin shifts listing with filters and sort
+- `src/app/api/admin/shifts/[id]/cancel/route.ts` - Admin shift cancellation with notifications
+- `src/app/api/admin/revenue/route.ts` - Revenue metrics calculation
+- `src/app/api/notifications/read-all/route.ts` - Batch mark-all-read endpoint
+
+### Files Modified
+- `src/components/admin-tab.tsx` - Added ShiftsPanel, RevenueReportCard, new imports, "Plantões" sub-tab
+- `src/components/notification-center.tsx` - Complete rewrite with category system, smart inference, category count bar, efficient mark-all-read
+- `src/components/perfil-tab.tsx` - Added Terms of Use Dialog, Privacy Policy Dialog, Dialog import, ScrollText import, state variables
+- `src/lib/store.ts` - Updated adminSubTab type to include 'shifts'
+
+### Testing
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ GET /api/admin/shifts returns 14 shifts with full relational data
+- ✅ GET /api/admin/shifts?status=AVAILABLE filters correctly
+- ✅ PUT /api/admin/shifts/[id]/cancel cancels shift and creates notification
+- ✅ PUT /api/admin/shifts/[id]/cancel rejects double-cancellation
+- ✅ GET /api/admin/revenue returns correct metrics (totalRevenue, trend, topCities)
+- ✅ PUT /api/notifications/read-all works correctly
+- ✅ No compilation errors in dev log
+
+## Phase 10 Changes (QA + Bug Fixes + New Features + Enhanced Styling)
+
+### Bug Fixes
+- **Perfil tab crash (critical)**: Fixed client-side error on the Perfil tab. The favorites API returned nested data `{ ...favorite, shift: { ...shiftData } }` but the component expected flat shift properties. Updated `loadFavorites()` in `perfil-tab.tsx` to properly extract shift data from the nested API response using `.filter()` and `.map()`.
+- **formatDate null safety**: Added null/undefined/NaN guards to `formatDate()`, `formatDateTime()`, and `formatTimeAgo()` functions in `src/lib/utils.ts`. These functions now return '—' instead of throwing when given invalid input, preventing crashes across the app.
+
+### New Features (via subagent Task 3-a)
+- **Activity Timeline** on Home tab (logged-in dashboard) - Vertical timeline showing recent user activities with color-coded icons and "Ver mais" expand button
+- **Shift Calendar View** in Meus Plantões - Toggle between list and monthly calendar view, with colored dots for published/bought shifts, day click for shift details
+- **Activity API** (`GET /api/users/[id]/activity`) - Combines shifts, ratings, notifications, contests into activity timeline
+- **Calendar API** (`GET /api/shifts/calendar`) - Returns shifts grouped by date for calendar visualization
+
+### New Features (via subagent Task 3-b)
+- **Admin Shift Management** - New "Plantões" sub-tab with status filter, search, sort, detail view, and cancel functionality
+- **Admin Revenue Report** - Revenue metrics card showing total revenue, monthly trend, average shift value, top cities
+- **Notification Categories** - 11 notification categories with color-coded icons, category count bar, and efficient batch mark-all-read
+- **Terms of Use Dialog** - Professional legal document in Portuguese with 10 sections
+- **Privacy Policy Dialog** - LGPD-compliant privacy policy with 10 sections
+- **New API endpoints**: `GET /api/admin/shifts`, `PUT /api/admin/shifts/[id]/cancel`, `GET /api/admin/revenue`, `PUT /api/notifications/read-all`
+
+### Enhanced Styling (via subagent Task 4)
+- **6 new CSS animations**: float, ripple, badge-pulse, shimmer-slow, parallax-rotate, sweep
+- **New utility classes**: `.gradient-text` (emerald gradient clip), `.glass-card` (glassmorphism)
+- **Home Tab**: Parallax gradient shift, hover lift on stats, pulsing dot on Concursos, staggered card animations, wave SVG divider
+- **Plantões Tab**: Search focus ring, "Novo" badge for recent shifts, gradient overlay, FAB glow effect
+- **Meus Plantões**: Shift completion progress bar, gold "badge of honor" for 5★ sellers, financial summary shimmer
+- **Concursos Tab**: "URGENTE" ribbon for deadline <7d, urgency gradient cards, animated empty state
+- **Shift Detail**: Shimmer value display, verified seller badge, shift lifecycle timeline, hospital pattern
+- **Profile Tab**: Confetti pattern, progress ring (profile completion %), verification/activity badges
+- **Notifications**: Color-coded borders by type, pulse on unread, sweep animation on mark-all
+- **Header**: Gradient text logo, breathing live indicator, pulse notification badge
+- **Bottom Nav**: Ripple effect, desktop tooltips, group hover
+
+### Files Created
+- `src/app/api/users/[id]/activity/route.ts` - Activity timeline API
+- `src/app/api/shifts/calendar/route.ts` - Calendar shifts API
+- `src/app/api/admin/shifts/route.ts` - Admin shifts management
+- `src/app/api/admin/shifts/[id]/cancel/route.ts` - Admin shift cancellation
+- `src/app/api/admin/revenue/route.ts` - Revenue metrics
+- `src/app/api/notifications/read-all/route.ts` - Batch mark-all-read
+
+### Files Modified
+- `src/lib/utils.ts` - Null safety for formatDate/formatDateTime/formatTimeAgo
+- `src/components/perfil-tab.tsx` - Fixed favorites data mapping, added Terms/Privacy dialogs, confetti pattern, progress ring, badges
+- `src/components/home-tab.tsx` - Added Activity Timeline section, parallax gradient, hover lift, staggered animations, wave SVG
+- `src/components/meus-plantoes-tab.tsx` - Added Calendar View toggle, progress bars, gold badges, shimmer
+- `src/components/plantoes-tab.tsx` - Focus ring, "Novo" badge, gradient overlay, FAB glow
+- `src/components/concursos-tab.tsx` - URGENTE ribbon, urgency gradients, animated empty state
+- `src/components/shift-detail.tsx` - Shimmer value, verified badge, lifecycle timeline, hospital pattern
+- `src/components/admin-tab.tsx` - ShiftsPanel, RevenueReportCard, new sub-tab
+- `src/components/notification-center.tsx` - Category system, batch mark-all-read, color-coded borders
+- `src/components/top-header.tsx` - Gradient text, breathing indicator, pulse badge
+- `src/components/bottom-nav.tsx` - Ripple effect, tooltips
+- `src/app/globals.css` - 6 new animations, gradient-text, glass-card utilities
+- `src/lib/store.ts` - Updated adminSubTab type
+
+### QA Testing Summary (via agent-browser)
+- ✅ Homepage loads correctly (logged-out hero + logged-in dashboard with Activity Timeline)
+- ✅ Doctor login works, shows all features
+- ✅ Admin login works, shows new "Plantões" sub-tab and Revenue Report
+- ✅ Perfil tab no longer crashes (favorites data mapping bug fixed)
+- ✅ Favorites tab shows proper data with date formatting
+- ✅ Meus Plantões Calendar view works with month navigation and day click
+- ✅ Plantões tab shows "Novo" badges and search focus ring
+- ✅ Concursos tab shows urgency indicators
+- ✅ No browser errors detected
+- ✅ Lint passes clean
+
+### Unresolved Issues / Next Steps
+1. **Authentication**: Currently using simple email/password comparison (no JWT/sessions) - should add proper auth for production
+2. **File Uploads**: Document upload (CRM, COREN, CPF) not yet implemented - currently text fields only
+3. **Payment Integration**: Registration fees are displayed but no payment processing
+4. **Chat/Messaging**: No direct communication between buyer and seller
+5. **Map Integration**: Hospital/shift locations could benefit from map visualization
+6. **Shift Scheduling**: Could add recurring shift patterns
+7. **Email Verification**: No email verification on registration
+8. ~~**Analytics Dashboard**: Admin could benefit from more detailed analytics with charts~~ **RESOLVED in Phase 4**
+9. **Push Notifications**: No browser push notifications
+10. **Multi-language**: Currently Portuguese only

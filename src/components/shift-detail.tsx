@@ -321,10 +321,12 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
 
       {/* Main Info Card */}
       <Card className="rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white">
-          <h3 className="text-xl font-bold">{shift.title}</h3>
-          <p className="text-emerald-100 text-sm mt-1">{shift.location}</p>
-          <div className="flex items-center gap-4 mt-3">
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white relative overflow-hidden">
+          {/* Decorative background pattern */}
+          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          <h3 className="text-xl font-bold relative z-10">{shift.title}</h3>
+          <p className="text-emerald-100 text-sm mt-1 relative z-10">{shift.location}</p>
+          <div className="flex items-center gap-4 mt-3 relative z-10">
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-200" />
               <span className="text-sm">{formatDate(shift.date)}</span>
@@ -334,19 +336,24 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               <span className="text-sm">{shift.startTime} - {shift.endTime}</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2 relative z-10">
             <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-white/30', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
               {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
             </span>
           </div>
           {countdown && (
-            <div className="flex items-center gap-1.5 mt-2">
+            <div className="flex items-center gap-1.5 mt-2 relative z-10">
               <Timer className="w-4 h-4 text-emerald-200" />
               <span className="text-emerald-100 text-xs">Inicia em:</span>
               <span className="text-white text-xs font-semibold">{countdown}</span>
             </div>
           )}
-          <div className="mt-3 text-2xl font-bold">{formatCurrency(shift.value)}</div>
+          {/* Gradient shimmer on value */}
+          <div className="mt-3 relative z-10">
+            <span className="text-2xl font-bold bg-gradient-to-r from-white via-emerald-100 to-white bg-[length:200%_100%] animate-shimmer-slow bg-clip-text text-transparent">
+              {formatCurrency(shift.value)}
+            </span>
+          </div>
         </div>
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -377,21 +384,23 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
 
       {/* Hospital Info */}
       {shift.hospital && (
-        <Card className="rounded-xl shadow-sm border-0">
-          <CardContent className="p-4">
+        <Card className="rounded-xl shadow-sm border-0 relative overflow-hidden">
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h20v20H0z\' fill=\'none\'/%3E%3Cpath d=\'M10 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z\' fill=\'%23000\'/%3E%3C/svg%3E")' }} />
+          <CardContent className="p-4 relative z-10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-medium text-sm text-gray-800">{shift.hospital.name}</p>
+                <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{shift.hospital.name}</p>
                 {shift.hospital.address && (
-                  <p className="text-xs text-gray-500">{shift.hospital.address}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{shift.hospital.address}</p>
                 )}
                 {shift.hospital.phone && (
                   <div className="flex items-center gap-1 mt-0.5">
                     <Phone className="w-3 h-3 text-gray-400" />
-                    <span className="text-xs text-gray-500">{shift.hospital.phone}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{shift.hospital.phone}</span>
                   </div>
                 )}
               </div>
@@ -405,25 +414,34 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         <CardContent className="p-4">
           <p className="text-xs text-gray-400 font-medium mb-2 uppercase tracking-wide">Vendedor</p>
           <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 border-2 border-emerald-200">
-              <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm font-semibold">
+            <Avatar className="w-10 h-10 border-2 border-emerald-200 dark:border-emerald-800">
+              <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
                 {shift.seller.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-gray-800">{shift.seller.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{shift.seller.name}</p>
+                {/* Verified seller badge */}
+                {shift.seller.professionalDoc && (
+                  <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-800/30">
+                    <Shield className="w-2.5 h-2.5" />
+                    Verificado
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.seller.role))}>
                   {getRoleLabel(shift.seller.role)}
                 </span>
                 {shift.seller.professionalDoc && (
-                  <span className="text-xs text-gray-400">{shift.seller.professionalDoc}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{shift.seller.professionalDoc}</span>
                 )}
               </div>
               {shift.seller.avgRating > 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   <span className="text-amber-500 text-sm">{renderStars(shift.seller.avgRating)}</span>
-                  <span className="text-xs text-gray-400">({shift.seller.totalRatings})</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">({shift.seller.totalRatings})</span>
                 </div>
               )}
             </div>
@@ -559,12 +577,53 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Shift Lifecycle Timeline */}
+      <Card className="rounded-xl shadow-sm border-0">
+        <CardContent className="p-4">
+          <p className="text-xs text-gray-400 font-medium mb-3 uppercase tracking-wide">Ciclo do Plantão</p>
+          <div className="flex items-center gap-0">
+            {/* Created */}
+            <div className="flex flex-col items-center flex-1">
+              <div className={cn(
+                'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold',
+                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              )}>
+                ✓
+              </div>
+              <span className="text-[9px] text-gray-500 mt-1">Criado</span>
+            </div>
+            <div className="flex-1 h-0.5 bg-emerald-200 dark:bg-emerald-800 -mt-4" />
+            {/* Available */}
+            <div className="flex flex-col items-center flex-1">
+              <div className={cn(
+                'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold',
+                shift.status === 'AVAILABLE' ? 'bg-emerald-500 text-white animate-badge-pulse' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              )}>
+                {shift.status === 'AVAILABLE' ? '●' : '✓'}
+              </div>
+              <span className="text-[9px] text-gray-500 mt-1">Disponível</span>
+            </div>
+            <div className={cn('flex-1 h-0.5 -mt-4', shift.status === 'SOLD' ? 'bg-emerald-200 dark:bg-emerald-800' : 'bg-gray-200 dark:bg-gray-700')} />
+            {/* Sold */}
+            <div className="flex flex-col items-center flex-1">
+              <div className={cn(
+                'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold',
+                shift.status === 'SOLD' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+              )}>
+                {shift.status === 'SOLD' ? '✓' : '○'}
+              </div>
+              <span className="text-[9px] text-gray-500 mt-1">Vendido</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Action Buttons */}
       <div className="space-y-2">
         {canBuy && (
           <Button
             onClick={() => setShowBuyConfirm(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold animate-badge-pulse"
             disabled={buying}
           >
             {buying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

@@ -27,7 +27,8 @@ import {
 import {
   Shield, Users, Building2, Trophy, MapPin, DollarSign,
   Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
-  Calendar, Star, BarChart3
+  Calendar, Star, BarChart3, Eye, ArrowUpDown, Clock, Banknote,
+  ArrowUpRight, ArrowDownRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -36,7 +37,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const adminSubTabs = ['dashboard', 'users', 'hospitals', 'contests', 'locations', 'fees'] as const
+const adminSubTabs = ['dashboard', 'users', 'shifts', 'hospitals', 'contests', 'locations', 'fees'] as const
 type AdminSubTab = typeof adminSubTabs[number]
 
 export function AdminTab() {
@@ -65,6 +66,10 @@ export function AdminTab() {
             <Users className="w-3.5 h-3.5 mr-1" />
             Usuários
           </TabsTrigger>
+          <TabsTrigger value="shifts" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+            <Calendar className="w-3.5 h-3.5 mr-1" />
+            Plantões
+          </TabsTrigger>
           <TabsTrigger value="hospitals" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
             <Building2 className="w-3.5 h-3.5 mr-1" />
             Hospitais
@@ -88,6 +93,9 @@ export function AdminTab() {
         </TabsContent>
         <TabsContent value="users" className="mt-4">
           <UsersPanel />
+        </TabsContent>
+        <TabsContent value="shifts" className="mt-4">
+          <ShiftsPanel />
         </TabsContent>
         <TabsContent value="hospitals" className="mt-4">
           <HospitalsPanel />
@@ -263,6 +271,9 @@ function DashboardPanel() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Relatório de Receita ── */}
+      <RevenueReportCard />
 
       {/* Recent pending registrations */}
       {stats.recentRegistrations && stats.recentRegistrations.length > 0 && (
@@ -902,6 +913,447 @@ function ContestsPanel() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ──────────────────────────────────────
+// REVENUE REPORT CARD
+// ──────────────────────────────────────
+function RevenueReportCard() {
+  const { user } = useAppStore()
+  const [revenue, setRevenue] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user) loadRevenue()
+  }, [user])
+
+  const loadRevenue = async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/revenue?adminId=${user.id}`)
+      if (res.ok) setRevenue(await res.json())
+    } catch { /* */ }
+    finally { setLoading(false) }
+  }
+
+  if (loading) {
+    return <Skeleton className="h-40 rounded-xl" />
+  }
+
+  if (!revenue) return null
+
+  const trendUp = revenue.revenueTrend >= 0
+
+  return (
+    <Card className="rounded-xl border-0 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Banknote className="w-5 h-5 text-white" />
+          <h3 className="text-sm font-semibold text-white">Relatório de Receita</h3>
+        </div>
+        <p className="text-2xl font-bold text-white">{formatCurrency(revenue.totalRevenue)}</p>
+        <p className="text-emerald-100 text-[10px]">Receita total (plantões vendidos)</p>
+      </div>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Este Mês</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.revenueThisMonth)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mês Passado</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.revenueLastMonth)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Média/Plantão</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.averageShiftValue)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tendência</p>
+            <div className="flex items-center gap-1">
+              {trendUp ? (
+                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
+              )}
+              <span className={cn('text-sm font-bold', trendUp ? 'text-emerald-600' : 'text-red-600')}>
+                {Math.abs(revenue.revenueTrend).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Cities */}
+        {revenue.topCities && revenue.topCities.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Top Cidades</p>
+            <div className="space-y-1">
+              {revenue.topCities.slice(0, 3).map((c: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-700 dark:text-gray-300">{c.city}/{c.state}</span>
+                  <span className="font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(c.revenue)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ──────────────────────────────────────
+// SHIFTS PANEL
+// ──────────────────────────────────────
+function ShiftsPanel() {
+  const { user } = useAppStore()
+  const [shifts, setShifts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState('ALL')
+  const [sortBy, setSortBy] = useState('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [selectedShift, setSelectedShift] = useState<any>(null)
+  const [showDetail, setShowDetail] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const loadShifts = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('adminId', user.id)
+      if (filterStatus !== 'ALL') params.set('status', filterStatus)
+      params.set('sortBy', sortBy)
+      params.set('sortOrder', sortOrder)
+      const res = await fetch(`/api/admin/shifts?${params.toString()}`)
+      if (res.ok) setShifts(await res.json())
+    } catch { /* */ }
+    finally { setLoading(false) }
+  }, [user, filterStatus, sortBy, sortOrder])
+
+  useEffect(() => { loadShifts() }, [loadShifts])
+
+  const handleViewDetail = (shift: any) => {
+    setSelectedShift(shift)
+    setShowDetail(true)
+  }
+
+  const handleCancelShift = async () => {
+    if (!user || !cancellingId) return
+    try {
+      const res = await fetch(`/api/admin/shifts/${cancellingId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminId: user.id,
+          reason: cancelReason || undefined,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Plantão cancelado com sucesso!')
+        setShowCancelDialog(false)
+        setCancellingId(null)
+        setCancelReason('')
+        loadShifts()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Erro ao cancelar plantão')
+      }
+    } catch {
+      toast.error('Erro ao cancelar plantão')
+    }
+  }
+
+  const openCancelDialog = (shiftId: string) => {
+    setCancellingId(shiftId)
+    setCancelReason('')
+    setShowCancelDialog(true)
+  }
+
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('desc')
+    }
+  }
+
+  // Filter shifts by search query client-side
+  const filteredShifts = searchQuery
+    ? shifts.filter((s: any) =>
+        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.seller?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.hospital?.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : shifts
+
+  return (
+    <div className="space-y-3">
+      {/* Filters & Search */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 rounded-lg h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos</SelectItem>
+              <SelectItem value="AVAILABLE">Disponível</SelectItem>
+              <SelectItem value="SOLD">Vendido</SelectItem>
+              <SelectItem value="CANCELLED">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">{filteredShifts.length} plantões</p>
+        </div>
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="Buscar plantão..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 rounded-lg h-9 text-sm w-full sm:w-48"
+          />
+        </div>
+      </div>
+
+      {/* Sort buttons */}
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] text-gray-400 mr-1">Ordenar:</span>
+        {[
+          { key: 'date', label: 'Data' },
+          { key: 'value', label: 'Valor' },
+          { key: 'status', label: 'Status' },
+        ].map((s) => (
+          <button
+            key={s.key}
+            onClick={() => toggleSort(s.key)}
+            className={cn(
+              'flex items-center gap-0.5 text-[10px] px-2 py-1 rounded-md transition-colors',
+              sortBy === s.key
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+            )}
+          >
+            {s.label}
+            <ArrowUpDown className="w-2.5 h-2.5" />
+          </button>
+        ))}
+      </div>
+
+      {/* Shifts List */}
+      {loading ? (
+        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+      ) : filteredShifts.length === 0 ? (
+        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum plantão encontrado</CardContent></Card>
+      ) : (
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {filteredShifts.map((s: any) => (
+            <Card key={s.id} className={cn('rounded-xl shadow-sm border-0 hover:-translate-y-0.5 transition-transform', s.status === 'CANCELLED' && 'opacity-60')}>
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{s.title}</p>
+                      <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0', getStatusColor(s.status))}>
+                        {getStatusLabel(s.status)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(s.date)}
+                      </span>
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {s.startTime}-{s.endTime}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(s.value)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-[10px] text-gray-400">{s.city}/{s.state}</span>
+                      {s.hospital && <span className="text-[10px] text-gray-400">• {s.hospital.name}</span>}
+                      <span className="text-[10px] text-gray-400">• Vendedor: {s.seller?.name}</span>
+                      {s.buyer && <span className="text-[10px] text-gray-400">• Comprador: {s.buyer.name}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => handleViewDetail(s)}
+                      className="w-8 h-8 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 rounded-lg flex items-center justify-center transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    </button>
+                    {s.status !== 'CANCELLED' && (
+                      <button
+                        onClick={() => openCancelDialog(s.id)}
+                        className="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 rounded-lg flex items-center justify-center transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Shift Detail Dialog */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-emerald-600" />
+              Detalhes do Plantão
+            </DialogTitle>
+          </DialogHeader>
+          {selectedShift && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{selectedShift.title}</h3>
+                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium inline-block mt-1', getStatusColor(selectedShift.status))}>
+                  {getStatusLabel(selectedShift.status)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <p className="text-[10px] text-gray-400 uppercase">Data</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatDate(selectedShift.date)}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <p className="text-[10px] text-gray-400 uppercase">Horário</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.startTime} - {selectedShift.endTime}</p>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase">Valor</p>
+                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(selectedShift.value)}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  <p className="text-[10px] text-gray-400 uppercase">Tipo Profissional</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{getRoleLabel(selectedShift.professionalType)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{selectedShift.city}/{selectedShift.state}</span>
+                  {selectedShift.location && <span className="text-xs text-gray-400">• {selectedShift.location}</span>}
+                </div>
+                {selectedShift.hospital && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{selectedShift.hospital.name}</span>
+                  </div>
+                )}
+              </div>
+
+              {selectedShift.description && (
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase mb-1">Descrição</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedShift.description}</p>
+                </div>
+              )}
+
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
+                <p className="text-[10px] text-gray-400 uppercase">Vendedor</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      {selectedShift.seller?.name?.charAt(0) || '?'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.seller?.name}</p>
+                    <p className="text-[10px] text-gray-400">{selectedShift.seller?.email}</p>
+                  </div>
+                </div>
+
+                {selectedShift.buyer && (
+                  <>
+                    <p className="text-[10px] text-gray-400 uppercase mt-2">Comprador</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                          {selectedShift.buyer.name?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.buyer.name}</p>
+                        <p className="text-[10px] text-gray-400">{selectedShift.buyer.email}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {selectedShift.status !== 'CANCELLED' && (
+                <Button
+                  onClick={() => {
+                    setShowDetail(false)
+                    openCancelDialog(selectedShift.id)
+                  }}
+                  variant="outline"
+                  className="w-full border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancelar Plantão
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Shift Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <X className="w-5 h-5" />
+              Cancelar Plantão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Tem certeza que deseja cancelar este plantão? O vendedor será notificado.
+            </p>
+            <Textarea
+              placeholder="Motivo do cancelamento (opcional)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="rounded-lg text-sm resize-none"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCancelShift}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg gap-2"
+              >
+                <X className="w-4 h-4" />
+                Confirmar Cancelamento
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelDialog(false)}
+                className="rounded-lg"
+              >
+                Voltar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

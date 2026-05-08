@@ -223,8 +223,11 @@ export function ConcursosTab() {
       ) : contests.length === 0 ? (
         <Card className="rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-0 animate-fadeIn">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <SearchX className="w-8 h-8 text-gray-300 dark:text-gray-500" />
+            {/* Animated illustration-like element */}
+            <div className="w-20 h-20 mx-auto mb-4 relative">
+              <div className="absolute inset-0 rounded-full bg-gray-100 dark:bg-gray-700 animate-pulse" />
+              <div className="absolute inset-2 rounded-full bg-gray-200 dark:bg-gray-600" />
+              <Trophy className="absolute inset-0 m-auto w-8 h-8 text-gray-400 dark:text-gray-500 animate-float" />
             </div>
             <p className="text-gray-600 dark:text-gray-300 font-medium">Nenhum concurso encontrado</p>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Tente ajustar os filtros de busca ou aguarde novos concursos</p>
@@ -241,17 +244,34 @@ export function ConcursosTab() {
             const urgency = getUrgencyConfig(daysRemaining)
             const UrgencyIcon = urgency.icon
             const leftBorderColor = getLeftBorderColor(daysRemaining)
+            const isUrgent = daysRemaining !== null && daysRemaining >= 0 && daysRemaining < 7
+
+            // Dynamic gradient based on deadline urgency
+            const urgencyGradient = daysRemaining === null ? 'from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900'
+              : daysRemaining < 0 ? 'from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800'
+              : daysRemaining <= 7 ? 'from-red-50 to-amber-50 dark:from-red-950/20 dark:to-amber-950/20'
+              : daysRemaining <= 30 ? 'from-amber-50 to-emerald-50 dark:from-amber-950/20 dark:to-emerald-950/20'
+              : 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20'
 
             return (
               <Card
                 key={contest.id}
                 className={cn(
-                  'rounded-xl shadow-sm border-0 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4',
+                  'rounded-xl shadow-sm border-0 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 relative overflow-hidden',
                   leftBorderColor,
-                  'hover:border-l-[6px]'
+                  'hover:border-l-[6px]',
+                  `bg-gradient-to-br ${urgencyGradient}`
                 )}
                 onClick={() => setSelectedContestId(contest.id)}
               >
+                {/* Badge ribbon for urgent contests */}
+                {isUrgent && (
+                  <div className="absolute top-0 right-0">
+                    <div className="bg-red-500 text-white text-[8px] font-bold px-3 py-0.5 rounded-bl-lg shadow-sm">
+                      URGENTE
+                    </div>
+                  </div>
+                )}
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -269,11 +289,12 @@ export function ConcursosTab() {
                         <div className="flex items-center gap-2 mt-1">
                           <Calendar className="w-3 h-3 text-gray-400 shrink-0" />
                           <span className="text-xs text-gray-500 dark:text-gray-400">Prazo: {formatDate(contest.deadline)}</span>
-                          {/* Urgency badge */}
+                          {/* Urgency badge with pulse for <7 days */}
                           {daysRemaining !== null && daysRemaining >= 0 && (
                             <span className={cn(
                               'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium border',
-                              urgency.bgColor, urgency.color, urgency.borderColor
+                              urgency.bgColor, urgency.color, urgency.borderColor,
+                              isUrgent && 'animate-badge-pulse'
                             )}>
                               <UrgencyIcon className="w-2.5 h-2.5" />
                               {urgency.label}

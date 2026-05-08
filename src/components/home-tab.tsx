@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, formatTimeAgo, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase } from 'lucide-react'
+import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase, Activity } from 'lucide-react'
 import { FaqHelpSection } from '@/components/faq-help-section'
 
 interface ShiftItem {
@@ -35,6 +35,15 @@ interface ShiftItem {
   hospital: { id: string; name: string } | null
 }
 
+interface ActivityItem {
+  id: string
+  type: string
+  title: string
+  description: string
+  createdAt: string
+  icon: string
+}
+
 export function HomeTab() {
   const { user, setActiveTab, setShowAuthModal, setAuthMode, setSelectedShiftId } = useAppStore()
   const [shifts, setShifts] = useState<ShiftItem[]>([])
@@ -42,6 +51,9 @@ export function HomeTab() {
   const [userRating, setUserRating] = useState<number>(0)
   const [myShiftsCount, setMyShiftsCount] = useState(0)
   const [boughtShiftsCount, setBoughtShiftsCount] = useState(0)
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [activitiesLoading, setActivitiesLoading] = useState(false)
+  const [showAllActivities, setShowAllActivities] = useState(false)
 
   useEffect(() => {
     loadFeaturedShifts()
@@ -52,6 +64,7 @@ export function HomeTab() {
       loadUserRating()
       loadMyShiftsCount()
       loadBoughtShiftsCount()
+      loadActivities()
     }
   }, [user])
 
@@ -108,6 +121,22 @@ export function HomeTab() {
     }
   }
 
+  const loadActivities = async () => {
+    if (!user) return
+    setActivitiesLoading(true)
+    try {
+      const res = await fetch(`/api/users/${user.id}/activity`)
+      if (res.ok) {
+        const data = await res.json()
+        setActivities(data)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setActivitiesLoading(false)
+    }
+  }
+
   const handleShiftClick = (shiftId: string) => {
     setSelectedShiftId(shiftId)
     setActiveTab('plantoes')
@@ -119,6 +148,8 @@ export function HomeTab() {
       <div className="space-y-6">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden">
+          {/* Parallax rotating gradient pseudo-element */}
+          <div className="absolute inset-0 animate-parallax-rotate opacity-30" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.15), transparent, rgba(255,255,255,0.08), transparent)', transformOrigin: 'center center' }} />
           {/* Shimmer overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full [animation:shimmer_3s_infinite]" />
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
@@ -339,6 +370,8 @@ export function HomeTab() {
     <div className="space-y-5">
       {/* Welcome */}
       <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-5 text-white relative overflow-hidden">
+        {/* Parallax rotating gradient pseudo-element */}
+        <div className="absolute inset-0 animate-parallax-rotate opacity-20" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.12), transparent, rgba(255,255,255,0.06), transparent)', transformOrigin: 'center center' }} />
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
         <div className="relative z-10">
@@ -391,9 +424,16 @@ export function HomeTab() {
         </Card>
       )}
 
+      {/* Wave SVG Divider */}
+      <div className="-mt-2">
+        <svg viewBox="0 0 400 30" className="w-full h-6 fill-emerald-600/5 dark:fill-emerald-900/20" preserveAspectRatio="none">
+          <path d="M0,15 C100,30 200,0 300,15 C350,22 380,18 400,15 L400,30 L0,30 Z" />
+        </svg>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2">
-        <Card className="rounded-xl border-0 shadow-sm">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Calendar className="w-3.5 h-3.5 text-emerald-600" />
@@ -402,7 +442,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500">Disponíveis</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Briefcase className="w-3.5 h-3.5 text-teal-600" />
@@ -411,7 +451,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500">Publicados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-1">
               <DollarSign className="w-3.5 h-3.5 text-blue-600" />
@@ -420,7 +460,7 @@ export function HomeTab() {
             <p className="text-[9px] text-gray-500">Comprados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
           <CardContent className="p-2.5 text-center">
             <div className="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Star className="w-3.5 h-3.5 text-amber-600" />
@@ -436,33 +476,35 @@ export function HomeTab() {
         <div className="grid grid-cols-2 gap-3">
           <Button
             onClick={() => setActiveTab('plantoes')}
-            className="h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm"
+            className="h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-800/10 group"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
             <span className="text-xs font-medium">Publicar Plantão</span>
           </Button>
           <Button
             onClick={() => setActiveTab('plantoes')}
             variant="outline"
-            className="h-16 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl flex flex-col gap-1"
+            className="h-16 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-200/20 group"
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             <span className="text-xs font-medium">Buscar Plantões</span>
           </Button>
         </div>
       )}
 
       {/* Concursos quick link */}
-      <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-r from-teal-50 to-emerald-50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('concursos')}>
+      <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('concursos')}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-teal-600" />
+              <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/40 rounded-xl flex items-center justify-center relative">
+                <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                {/* Pulsing dot indicator */}
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-badge-pulse" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">Concursos Abertos</p>
-                <p className="text-xs text-gray-500">Confira os editais da sua região</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Concursos Abertos</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Confira os editais da sua região</p>
               </div>
             </div>
             <ArrowRight className="w-5 h-5 text-gray-400" />
@@ -497,10 +539,11 @@ export function HomeTab() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {shifts.map((shift) => (
+            {shifts.map((shift, index) => (
               <Card
                 key={shift.id}
-                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
+                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 animate-slideUp"
+                style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
                 onClick={() => handleShiftClick(shift.id)}
               >
                 <CardContent className="p-4">
@@ -546,6 +589,105 @@ export function HomeTab() {
               </Card>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Recent Activity Timeline */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-600" />
+            <h3 className="text-base font-semibold text-gray-800">Atividade Recente</h3>
+          </div>
+        </div>
+        {activitiesLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="w-9 h-9 rounded-full shrink-0 animate-pulse" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-3/4 rounded animate-pulse" />
+                  <Skeleton className="h-3 w-1/2 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activities.length === 0 ? (
+          <Card className="rounded-2xl bg-gray-50 border-0">
+            <CardContent className="p-8 text-center">
+              <Activity className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+              <p className="text-sm text-gray-500">Nenhuma atividade recente</p>
+              <p className="text-xs text-gray-400 mt-1">Suas atividades aparecerão aqui</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="rounded-xl border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="relative">
+                {activities.slice(0, showAllActivities ? 10 : 5).map((activity, index) => {
+                  const isLast = index === (showAllActivities ? Math.min(10, activities.length) : Math.min(5, activities.length)) - 1
+                  const typeColors: Record<string, string> = {
+                    shift_published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                    shift_bought: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    shift_cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                    new_rating: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                    registration_approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                    contest_opening: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+                  }
+                  const colorClass = typeColors[activity.type] || 'bg-gray-100 text-gray-700'
+
+                  return (
+                    <div
+                      key={activity.id}
+                      className="animate-slideUp"
+                      style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}
+                    >
+                      <div className="flex items-start gap-3 relative">
+                        {/* Timeline line */}
+                        {!isLast && (
+                          <div className="absolute left-[17px] top-9 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+                        )}
+                        {/* Icon circle */}
+                        <div className={cn(
+                          'w-9 h-9 rounded-full flex items-center justify-center shrink-0 z-10 text-sm',
+                          colorClass
+                        )}>
+                          {activity.icon}
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 pb-4">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{activity.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activity.description}</p>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTimeAgo(activity.createdAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {activities.length > 5 && !showAllActivities && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                  onClick={() => setShowAllActivities(true)}
+                >
+                  Ver mais
+                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              )}
+              {showAllActivities && activities.length > 5 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-1 text-gray-500 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                  onClick={() => setShowAllActivities(false)}
+                >
+                  Ver menos
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
 

@@ -60,6 +60,10 @@
   --animate-successPop: successPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-shimmer: shimmer 1.8s ease-in-out infinite;
   --animate-borderGrow: borderGrow 0.3s ease-out forwards;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-ripple: ripple 0.6s ease-out;
+  --animate-badge-pulse: badge-pulse 2s ease-in-out infinite;
+  --animate-shimmer-slow: shimmer-slow 3s linear infinite;
 }
 
 :root {
@@ -331,6 +335,105 @@ textarea::placeholder {
 }
 .animate-borderGrow {
   animation: borderGrow 0.3s ease-out forwards;
+}
+
+/* ===== Float animation ===== */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ===== Ripple animation ===== */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===== Badge pulse animation ===== */
+@keyframes badge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+}
+
+/* ===== Slow shimmer animation ===== */
+@keyframes shimmer-slow {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* ===== Parallax rotate animation ===== */
+@keyframes parallax-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Sweep animation ===== */
+@keyframes sweep {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ===== Utility animation classes ===== */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+.animate-ripple {
+  animation: ripple 0.6s ease-out;
+}
+.animate-badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+.animate-shimmer-slow {
+  background-size: 200% auto;
+  animation: shimmer-slow 3s linear infinite;
+}
+.animate-parallax-rotate {
+  animation: parallax-rotate 20s linear infinite;
+}
+.animate-sweep {
+  animation: sweep 0.5s ease-out forwards;
+}
+
+/* ===== Gradient text utility ===== */
+.gradient-text {
+  background: linear-gradient(135deg, oklch(0.508 0.118 165.612), oklch(0.696 0.17 162.48));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Glass card utility ===== */
+.glass-card {
+  background: oklch(1 0 0 / 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(1 0 0 / 0.2);
+}
+.dark .glass-card {
+  background: oklch(0.18 0.025 166.113 / 0.7);
+  border: 1px solid oklch(0.28 0.03 166.113 / 0.3);
 }
 
 /* ===== Skeleton shimmer effect ===== */

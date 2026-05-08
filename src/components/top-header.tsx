@@ -60,12 +60,12 @@ export function TopHeader() {
               <Stethoscope className="w-[18px] h-[18px] text-white" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400 tracking-tight">
+              <span className="text-xl font-bold tracking-tight gradient-text">
                 Plantão<span className="text-emerald-500 dark:text-emerald-300">Help</span>
               </span>
-              {/* Pulsing green live indicator */}
+              {/* Breathing green live indicator */}
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-pulseSoft" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-400/50" />
               </span>
             </div>
@@ -96,7 +96,7 @@ export function TopHeader() {
                     <Bell className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </span>
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-gray-900 shadow-sm shadow-red-200 dark:shadow-red-900/30">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-gray-900 shadow-sm shadow-red-200 dark:shadow-red-900/30 animate-badge-pulse">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}

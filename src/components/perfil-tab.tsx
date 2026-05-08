@@ -8,6 +8,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -16,7 +22,8 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   User, Mail, Phone, MapPin, FileText, Shield, LogOut,
   Star, MessageSquare, Settings, LogIn, ChevronRight,
-  Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2
+  Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2,
+  ScrollText
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -62,6 +69,10 @@ export function PerfilTab() {
   const [editBio, setEditBio] = useState('')
   const [editDoc, setEditDoc] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
+
+  // Legal dialog states
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('')
@@ -115,8 +126,15 @@ export function PerfilTab() {
       const res = await fetch(`/api/favorites?userId=${user.id}`)
       if (res.ok) {
         const data = await res.json()
-        setFavoriteShifts(data)
-        setFavoriteIds(data.map((s: FavoriteShift) => s.id))
+        // API returns { ...favorite, shift: { ...shiftData } }, extract shift data
+        const shifts: FavoriteShift[] = data
+          .filter((item: { shift: unknown }) => item.shift)
+          .map((item: { shift: FavoriteShift; shiftId: string }) => ({
+            ...item.shift,
+            id: item.shiftId,
+          }))
+        setFavoriteShifts(shifts)
+        setFavoriteIds(shifts.map((s: FavoriteShift) => s.id))
       }
     } catch {
       // silently fail
@@ -268,18 +286,39 @@ export function PerfilTab() {
   return (
     <div className="space-y-4">
       {/* Profile Header */}
-      <Card className="rounded-xl shadow-sm border-0 overflow-hidden">
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5">
+      <Card className="rounded-xl shadow-sm border-0 overflow-hidden relative">
+        {/* Confetti-like decorative pattern */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-white/10"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${i * 200}ms`,
+              }}
+            />
+          ))}
+        </div>
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 relative z-10">
           <div className="flex items-center gap-4">
-            <Avatar className="w-16 h-16 border-3 border-white/30">
-              <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            {/* Avatar with progress ring */}
+            <div className="relative">
+              <svg className="absolute -inset-1 w-[calc(100%+8px)] h-[calc(100%+8px)]" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="33" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+                <circle cx="36" cy="36" r="33" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${((user.email ? 20 : 0) + (user.phone ? 20 : 0) + (user.city ? 15 : 0) + (user.professionalDoc ? 25 : 0) + (user.bio ? 20 : 0)) / 100 * 207.3} 207.3`} transform="rotate(-90 36 36)" />
+              </svg>
+              <Avatar className="w-16 h-16 border-3 border-white/30">
+                <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-bold text-white truncate">{user.name}</h3>
               <p className="text-emerald-100 text-sm">{getRoleLabel(user.role)}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={cn(
                   'text-xs px-2 py-0.5 rounded-full font-medium',
                   user.registrationStatus === 'APPROVED' ? 'bg-emerald-400/30 text-emerald-50' :
@@ -288,6 +327,17 @@ export function PerfilTab() {
                 )}>
                   {getStatusLabel(user.registrationStatus)}
                 </span>
+                {/* Badge system */}
+                {user.registrationStatus === 'APPROVED' && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-400/30 text-emerald-50 inline-flex items-center gap-0.5">
+                    ✓ Verificado
+                  </span>
+                )}
+                {avgRating >= 4.5 && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-amber-400/30 text-amber-100 inline-flex items-center gap-0.5">
+                    ⭐ Top
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -326,6 +376,8 @@ export function PerfilTab() {
           <Card className="rounded-xl shadow-sm border-0">
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {/* Gradient divider accent */}
+                <div className="h-0.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
                 <div className="flex items-center gap-3 p-4">
                   <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
                     <Mail className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -755,7 +807,7 @@ export function PerfilTab() {
           {/* Legal links */}
           <Card className="rounded-xl shadow-sm border-0">
             <CardContent className="p-0">
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl">
+              <button onClick={() => setShowTerms(true)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl">
                 <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </div>
@@ -766,7 +818,7 @@ export function PerfilTab() {
                 <ChevronRight className="w-4 h-4 text-gray-400" />
               </button>
               <div className="border-t border-gray-100 dark:border-gray-800" />
-              <button className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-b-xl">
+              <button onClick={() => setShowPrivacy(true)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-b-xl">
                 <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                   <Shield className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </div>
@@ -802,6 +854,184 @@ export function PerfilTab() {
         <LogOut className="w-4 h-4" />
         Sair
       </Button>
+
+      {/* Terms of Use Dialog */}
+      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+        <DialogContent className="max-w-lg max-h-[85vh]" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScrollText className="w-5 h-5 text-emerald-600" />
+              Termos de Uso
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[65vh] pr-2 space-y-4 text-sm text-gray-700 dark:text-gray-300">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                Última atualização: Janeiro de 2025 • Versão 1.0
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">1. Aceitação dos Termos</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Ao acessar e utilizar a plataforma Plantão Help, o usuário declara estar de acordo com os presentes Termos de Uso, que regulam o acesso e a utilização de todos os serviços oferecidos pela plataforma. Caso não concorde com qualquer disposição, o usuário deve cessar imediatamente o uso da plataforma.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">2. Descrição do Serviço</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                O Plantão Help é uma plataforma digital de marketplace que conecta profissionais de saúde (médicos, enfermeiros e técnicos de enfermagem) a oportunidades de plantões em estabelecimentos de saúde. A plataforma atua como intermediária, facilitando a negociação entre vendedores e compradores de plantões, não sendo responsável pela execução direta dos serviços médicos.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">3. Cadastro e Conta do Usuário</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Para utilizar os serviços da plataforma, o usuário deve criar uma conta fornecendo informações verdadeiras, completas e atualizadas. O usuário é responsável pela segurança de suas credenciais de acesso e por todas as atividades realizadas em sua conta. Profissionais de saúde devem informar seu número de registro profissional (CRM, COREN) que será verificado pela administração.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">4. Publicação e Compra de Plantões</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                O usuário pode publicar plantões para venda, informando dados como data, horário, valor, localização e hospital. A compra de um plantão é realizada diretamente pela plataforma. Após a confirmação da compra, o comprador assume a responsabilidade pelo cumprimento do plantão junto ao estabelecimento de saúde. Cancelamentos estão sujeitos às políticas específicas de cada plantão.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">5. Taxas e Pagamentos</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                A plataforma pode cobrar taxas de registro de acordo com o tipo profissional do usuário. Os valores praticados nos plantões são definidos livremente pelos vendedores. O Plantão Help poderá cobrar uma taxa de serviço sobre as transações realizadas na plataforma, conforme informado no momento da operação.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">6. Avaliações e Reputação</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Após a conclusão de um plantão, as partes podem avaliar mutuamente a experiência por meio de um sistema de estrelas (1 a 5) e comentários. As avaliações são públicas e contribuem para a reputação dos usuários na plataforma. Avaliações falsas, ofensivas ou que violem a boa-fé podem ser removidas pela administração.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">7. Responsabilidades do Usuário</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                O usuário se compromete a: (a) fornecer informações verdadeiras e atualizadas; (b) cumprir os plantões adquiridos; (c) respeitar a legislação profissional vigente; (d) não utilizar a plataforma para fins ilícitos; (e) manter a confidencialidade de suas credenciais de acesso; (f) comunicar imediatamente qualquer uso não autorizado de sua conta.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">8. Limitação de Responsabilidade</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                O Plantão Help não se responsabiliza por: (a) atrasos ou falhas na execução dos plantões; (b) condutas dos usuários que violem a lei ou estes Termos; (c) danos indiretos, incidentais ou consequenciais; (d) interrupções temporárias do serviço por motivos técnicos. A plataforma atua como intermediária e não garante a qualidade dos serviços prestados pelos profissionais.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">9. Modificações nos Termos</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                O Plantão Help reserva-se o direito de modificar estes Termos de Uso a qualquer momento, notificando os usuários por meio da plataforma ou por e-mail. O uso continuado da plataforma após as modificações implica na aceitação dos novos termos.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">10. Legislação Aplicável</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Estes Termos são regidos pela legislação brasileira. Quaisquer disputas serão submetidas ao foro da comarca do domicílio do usuário, conforme o Código de Defesa do Consumidor. Para dúvidas sobre estes Termos, entre em contato pelo e-mail contato@plantaohelp.com.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Policy Dialog */}
+      <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+        <DialogContent className="max-w-lg max-h-[85vh]" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              Política de Privacidade
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[65vh] pr-2 space-y-4 text-sm text-gray-700 dark:text-gray-300">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                Última atualização: Janeiro de 2025 • Versão 1.0
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">1. Informações que Coletamos</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Coletamos as seguintes categorias de informações: <strong>Dados de identificação:</strong> nome completo, e-mail, telefone, CPF/CNPJ; <strong>Dados profissionais:</strong> CRM, COREN ou outro registro profissional, especialidade; <strong>Dados de localização:</strong> cidade e estado de atuação; <strong>Dados de transação:</strong> histórico de plantões publicados, comprados e vendidos, valores transacionados; <strong>Dados de uso:</strong> logs de acesso, interações na plataforma, endereço IP.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">2. Como Utilizamos suas Informações</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                As informações coletadas são utilizadas para: (a) criação e gerenciamento de contas; (b) verificação de identidade e registro profissional; (c) viabilizar a compra e venda de plantões; (d) comunicação sobre transações, atualizações e novidades; (e) geração de avaliações e reputação; (f) melhoria contínua da plataforma; (g) cumprimento de obrigações legais e regulatórias.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">3. Compartilhamento de Dados</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Seus dados podem ser compartilhados com: (a) outros usuários, na medida necessária para a realização de transações (nome, profissional tipo e avaliação); (b) autoridades competentes, quando exigido por lei ou ordem judicial; (c) prestadores de serviços que auxiliam na operação da plataforma (hospedagem, processamento de pagamentos), sempre sob obrigações de confidencialidade. Não vendemos seus dados pessoais a terceiros.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">4. Armazenamento e Segurança</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Seus dados são armazenados em servidores seguros com criptografia e controles de acesso rigorosos. Adotamos medidas técnicas e organizacionais adequadas para proteger suas informações contra acesso não autorizado, alteração, divulgação ou destruição. As senhas são armazenadas de forma criptografada (hash) e não podem ser recuperadas em texto claro.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">5. Seus Direitos (LGPD)</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018), você tem direito a: (a) confirmar a existência de tratamento de dados; (b) acessar seus dados pessoais; (c) corrigir dados incompletos, inexatos ou desatualizados; (d) solicitar a anonimização, bloqueio ou eliminação de dados desnecessários; (e) solicitar a portabilidade dos dados; (f) eliminar dados tratados com consentimento; (g) revogar o consentimento a qualquer momento.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">6. Cookies e Tecnologias Semelhantes</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Utilizamos cookies e tecnologias semelhantes para melhorar sua experiência, como: cookies essenciais para o funcionamento da plataforma; cookies de preferência para lembrar suas configurações (como tema escuro); cookies analíticos para entender como a plataforma é utilizada. Você pode gerenciar suas preferências de cookies nas configurações do navegador.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">7. Retenção de Dados</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Mantemos seus dados pessoais pelo tempo necessário para cumprir as finalidades descritas nesta política, ou conforme exigido por lei. Dados de transações financeiras são mantidos pelo prazo mínimo estabelecido pela legislação tributária e contábil. Após o período de retenção, os dados são eliminados ou anonimizados de forma segura.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">8. Menores de Idade</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                A plataforma Plantão Help não é destinada a menores de 18 anos. Não coletamos intencionalmente dados pessoais de menores. Caso tomemos conhecimento de que um menor forneu dados pessoais sem o consentimento dos pais ou responsáveis, tomaremos medidas para excluir essas informações.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">9. Alterações nesta Política</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Esta Política de Privacidade pode ser atualizada periodicamente. Notificaremos você sobre mudanças significativas por meio da plataforma ou por e-mail. A data da última atualização será sempre indicada no topo deste documento. Recomendamos a revisão periódica desta política.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">10. Contato</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                Para exercer seus direitos, tirar dúvidas ou fazer reclamações sobre o tratamento de dados pessoais, entre em contato com nosso Encarregado de Proteção de Dados (DPO) pelo e-mail: <strong>privacidade@plantaohelp.com</strong>. Respondemos solicitações de titulares de dados em até 15 dias úteis, conforme previsto na LGPD.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -12,22 +12,28 @@ export function formatCurrency(value: number): string {
   }).format(value)
 }
 
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return '—'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return '—'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 export function getRoleLabel(role: string): string {
@@ -95,9 +101,11 @@ export function getProfessionalTypeColor(type: string): string {
   return colors[type] || 'bg-gray-100 text-gray-800'
 }
 
-export function formatTimeAgo(date: string | Date): string {
+export function formatTimeAgo(date: string | Date | null | undefined): string {
+  if (!date) return '—'
   const now = new Date()
   const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
   const diffMs = now.getTime() - d.getTime()
   const diffMins = Math.floor(diffMs / 60000)
   if (diffMins < 1) return 'agora'

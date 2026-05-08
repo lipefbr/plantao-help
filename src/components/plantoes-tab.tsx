@@ -122,7 +122,7 @@ export function PlantoesTab() {
             placeholder="Buscar plantões..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 rounded-xl bg-white border-gray-200"
+            className="pl-9 rounded-xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-emerald-400/50 transition-all duration-200"
           />
         </div>
         <div className="relative">
@@ -267,17 +267,26 @@ export function PlantoesTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {shifts.map((shift) => (
+        <div className="space-y-3 relative">
+          {/* Gradient overlay at bottom when scrollable */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent z-10" />
+          {shifts.map((shift) => {
+            const isNew = new Date().getTime() - new Date(shift.date).getTime() < 2 * 24 * 60 * 60 * 1000
+            return (
             <Card
               key={shift.id}
-              className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
+              className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500"
               onClick={() => handleShiftClick(shift.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-gray-800 truncate">{shift.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm text-gray-800 truncate">{shift.title}</h4>
+                      {isNew && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500 text-white rounded-full font-bold animate-badge-pulse shrink-0">Novo</span>
+                      )}
+                    </div>
                     {shift.hospital && (
                       <p className="text-xs text-gray-400 mt-0.5 truncate">{shift.hospital.name}</p>
                     )}
@@ -318,7 +327,8 @@ export function PlantoesTab() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -326,7 +336,7 @@ export function PlantoesTab() {
       {user?.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
         <button
           onClick={handleCreateShift}
-          className="fixed bottom-20 right-4 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 z-40"
+          className="fixed bottom-20 right-4 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 z-40 animate-float ring-4 ring-emerald-400/20 hover:ring-emerald-400/40 ring-offset-2 ring-offset-white dark:ring-offset-gray-950"
         >
           <Plus className="w-6 h-6" />
         </button>
