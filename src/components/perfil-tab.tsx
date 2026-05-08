@@ -23,7 +23,7 @@ import {
   User, Mail, Phone, MapPin, FileText, Shield, LogOut,
   Star, MessageSquare, Settings, LogIn, ChevronRight,
   Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2,
-  ScrollText
+  ScrollText, TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -49,6 +49,24 @@ interface FavoriteShift {
   professionalType: string
   seller: { id: string; name: string; avgRating: number }
   hospital: { id: string; name: string } | null
+}
+
+interface UserStats {
+  totalPublished: number
+  totalSold: number
+  totalCancelled: number
+  totalBought: number
+  totalEarned: number
+  totalSpent: number
+  avgRating: number
+  mostCommonCity: string | null
+  mostCommonState: string | null
+  mostCommonShiftType: string | null
+  accountAgeDays: number
+  profileCompletion: number
+  activityScore: number
+  completionRate: number
+  totalRatingsReceived: number
 }
 
 export function PerfilTab() {
@@ -82,10 +100,15 @@ export function PerfilTab() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
+  // User stats state
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
+
   useEffect(() => {
     if (user) {
       loadRatings()
       loadFavorites()
+      loadUserStats()
     }
   }, [user])
 
@@ -140,6 +163,22 @@ export function PerfilTab() {
       // silently fail
     } finally {
       setLoadingFavorites(false)
+    }
+  }
+
+  const loadUserStats = async () => {
+    if (!user) return
+    setLoadingStats(true)
+    try {
+      const res = await fetch(`/api/users/${user.id}/stats`)
+      if (res.ok) {
+        const data = await res.json()
+        setUserStats(data as UserStats)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingStats(false)
     }
   }
 
@@ -443,6 +482,97 @@ export function PerfilTab() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Suas Estatísticas ── */}
+          <Card className="rounded-xl shadow-sm border-0 mt-4 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Suas Estatísticas</h3>
+              </div>
+
+              {loadingStats ? (
+                <div className="grid grid-cols-4 gap-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                    <div key={i} className="text-center">
+                      <Skeleton className="w-8 h-8 rounded-lg mx-auto mb-1.5" />
+                      <Skeleton className="h-4 w-12 mx-auto mb-1" />
+                      <Skeleton className="h-2.5 w-16 mx-auto" />
+                    </div>
+                  ))}
+                </div>
+              ) : userStats ? (
+                <div className="space-y-3">
+                  {/* Row 1 */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalPublished}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Publicados</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <ShoppingCart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalSold}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Vendidos</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-teal-50 dark:bg-teal-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <DollarSign className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalBought}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Comprados</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{formatCurrency(userStats.totalEarned)}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Total Ganho</p>
+                    </div>
+                  </div>
+
+                  {/* Row 2 */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-rose-50 dark:bg-rose-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <DollarSign className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{formatCurrency(userStats.totalSpent)}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Total Gasto</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.avgRating > 0 ? userStats.avgRating.toFixed(1) : '—'}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Avaliação Média</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.completionRate}%</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Taxa Conclusão</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+                        <CalendarDays className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.accountAgeDays}</p>
+                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Membro há (dias)</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>

@@ -64,6 +64,11 @@
   --animate-ripple: ripple 0.6s ease-out;
   --animate-badge-pulse: badge-pulse 2s ease-in-out infinite;
   --animate-shimmer-slow: shimmer-slow 3s linear infinite;
+  --animate-typewriter: typewriter 1s step-end infinite;
+  --animate-breathe: breathe 3s ease-in-out infinite;
+  --animate-countUp: countUp 0.5s ease-out forwards;
+  --animate-dotBounce: dotBounce 1.4s ease-in-out infinite;
+  --animate-shake: shake 0.5s ease-in-out;
 }
 
 :root {
@@ -464,4 +469,250 @@ textarea::placeholder {
     oklch(0.28 0.02 166.113 / 0.4) 50%,
     transparent 100%
   );
+}
+
+/* ===== Typewriter cursor blink ===== */
+@keyframes typewriter {
+  0%, 100% {
+    border-right-color: oklch(1 0 0);
+  }
+  50% {
+    border-right-color: transparent;
+  }
+}
+
+/* ===== Breathing effect (scale + shadow) ===== */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.15);
+  }
+}
+
+/* ===== Count up animation ===== */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Dot bounce animation (3 dots) ===== */
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ===== Shake animation for form errors ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* ===== Confetti burst for success ===== */
+@keyframes confettiBurst {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) rotate(360deg) scale(0.5);
+  }
+}
+
+/* ===== Input glow animation ===== */
+@keyframes inputGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+  }
+}
+
+/* ===== Progress bar fill animation ===== */
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+}
+
+/* ===== Fade in from transparent ===== */
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== Utility animation classes ===== */
+.animate-typewriter {
+  border-right: 2px solid oklch(1 0 0);
+  animation: typewriter 1s step-end infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.animate-countUp {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-fadeInOnly {
+  animation: fadeInOnly 0.3s ease-out forwards;
+}
+
+/* ===== Dot bounce container ===== */
+.dot-bounce {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.dot-bounce span {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: oklch(0.508 0.118 165.612);
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+.dark .dot-bounce span {
+  background: oklch(0.696 0.17 162.48);
+}
+.dot-bounce span:nth-child(1) {
+  animation-delay: 0s;
+}
+.dot-bounce span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.dot-bounce span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+/* ===== Shimmer border (animated gradient border) ===== */
+.shimmer-border {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: conic-gradient(from 0deg, oklch(0.696 0.17 162.48), oklch(0.508 0.118 165.612), oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48));
+  animation: parallax-rotate 4s linear infinite;
+}
+.shimmer-border > * {
+  border-radius: calc(1rem - 2px);
+  position: relative;
+  z-index: 1;
+}
+.dark .shimmer-border {
+  background: conic-gradient(from 0deg, oklch(0.696 0.17 162.48), oklch(0.432 0.095 166.913), oklch(0.596 0.145 163.225), oklch(0.696 0.17 162.48));
+}
+
+/* ===== Emerald glow with breathing ===== */
+.glow-emerald {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2), 0 0 24px rgba(16, 185, 129, 0.1);
+  animation: breathe 3s ease-in-out infinite;
+}
+.dark .glow-emerald {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.15), 0 0 24px rgba(16, 185, 129, 0.08);
+}
+
+/* ===== Confetti pseudo-elements for registration success ===== */
+.confetti-burst {
+  position: relative;
+}
+.confetti-burst::before,
+.confetti-burst::after {
+  content: '';
+  position: absolute;
+  top: 30%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: confettiBurst 1.2s ease-out forwards;
+  pointer-events: none;
+  z-index: 50;
+}
+.confetti-burst::before {
+  left: 20%;
+  background: oklch(0.696 0.17 162.48);
+  animation-delay: 0s;
+}
+.confetti-burst::after {
+  right: 20%;
+  background: oklch(0.828 0.189 84.429);
+  animation-delay: 0.15s;
+}
+
+/* ===== Input glow on focus ===== */
+.input-glow:focus {
+  animation: inputGlow 2s ease-in-out infinite;
+  border-color: oklch(0.696 0.17 162.48) !important;
+}
+
+/* ===== Password visibility icon transition ===== */
+.password-icon-transition {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.password-icon-transition:hover {
+  transform: scale(1.1);
+}
+
+/* ===== Pull to refresh hint ===== */
+.pull-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 4px;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+.pull-hint:hover {
+  opacity: 0.7;
+}
+
+/* ===== Verified stamp overlay ===== */
+.verified-stamp {
+  position: relative;
+}
+.verified-stamp::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  font-size: 8px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0.696 0.17 162.48);
+  color: white;
+  border-radius: 50%;
+  opacity: 0.6;
+  font-weight: bold;
+}
+
+/* ===== Sort dropdown arrow rotation ===== */
+.sort-arrow {
+  transition: transform 0.2s ease;
+}
+.sort-arrow-open {
+  transform: rotate(180deg);
 }

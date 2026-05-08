@@ -8,6 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -15,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown } from 'lucide-react'
+import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ShiftItem {
@@ -56,6 +64,8 @@ export function PlantoesTab() {
   const [sortBy, setSortBy] = useState('recent')
   const [showFilters, setShowFilters] = useState(false)
   const [showCreateShift, setShowCreateShift] = useState(false)
+  const [comparisonIds, setComparisonIds] = useState<string[]>([])
+  const [showComparisonDialog, setShowComparisonDialog] = useState(false)
 
   const loadShifts = useCallback(async () => {
     setLoading(true)
@@ -109,6 +119,25 @@ export function PlantoesTab() {
     setSortBy('recent')
   }
 
+  const toggleComparison = (shiftId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setComparisonIds(prev => {
+      if (prev.includes(shiftId)) {
+        return prev.filter(id => id !== shiftId)
+      }
+      if (prev.length >= 3) {
+        toast.warning('Máximo de 3 plantões para comparação')
+        return prev
+      }
+      return [...prev, shiftId]
+    })
+  }
+
+  const clearComparison = () => {
+    setComparisonIds([])
+  }
+
+  const comparisonShifts = shifts.filter(s => comparisonIds.includes(s.id))
   const activeFilterCount = [city, state, professionalType, minValue, maxValue].filter(Boolean).length
   const hasActiveFilters = activeFilterCount > 0
 
@@ -242,6 +271,15 @@ export function PlantoesTab() {
         <p className="text-sm text-gray-500">
           {loading ? 'Buscando...' : `${shifts.length} plant${shifts.length !== 1 ? 'ões' : 'ão'} encontrado${shifts.length !== 1 ? 's' : ''}`}
         </p>
+        {comparisonIds.length > 0 && (
+          <button
+            onClick={clearComparison}
+            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Limpar seleção ({comparisonIds.length})
+          </button>
+        )}
       </div>
 
       {/* Shift List */}
@@ -272,17 +310,42 @@ export function PlantoesTab() {
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent z-10" />
           {shifts.map((shift) => {
             const isNew = new Date().getTime() - new Date(shift.date).getTime() < 2 * 24 * 60 * 60 * 1000
+            const isSelected = comparisonIds.includes(shift.id)
             return (
             <Card
               key={shift.id}
-              className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500"
+              className={cn(
+                "rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 relative",
+                isSelected && 'ring-2 ring-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10'
+              )}
               onClick={() => handleShiftClick(shift.id)}
             >
               <CardContent className="p-4">
+                {/* Comparison checkbox - top right */}
+                <div
+                  className="absolute top-3 right-3 z-10"
+                  onClick={(e) => toggleComparison(shift.id, e)}
+                >
+                  <button
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 border-2',
+                      isSelected
+                        ? 'bg-emerald-500 border-emerald-500 text-white scale-110'
+                        : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:scale-105'
+                    )}
+                    aria-label={isSelected ? 'Remover da comparação' : 'Adicionar à comparação'}
+                  >
+                    {isSelected ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <GitCompare className="w-3 h-3 text-gray-400" />
+                    )}
+                  </button>
+                </div>
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-8">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm text-gray-800 truncate">{shift.title}</h4>
+                      <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
                       {isNew && (
                         <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500 text-white rounded-full font-bold animate-badge-pulse shrink-0">Novo</span>
                       )}
@@ -292,19 +355,19 @@ export function PlantoesTab() {
                     )}
                     <div className="flex items-center gap-2 mt-1.5">
                       <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
-                      <span className="text-xs text-gray-500">{shift.city}/{shift.state}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{shift.city}/{shift.state}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <Clock className="w-3 h-3 text-gray-400 shrink-0" />
-                      <span className="text-xs text-gray-500">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5">
-                      <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                        <span className="text-[8px] font-bold text-emerald-700">
+                      <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                        <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
                           {shift.seller.name.charAt(0)}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-600 truncate">{shift.seller.name}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 truncate">{shift.seller.name}</span>
                       {shift.seller.avgRating > 0 && (
                         <span className="text-xs text-amber-500 shrink-0">
                           <Star className="w-3 h-3 inline fill-amber-400 text-amber-400" />
@@ -314,7 +377,7 @@ export function PlantoesTab() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-emerald-700 font-bold">{formatCurrency(shift.value)}</p>
+                    <p className="text-emerald-700 dark:text-emerald-400 font-bold">{formatCurrency(shift.value)}</p>
                     <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                       {getRoleLabel(shift.professionalType)}
                     </span>
@@ -332,13 +395,100 @@ export function PlantoesTab() {
         </div>
       )}
 
+      {/* Floating Comparison Bar */}
+      {comparisonIds.length >= 2 && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-slideUp w-[calc(100%-2rem)] max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-3 flex items-center gap-3">
+            <div className="flex -space-x-2 shrink-0">
+              {comparisonShifts.slice(0, 3).map(shift => (
+                <div
+                  key={shift.id}
+                  className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border-2 border-white dark:border-gray-900 flex items-center justify-center"
+                >
+                  <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400">{shift.title.charAt(0)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
+                {comparisonIds.length} plant{comparisonIds.length !== 1 ? 'ões' : 'ão'} selecionado{comparisonIds.length !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {comparisonShifts.map(s => s.title).join(' • ')}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg h-9 gap-1.5 shadow-sm"
+                onClick={() => setShowComparisonDialog(true)}
+              >
+                <GitCompare className="w-3.5 h-3.5" />
+                Comparar
+              </Button>
+              <button
+                onClick={clearComparison}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison Dialog */}
+      <Dialog open={showComparisonDialog} onOpenChange={setShowComparisonDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="w-5 h-5 text-emerald-600" />
+              Comparação de Plantões
+            </DialogTitle>
+            <DialogDescription>
+              Compare até 3 plantões lado a lado. Os melhores valores estão destacados em verde.
+            </DialogDescription>
+          </DialogHeader>
+
+          {comparisonShifts.length >= 2 && (
+            <ShiftComparisonTable shifts={comparisonShifts} />
+          )}
+
+          <div className="flex items-center justify-between pt-2 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-red-500"
+              onClick={() => {
+                clearComparison()
+                setShowComparisonDialog(false)
+              }}
+            >
+              <X className="w-4 h-4 mr-1" />
+              Limpar seleção
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+              onClick={() => setShowComparisonDialog(false)}
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Floating Action Button */}
       {user?.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
         <button
           onClick={handleCreateShift}
-          className="fixed bottom-20 right-4 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 z-40 animate-float ring-4 ring-emerald-400/20 hover:ring-emerald-400/40 ring-offset-2 ring-offset-white dark:ring-offset-gray-950"
+          className={cn(
+            "fixed right-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 animate-float ring-4 ring-emerald-400/20 hover:ring-emerald-400/40 ring-offset-2 ring-offset-white dark:ring-offset-gray-950 z-40",
+            comparisonIds.length >= 2 ? "bottom-36 w-12 h-12" : "bottom-20 w-14 h-14"
+          )}
         >
-          <Plus className="w-6 h-6" />
+          <Plus className={comparisonIds.length >= 2 ? "w-5 h-5" : "w-6 h-6"} />
         </button>
       )}
 
@@ -349,6 +499,193 @@ export function PlantoesTab() {
           onCreated={loadShifts}
         />
       )}
+    </div>
+  )
+}
+
+// Comparison Table Component
+function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
+  // Find best values for highlighting
+  const bestValue = Math.min(...shifts.map(s => s.value))
+  const bestRating = Math.max(...shifts.map(s => s.seller.avgRating))
+
+  const rows: { label: string; icon: React.ReactNode; values: React.ReactNode[]; compareFn?: (values: (number | string)[]) => number[] }[] = [
+    {
+      label: 'Título',
+      icon: <Sparkles className="w-3.5 h-3.5" />,
+      values: shifts.map(s => (
+        <span key={s.id} className="font-medium text-sm text-gray-800 dark:text-gray-200">{s.title}</span>
+      )),
+    },
+    {
+      label: 'Data',
+      icon: <Clock className="w-3.5 h-3.5" />,
+      values: shifts.map(s => (
+        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{formatDate(s.date)}</span>
+      )),
+    },
+    {
+      label: 'Horário',
+      icon: <Clock className="w-3.5 h-3.5" />,
+      values: shifts.map(s => (
+        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.startTime} - {s.endTime}</span>
+      )),
+    },
+    {
+      label: 'Valor',
+      icon: <span className="text-xs">💰</span>,
+      values: shifts.map(s => {
+        const isBest = s.value === bestValue && shifts.length > 1
+        return (
+          <span key={s.id} className={cn(
+            'text-sm font-bold',
+            isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+          )}>
+            {formatCurrency(s.value)}
+            {isBest && <span className="ml-1 text-[10px] font-normal">✓ Melhor</span>}
+          </span>
+        )
+      }),
+      compareFn: (values) => {
+        const nums = values.map(Number)
+        const min = Math.min(...nums)
+        return nums.map(n => n === min ? 1 : 0)
+      }
+    },
+    {
+      label: 'Cidade/Estado',
+      icon: <MapPin className="w-3.5 h-3.5" />,
+      values: shifts.map(s => (
+        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.city}/{s.state}</span>
+      )),
+    },
+    {
+      label: 'Hospital',
+      icon: <span className="text-xs">🏥</span>,
+      values: shifts.map(s => (
+        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.hospital?.name || '—'}</span>
+      )),
+    },
+    {
+      label: 'Tipo Profissional',
+      icon: <span className="text-xs">🩺</span>,
+      values: shifts.map(s => (
+        <Badge key={s.id} variant="secondary" className={cn('text-[11px] px-2 py-0 h-5 font-medium', getProfessionalTypeColor(s.professionalType))}>
+          {getRoleLabel(s.professionalType)}
+        </Badge>
+      )),
+    },
+    {
+      label: 'Tipo Turno',
+      icon: <span className="text-xs">⏰</span>,
+      values: shifts.map(s => {
+        const shiftType = getShiftType(s.startTime, s.endTime)
+        return (
+          <Badge key={s.id} variant="secondary" className={cn('text-[11px] px-2 py-0 h-5 font-medium', getShiftTypeColor(shiftType))}>
+            {getShiftTypeIcon(shiftType)} {shiftType}
+          </Badge>
+        )
+      }),
+    },
+    {
+      label: 'Vendedor',
+      icon: <span className="text-xs">👤</span>,
+      values: shifts.map(s => (
+        <div key={s.id} className="flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+            <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{s.seller.name.charAt(0)}</span>
+          </div>
+          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{s.seller.name}</span>
+        </div>
+      )),
+    },
+    {
+      label: 'Avaliação Vendedor',
+      icon: <Star className="w-3.5 h-3.5" />,
+      values: shifts.map(s => {
+        const isBest = s.seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+        return (
+          <span key={s.id} className={cn(
+            'text-sm font-medium',
+            isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+          )}>
+            {s.seller.avgRating > 0 ? (
+              <>
+                <Star className="w-3 h-3 inline fill-amber-400 text-amber-400 mr-0.5" />
+                {s.seller.avgRating.toFixed(1)}
+                {isBest && <span className="ml-1 text-[10px] font-normal">✓ Melhor</span>}
+              </>
+            ) : '—'}
+          </span>
+        )
+      }),
+    },
+  ]
+
+  return (
+    <div className="overflow-x-auto -mx-2">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 dark:border-gray-700">
+            <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 w-28 shrink-0">
+              Critério
+            </th>
+            {shifts.map((shift) => (
+              <th key={shift.id} className="text-left py-2 px-2 text-xs font-semibold text-gray-800 dark:text-gray-200 min-w-[140px]">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{shift.title.charAt(0)}</span>
+                  </div>
+                  <span className="truncate">{shift.title}</span>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, idx) => {
+            // Determine which cells should be highlighted (best value per row)
+            const isValueRow = row.label === 'Valor'
+            const isRatingRow = row.label === 'Avaliação Vendedor'
+
+            return (
+              <tr
+                key={row.label}
+                className={cn(
+                  idx % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/30' : '',
+                  'border-b border-gray-100 dark:border-gray-800'
+                )}
+              >
+                <td className="py-2.5 px-2">
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    {row.icon}
+                    <span className="text-xs font-medium">{row.label}</span>
+                  </div>
+                </td>
+                {row.values.map((val, valIdx) => {
+                  const isBest = isValueRow
+                    ? shifts[valIdx].value === bestValue && shifts.length > 1
+                    : isRatingRow
+                      ? shifts[valIdx].seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+                      : false
+
+                  return (
+                    <td
+                      key={valIdx}
+                      className={cn(
+                        'py-2.5 px-2',
+                        isBest && 'bg-emerald-50 dark:bg-emerald-900/20 rounded-md'
+                      )}
+                    >
+                      {val}
+                    </td>
+                  )
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -526,5 +863,3 @@ function CreateShiftInline({ onClose, onCreated }: { onClose: () => void; onCrea
     </div>
   )
 }
-
-

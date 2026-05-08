@@ -322,6 +322,8 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
       {/* Main Info Card */}
       <Card className="rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
         <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white relative overflow-hidden">
+          {/* Parallax scrolling background effect */}
+          <div className="absolute inset-0 animate-parallax-rotate opacity-10" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.1), transparent, rgba(255,255,255,0.05), transparent)', transformOrigin: 'center center' }} />
           {/* Decorative background pattern */}
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           <h3 className="text-xl font-bold relative z-10">{shift.title}</h3>
@@ -348,6 +350,26 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               <span className="text-white text-xs font-semibold">{countdown}</span>
             </div>
           )}
+          {/* Time until shift progress bar */}
+          {shift.status === 'AVAILABLE' && countdown && countdown !== 'Em andamento ou encerrado' && (() => {
+            const dateStr = typeof shift.date === 'string' ? shift.date.split('T')[0] : new Date(shift.date).toISOString().split('T')[0]
+            const shiftDate = new Date(`${dateStr}T${shift.startTime}:00`)
+            const now = new Date()
+            const total = shiftDate.getTime() - new Date(shift.createdAt || now).getTime()
+            const remaining = shiftDate.getTime() - now.getTime()
+            const pct = total > 0 ? Math.min(100, Math.max(0, Math.round(((total - remaining) / total) * 100))) : 0
+            return (
+              <div className="mt-2 relative z-10">
+                <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white/60 rounded-full"
+                    style={{ width: `${pct}%`, animation: 'progressFill 1s ease-out' }}
+                  />
+                </div>
+                <p className="text-[9px] text-emerald-200 mt-0.5">{pct}% até o plantão</p>
+              </div>
+            )
+          })()}
           {/* Gradient shimmer on value */}
           <div className="mt-3 relative z-10">
             <span className="text-2xl font-bold bg-gradient-to-r from-white via-emerald-100 to-white bg-[length:200%_100%] animate-shimmer-slow bg-clip-text text-transparent">
@@ -420,7 +442,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 verified-stamp">
                 <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{shift.seller.name}</p>
                 {/* Verified seller badge */}
                 {shift.seller.professionalDoc && (
@@ -623,7 +645,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         {canBuy && (
           <Button
             onClick={() => setShowBuyConfirm(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold animate-badge-pulse"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold glow-emerald"
             disabled={buying}
           >
             {buying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

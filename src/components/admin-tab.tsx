@@ -28,7 +28,7 @@ import {
   Shield, Users, Building2, Trophy, MapPin, DollarSign,
   Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
   Calendar, Star, BarChart3, Eye, ArrowUpDown, Clock, Banknote,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight, ArrowDownRight, Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -138,6 +138,34 @@ function DashboardPanel() {
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<any>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [exportingType, setExportingType] = useState<'shifts' | 'users' | 'revenue' | null>(null)
+
+  const handleExport = async (type: 'shifts' | 'users' | 'revenue') => {
+    if (!user) return
+    setExportingType(type)
+    try {
+      const res = await fetch(`/api/admin/export?adminId=${user.id}&type=${type}`)
+      if (res.ok) {
+        const text = await res.text()
+        const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        toast.success(`${type === 'shifts' ? 'Plantões' : type === 'users' ? 'Usuários' : 'Receita'} exportados com sucesso!`)
+      } else {
+        toast.error('Erro ao exportar dados')
+      }
+    } catch {
+      toast.error('Erro ao exportar dados')
+    } finally {
+      setExportingType(null)
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -274,6 +302,54 @@ function DashboardPanel() {
 
       {/* ── Relatório de Receita ── */}
       <RevenueReportCard />
+
+      {/* ── Export Data ── */}
+      <Card className="rounded-xl shadow-sm border-0">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Exportar Dados</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Button
+              onClick={() => handleExport('shifts')}
+              disabled={exportingType !== null}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs gap-1.5 h-9"
+            >
+              {exportingType === 'shifts' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Exportar Plantões
+            </Button>
+            <Button
+              onClick={() => handleExport('users')}
+              disabled={exportingType !== null}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs gap-1.5 h-9"
+            >
+              {exportingType === 'users' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Exportar Usuários
+            </Button>
+            <Button
+              onClick={() => handleExport('revenue')}
+              disabled={exportingType !== null}
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs gap-1.5 h-9"
+            >
+              {exportingType === 'revenue' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              Exportar Receita
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent pending registrations */}
       {stats.recentRegistrations && stats.recentRegistrations.length > 0 && (

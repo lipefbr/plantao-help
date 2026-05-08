@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase, Activity } from 'lucide-react'
+import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase, Activity, Sparkles } from 'lucide-react'
 import { FaqHelpSection } from '@/components/faq-help-section'
 
 interface ShiftItem {
@@ -44,6 +44,11 @@ interface ActivityItem {
   icon: string
 }
 
+interface RecommendedShiftItem extends ShiftItem {
+  score: number
+  reasons: string[]
+}
+
 export function HomeTab() {
   const { user, setActiveTab, setShowAuthModal, setAuthMode, setSelectedShiftId } = useAppStore()
   const [shifts, setShifts] = useState<ShiftItem[]>([])
@@ -54,6 +59,9 @@ export function HomeTab() {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [activitiesLoading, setActivitiesLoading] = useState(false)
   const [showAllActivities, setShowAllActivities] = useState(false)
+  const [recommendedShifts, setRecommendedShifts] = useState<RecommendedShiftItem[]>([])
+  const [recommendedLoading, setRecommendedLoading] = useState(false)
+  const [trustCounts, setTrustCounts] = useState({ shifts: 0, verified: 0 })
 
   useEffect(() => {
     loadFeaturedShifts()
@@ -65,8 +73,29 @@ export function HomeTab() {
       loadMyShiftsCount()
       loadBoughtShiftsCount()
       loadActivities()
+      loadRecommendedShifts()
     }
   }, [user])
+
+  // Counter animation for Trust Bar (logged-out page)
+  useEffect(() => {
+    if (loading || user) return
+    const target = shifts.length
+    const duration = 1200
+    const steps = 30
+    const increment = target / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= target) {
+        setTrustCounts({ shifts: target, verified: 100 })
+        clearInterval(timer)
+      } else {
+        setTrustCounts(prev => ({ ...prev, shifts: Math.round(current) }))
+      }
+    }, duration / steps)
+    return () => clearInterval(timer)
+  }, [loading, shifts.length, user])
 
   const loadFeaturedShifts = async () => {
     try {
@@ -134,6 +163,22 @@ export function HomeTab() {
       // silently fail
     } finally {
       setActivitiesLoading(false)
+    }
+  }
+
+  const loadRecommendedShifts = async () => {
+    if (!user) return
+    setRecommendedLoading(true)
+    try {
+      const res = await fetch(`/api/shifts/recommended?userId=${user.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setRecommendedShifts(data)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setRecommendedLoading(false)
     }
   }
 
@@ -217,7 +262,15 @@ export function HomeTab() {
         </div>
 
         {/* How it Works */}
-        <div>
+        <div className="relative">
+          {/* Decorative medical cross pattern background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]" aria-hidden="true">
+            <span className="absolute top-0 left-4 text-2xl">✚</span>
+            <span className="absolute top-2 right-8 text-lg">✚</span>
+            <span className="absolute top-0 left-1/3 text-xl">✚</span>
+            <span className="absolute top-1 right-1/4 text-2xl">✚</span>
+            <span className="absolute top-3 left-2/3 text-lg">✚</span>
+          </div>
           <h3 className="text-base font-semibold text-gray-800 mb-3">Como funciona?</h3>
           <div className="space-y-3">
             {[
@@ -279,15 +332,15 @@ export function HomeTab() {
           <CardContent className="p-4">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-xl font-bold">{shifts.length}+</p>
+                <p className="text-xl font-bold animate-countUp">{trustCounts.shifts > 0 ? `${trustCounts.shifts}+` : `${shifts.length}+`}</p>
                 <p className="text-[10px] text-emerald-100">Plantões Ativos</p>
               </div>
               <div>
-                <p className="text-xl font-bold">100%</p>
+                <p className="text-xl font-bold animate-countUp" style={{ animationDelay: '0.1s' }}>100%</p>
                 <p className="text-[10px] text-emerald-100">Verificados</p>
               </div>
               <div>
-                <p className="text-xl font-bold">24h</p>
+                <p className="text-xl font-bold animate-countUp" style={{ animationDelay: '0.2s' }}>24h</p>
                 <p className="text-[10px] text-emerald-100">Suporte</p>
               </div>
             </div>
@@ -296,7 +349,7 @@ export function HomeTab() {
 
         {/* Recent shifts preview */}
         <div>
-          <h3 className="text-base font-semibold text-gray-800 mb-3">Plantões em destaque</h3>
+          <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-1.5">Plantões em destaque <Sparkles className="w-4 h-4 text-amber-400" /></h3>
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -368,15 +421,16 @@ export function HomeTab() {
   // Logged in - dashboard
   return (
     <div className="space-y-5">
-      {/* Welcome */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-5 text-white relative overflow-hidden">
+      {/* Welcome - with shimmer border wrapper */}
+      <div className="shimmer-border">
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-[14px] p-5 text-white relative overflow-hidden">
         {/* Parallax rotating gradient pseudo-element */}
         <div className="absolute inset-0 animate-parallax-rotate opacity-20" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.12), transparent, rgba(255,255,255,0.06), transparent)', transformOrigin: 'center center' }} />
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
         <div className="relative z-10">
           <p className="text-emerald-100 text-sm">Olá,</p>
-          <h2 className="text-xl font-bold">{user.name}</h2>
+          <h2 className="text-xl font-bold animate-typewriter inline-block pr-1">{user.name}</h2>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full">{getRoleLabel(user.role)}</span>
             {user.registrationStatus === 'PENDING' && (
@@ -405,6 +459,7 @@ export function HomeTab() {
             </p>
           )}
         </div>
+      </div>
       </div>
 
       {/* Pending approval warning */}
@@ -474,13 +529,17 @@ export function HomeTab() {
       {/* Quick Actions */}
       {user.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
         <div className="grid grid-cols-2 gap-3">
-          <Button
-            onClick={() => setActiveTab('plantoes')}
-            className="h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-800/10 group"
-          >
-            <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
-            <span className="text-xs font-medium">Publicar Plantão</span>
-          </Button>
+          <div className="relative">
+            {/* Pulse ring behind Publicar Plantão button */}
+            <span className="absolute inset-0 rounded-xl animate-badge-pulse pointer-events-none" aria-hidden="true" />
+            <Button
+              onClick={() => setActiveTab('plantoes')}
+              className="h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-800/10 group relative z-10"
+            >
+              <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+              <span className="text-xs font-medium">Publicar Plantão</span>
+            </Button>
+          </div>
           <Button
             onClick={() => setActiveTab('plantoes')}
             variant="outline"
@@ -512,10 +571,115 @@ export function HomeTab() {
         </CardContent>
       </Card>
 
+      {/* Recommended Shifts */}
+      <div className="animate-slideUp">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">Recomendados para Você</h3>
+        </div>
+        {recommendedLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-28 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : recommendedShifts.length === 0 ? (
+          <Card className="rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-0">
+            <CardContent className="p-6 text-center">
+              <Sparkles className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma recomendação no momento</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Complete seu perfil para receber recomendações personalizadas</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {recommendedShifts.map((shift, index) => (
+              <Card
+                key={shift.id}
+                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500"
+                style={{ animationDelay: `${index * 80}ms`, opacity: 0, animation: 'slideUp 0.4s ease forwards', animationDelay: `${index * 80}ms` }}
+                onClick={() => handleShiftClick(shift.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{shift.city}/{shift.state}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="w-3 h-3 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                          <span className="text-[7px] font-bold text-emerald-700 dark:text-emerald-400">{shift.seller.name.charAt(0)}</span>
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{shift.seller.name}</span>
+                        {shift.seller.avgRating > 0 && (
+                          <span className="text-xs text-amber-500 flex items-center gap-0.5 shrink-0">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            {shift.seller.avgRating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{formatCurrency(shift.value)}</p>
+                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
+                        {getRoleLabel(shift.professionalType)}
+                      </span>
+                      <div className="mt-1">
+                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+                          {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Reason badges */}
+                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                    {shift.reasons.map((reason) => (
+                      <Badge
+                        key={reason}
+                        variant="secondary"
+                        className={cn(
+                          'text-[10px] px-2 py-0 h-5 font-medium',
+                          reason === 'Seu tipo' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                          reason === 'Mesma região' && 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+                          reason === 'Mesma cidade' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                          reason === 'Vendedor top' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                        )}
+                      >
+                        {reason === 'Seu tipo' && '🎯 '}{reason === 'Mesma região' && '📍 '}{reason === 'Mesma cidade' && '🏘️ '}{reason === 'Vendedor top' && '⭐ '}
+                        {reason}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-3 rounded-lg border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+          onClick={() => setActiveTab('plantoes')}
+        >
+          Ver todos
+          <ArrowRight className="w-3.5 h-3.5 ml-1" />
+        </Button>
+      </div>
+
       {/* Recent shifts */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-800">Plantões recentes</h3>
+          <h3 className="text-base font-semibold text-gray-800 flex items-center gap-1.5">Plantões recentes <Sparkles className="w-3.5 h-3.5 text-amber-400" /></h3>
           <button
             onClick={() => setActiveTab('plantoes')}
             className="text-xs text-emerald-600 font-medium hover:underline"

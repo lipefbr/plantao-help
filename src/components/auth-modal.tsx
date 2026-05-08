@@ -62,6 +62,8 @@ export function AuthModal() {
   const [showPassword, setShowPassword] = useState(false)
   const [fees, setFees] = useState<RegistrationFee[]>([])
   const [loginSuccess, setLoginSuccess] = useState(false)
+  const [loginError, setLoginError] = useState(false)
+  const [registerSuccess, setRegisterSuccess] = useState(false)
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('')
@@ -97,6 +99,7 @@ export function AuthModal() {
       setRegCompanyName('')
       setRegBio('')
       setLoginSuccess(false)
+      setRegisterSuccess(false)
     }
   }
 
@@ -147,6 +150,8 @@ export function AuthModal() {
       const data = await res.json()
       if (!res.ok) {
         toast.error(data.error || 'Erro ao fazer login')
+        setLoginError(true)
+        setTimeout(() => setLoginError(false), 600)
         return
       }
       // Show success animation briefly
@@ -189,6 +194,7 @@ export function AuthModal() {
         return
       }
       setLoginSuccess(true)
+      setRegisterSuccess(true)
       await new Promise(resolve => setTimeout(resolve, 600))
       setUser(data)
       setShowAuthModal(false)
@@ -241,7 +247,7 @@ export function AuthModal() {
               <p className="text-gray-600 dark:text-gray-300 font-medium">Redirecionando...</p>
             </div>
           ) : authMode === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleLogin} className={cn('space-y-4 animate-fadeIn', loginError && 'animate-shake')}>
               <div className="space-y-2">
                 <Label htmlFor="login-email">Email</Label>
                 <Input
@@ -251,7 +257,7 @@ export function AuthModal() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="space-y-2">
@@ -264,14 +270,17 @@ export function AuthModal() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
-                    className="rounded-lg pr-11 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                    className="rounded-lg pr-11 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 active:scale-90"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 active:scale-90 password-icon-transition"
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span className="relative w-3.5 h-3.5">
+                      <Eye className={cn('w-3.5 h-3.5 absolute inset-0 transition-all duration-200', showPassword ? 'opacity-0 scale-75' : 'opacity-100 scale-100')} />
+                      <EyeOff className={cn('w-3.5 h-3.5 absolute inset-0 transition-all duration-200', showPassword ? 'opacity-100 scale-100' : 'opacity-0 scale-75')} />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -295,7 +304,7 @@ export function AuthModal() {
               </p>
             </form>
           ) : (
-            <form onSubmit={handleRegister} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleRegister} className={cn('space-y-4 animate-fadeIn', registerSuccess && 'confetti-burst')}>
               {/* Visual role selection cards */}
               <div className="space-y-2">
                 <Label>Tipo de profissional</Label>
@@ -341,7 +350,7 @@ export function AuthModal() {
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   required
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="space-y-2">
@@ -353,7 +362,7 @@ export function AuthModal() {
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   required
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="space-y-2">
@@ -367,14 +376,17 @@ export function AuthModal() {
                     onChange={(e) => setRegPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="rounded-lg pr-11 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                    className="rounded-lg pr-11 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 active:scale-90"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 active:scale-90 password-icon-transition"
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span className="relative w-3.5 h-3.5">
+                      <Eye className={cn('w-3.5 h-3.5 absolute inset-0 transition-all duration-200', showPassword ? 'opacity-0 scale-75' : 'opacity-100 scale-100')} />
+                      <EyeOff className={cn('w-3.5 h-3.5 absolute inset-0 transition-all duration-200', showPassword ? 'opacity-100 scale-100' : 'opacity-0 scale-75')} />
+                    </span>
                   </button>
                 </div>
                 {/* Password strength indicator */}
@@ -406,7 +418,7 @@ export function AuthModal() {
                   placeholder="000.000.000-00"
                   value={regDocument}
                   onChange={(e) => setRegDocument(e.target.value)}
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="space-y-2">
@@ -416,7 +428,7 @@ export function AuthModal() {
                   placeholder={`Número do ${getProfessionalDocLabel()}`}
                   value={regProfessionalDoc}
                   onChange={(e) => setRegProfessionalDoc(e.target.value)}
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="space-y-2">
@@ -426,7 +438,7 @@ export function AuthModal() {
                   placeholder="(00) 00000-0000"
                   value={regPhone}
                   onChange={(e) => setRegPhone(e.target.value)}
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -437,7 +449,7 @@ export function AuthModal() {
                     placeholder="São Paulo"
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}
-                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                   />
                 </div>
                 <div className="space-y-2">
@@ -447,7 +459,7 @@ export function AuthModal() {
                     placeholder="SP"
                     value={regState}
                     onChange={(e) => setRegState(e.target.value)}
-                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                     maxLength={2}
                   />
                 </div>
@@ -460,7 +472,7 @@ export function AuthModal() {
                     placeholder="Hospital XYZ"
                     value={regCompanyName}
                     onChange={(e) => setRegCompanyName(e.target.value)}
-                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                    className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow"
                   />
                 </div>
               )}
@@ -471,7 +483,7 @@ export function AuthModal() {
                   placeholder="Conte um pouco sobre você..."
                   value={regBio}
                   onChange={(e) => setRegBio(e.target.value)}
-                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 input-glow resize-none"
                   rows={2}
                 />
               </div>
