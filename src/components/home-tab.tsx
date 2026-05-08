@@ -583,21 +583,17 @@ export function HomeTab() {
       {/* Quick Actions */}
       {user.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="relative">
-            {/* Pulse ring behind Publicar Plantão button */}
-            <span className="absolute inset-0 rounded-xl animate-badge-pulse pointer-events-none" aria-hidden="true" />
-            <Button
-              onClick={() => setActiveTab('plantoes')}
-              className="h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-800/10 group relative z-10"
-            >
-              <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
-              <span className="text-xs font-medium">Publicar Plantão</span>
-            </Button>
-          </div>
+          <Button
+            onClick={() => setActiveTab('plantoes')}
+            className="h-16 w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30 group"
+          >
+            <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+            <span className="text-xs font-medium">Publicar Plantão</span>
+          </Button>
           <Button
             onClick={() => setActiveTab('plantoes')}
             variant="outline"
-            className="h-16 border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl flex flex-col gap-1 shadow-sm shadow-inner shadow-emerald-200/20 group"
+            className="h-16 w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl flex flex-col gap-1 shadow-sm group"
           >
             <Search className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
             <span className="text-xs font-medium">Buscar Plantões</span>

@@ -1265,3 +1265,16 @@ Complete landing page with the following sections:
 - Search gradient may not be visible on some browsers due to CSS animation compatibility
 - Some dialogs still show accessibility warnings in development mode (non-blocking)
 
+
+## Phase 16 Changes (Button Size Fix + Green Tab Bug Fix)
+
+### Bug Fixes
+- **"Publicar Plantão" button size**: Made the "Publicar Plantão" button the same size as "Buscar Plantões" button by adding `w-full` class and removing the wrapper `<div className="relative">` that was causing inconsistent sizing.
+- **Green pulsing ring removed**: Removed the `animate-badge-pulse` pulsing green ring (`<span className="absolute inset-0 rounded-xl animate-badge-pulse pointer-events-none">`) that was behind the "Publicar Plantão" button. This was the "aba verde" (green tab) the user reported as spinning/moving on screen. Also removed the `shadow-inner shadow-emerald-800/10` and `relative z-10` classes that were only needed because of the pulsing ring overlay.
+
+### Files Modified
+- `src/components/home-tab.tsx` - Simplified Quick Actions section: removed relative wrapper div, removed pulse ring span, added `w-full` to both buttons, cleaned up shadow classes
+
+### Testing
+- ✅ Lint passes clean
+- ✅ Dev server running without errors
