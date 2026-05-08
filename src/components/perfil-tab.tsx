@@ -23,7 +23,8 @@ import {
   User, Mail, Phone, MapPin, FileText, Shield, LogOut,
   Star, MessageSquare, Settings, LogIn, ChevronRight,
   Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2,
-  ScrollText, TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer
+  ScrollText, TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer,
+  Bell, Plus, Trash2, Sun, MoonStar, Sunrise
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -69,6 +70,25 @@ interface UserStats {
   totalRatingsReceived: number
 }
 
+interface ShiftAlertItem {
+  id: string
+  userId: string
+  professionalType: string | null
+  city: string | null
+  state: string | null
+  minValue: number | null
+  maxValue: number | null
+  shiftType: string | null
+  active: boolean
+  createdAt: string
+}
+
+const BRAZILIAN_STATES = [
+  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
+  'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'
+]
+
 export function PerfilTab() {
   const { user, setUser, setShowAuthModal, setAuthMode, setActiveTab, setSelectedShiftId, darkMode, toggleDarkMode, favoriteIds, setFavoriteIds } = useAppStore()
   const [ratings, setRatings] = useState<RatingItem[]>([])
@@ -104,11 +124,26 @@ export function PerfilTab() {
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
 
+  // Alerts state
+  const [alerts, setAlerts] = useState<ShiftAlertItem[]>([])
+  const [loadingAlerts, setLoadingAlerts] = useState(false)
+  const [showAlertForm, setShowAlertForm] = useState(false)
+  const [alertForm, setAlertForm] = useState({
+    professionalType: '',
+    city: '',
+    state: '',
+    minValue: '',
+    maxValue: '',
+    shiftType: '',
+  })
+  const [savingAlert, setSavingAlert] = useState(false)
+
   useEffect(() => {
     if (user) {
       loadRatings()
       loadFavorites()
       loadUserStats()
+      loadAlerts()
     }
   }, [user])
 
@@ -179,6 +214,22 @@ export function PerfilTab() {
       // silently fail
     } finally {
       setLoadingStats(false)
+    }
+  }
+
+  const loadAlerts = async () => {
+    if (!user) return
+    setLoadingAlerts(true)
+    try {
+      const res = await fetch(`/api/alerts?userId=${user.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setAlerts(data.alerts || [])
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingAlerts(false)
     }
   }
 
@@ -283,6 +334,75 @@ export function PerfilTab() {
       toast.error('Erro ao alterar senha')
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const handleCreateAlert = async () => {
+    if (!user) return
+
+    const hasCriteria = alertForm.professionalType || alertForm.city || alertForm.state || alertForm.minValue || alertForm.maxValue || alertForm.shiftType
+    if (!hasCriteria) {
+      toast.error('Defina pelo menos um critério para o alerta')
+      return
+    }
+
+    setSavingAlert(true)
+    try {
+      const res = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          ...alertForm,
+        })
+      })
+      if (res.ok) {
+        setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' })
+        setShowAlertForm(false)
+        loadAlerts()
+        toast.success('Alerta criado com sucesso!')
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Erro ao criar alerta')
+      }
+    } catch {
+      toast.error('Erro ao criar alerta')
+    } finally {
+      setSavingAlert(false)
+    }
+  }
+
+  const handleDeleteAlert = async (alertId: string) => {
+    if (!user) return
+    try {
+      const res = await fetch(`/api/alerts/${alertId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      })
+      if (res.ok) {
+        setAlerts(alerts.filter(a => a.id !== alertId))
+        toast.success('Alerta excluído')
+      }
+    } catch {
+      toast.error('Erro ao excluir alerta')
+    }
+  }
+
+  const handleToggleAlert = async (alertId: string, currentActive: boolean) => {
+    if (!user) return
+    try {
+      const res = await fetch(`/api/alerts/${alertId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, active: !currentActive })
+      })
+      if (res.ok) {
+        setAlerts(alerts.map(a => a.id === alertId ? { ...a, active: !currentActive } : a))
+        toast.success(currentActive ? 'Alerta desativado' : 'Alerta ativado')
+      }
+    } catch {
+      toast.error('Erro ao atualizar alerta')
     }
   }
 
@@ -408,6 +528,10 @@ export function PerfilTab() {
           <TabsTrigger value="settings" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
             <Settings className="w-3 h-3 mr-1" />
             Config
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+            <Bell className="w-3 h-3 mr-1" />
+            Alertas
           </TabsTrigger>
         </TabsList>
 
@@ -578,6 +702,54 @@ export function PerfilTab() {
         </TabsContent>
 
         <TabsContent value="ratings" className="mt-4">
+          {/* Rating Distribution Chart */}
+          {ratings.length > 0 && (
+            <Card className="rounded-xl shadow-sm border-0 mb-4 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-amber-400 via-emerald-400 to-amber-400" />
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Distribuição de Avaliações</h3>
+                </div>
+                <div className="flex items-center gap-6">
+                  {/* Average rating display */}
+                  <div className="text-center shrink-0">
+                    <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                      {avgRating > 0 ? avgRating.toFixed(1) : '—'}
+                    </div>
+                    <div className="text-amber-500 text-lg mt-0.5">
+                      {renderStars(avgRating)}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-1">
+                      {totalRatings} avaliação{totalRatings !== 1 ? 'ões' : ''}
+                    </div>
+                  </div>
+                  {/* Horizontal bar chart */}
+                  <div className="flex-1 space-y-1.5">
+                    {[5, 4, 3, 2, 1].map(starCount => {
+                      const count = ratings.filter(r => r.stars === starCount).length
+                      const maxCount = Math.max(...[5, 4, 3, 2, 1].map(s => ratings.filter(r => r.stars === s).length), 1)
+                      const widthPercent = (count / maxCount) * 100
+                      return (
+                        <div key={starCount} className="flex items-center gap-2">
+                          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 w-6 text-right shrink-0">{starCount}★</span>
+                          <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
+                              style={{ width: `${widthPercent}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-gray-400 w-4 shrink-0">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {loadingRatings ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -672,6 +844,234 @@ export function PerfilTab() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="alerts" className="mt-4">
+          <Card className="rounded-xl shadow-sm border-0">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+                    <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Alertas de Plantão</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Receba notificações quando plantões compatíveis forem publicados</p>
+                  </div>
+                </div>
+                {!showAlertForm && (
+                  <Button
+                    onClick={() => setShowAlertForm(true)}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Criar
+                  </Button>
+                )}
+              </div>
+
+              {/* Alert Creation Form */}
+              {showAlertForm && (
+                <div className="space-y-3 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Criar Novo Alerta</p>
+                    <Button
+                      onClick={() => { setShowAlertForm(false); setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' }) }}
+                      size="sm"
+                      variant="ghost"
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg gap-1"
+                    >
+                      <X className="w-3 h-3" />
+                      Cancelar
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Tipo Profissional</Label>
+                      <select
+                        value={alertForm.professionalType}
+                        onChange={(e) => setAlertForm({ ...alertForm, professionalType: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                      >
+                        <option value="">Qualquer tipo</option>
+                        <option value="MEDICO">Médico</option>
+                        <option value="ENFERMEIRO">Enfermeiro</option>
+                        <option value="TECNICO_ENFERMAGEM">Téc. Enfermagem</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400">Cidade</Label>
+                        <Input
+                          value={alertForm.city}
+                          onChange={(e) => setAlertForm({ ...alertForm, city: e.target.value })}
+                          placeholder="Qualquer cidade"
+                          className="rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400">Estado</Label>
+                        <select
+                          value={alertForm.state}
+                          onChange={(e) => setAlertForm({ ...alertForm, state: e.target.value })}
+                          className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                        >
+                          <option value="">Qualquer estado</option>
+                          {BRAZILIAN_STATES.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400">Valor Mínimo (R$)</Label>
+                        <Input
+                          type="number"
+                          value={alertForm.minValue}
+                          onChange={(e) => setAlertForm({ ...alertForm, minValue: e.target.value })}
+                          placeholder="0"
+                          className="rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400">Valor Máximo (R$)</Label>
+                        <Input
+                          type="number"
+                          value={alertForm.maxValue}
+                          onChange={(e) => setAlertForm({ ...alertForm, maxValue: e.target.value })}
+                          placeholder="Sem limite"
+                          className="rounded-lg text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-gray-500 dark:text-gray-400">Tipo de Plantão</Label>
+                      <select
+                        value={alertForm.shiftType}
+                        onChange={(e) => setAlertForm({ ...alertForm, shiftType: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                      >
+                        <option value="">Qualquer tipo</option>
+                        <option value="Diurno">☀️ Diurno</option>
+                        <option value="Noturno">🌙 Noturno</option>
+                        <option value="Misto">🌅 Misto</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        onClick={handleCreateAlert}
+                        disabled={savingAlert}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-2"
+                      >
+                        {savingAlert ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                        {savingAlert ? 'Criando...' : 'Criar Alerta'}
+                      </Button>
+                      <Button
+                        onClick={() => { setShowAlertForm(false); setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' }) }}
+                        variant="outline"
+                        className="flex-1 rounded-lg gap-2"
+                        disabled={savingAlert}
+                      >
+                        <X className="w-4 h-4" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alert List */}
+              {loadingAlerts ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : alerts.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 text-center">
+                  <Bell className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2 animate-pulse" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum alerta configurado</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Crie alertas para ser notificado quando plantões compatíveis forem publicados</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {alerts.map((alert) => (
+                    <Card key={alert.id} className={cn(
+                      "rounded-xl border-0 shadow-sm transition-all",
+                      alert.active ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50 opacity-60"
+                    )}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap gap-1.5">
+                              {alert.professionalType && (
+                                <Badge variant="secondary" className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                                  {getRoleLabel(alert.professionalType as 'MEDICO' | 'ENFERMEIRO' | 'TECNICO_ENFERMAGEM' | 'EMPRESA' | 'ADMIN')}
+                                </Badge>
+                              )}
+                              {alert.shiftType && (
+                                <Badge variant="secondary" className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                  {alert.shiftType === 'Diurno' ? '☀️' : alert.shiftType === 'Noturno' ? '🌙' : '🌅'} {alert.shiftType}
+                                </Badge>
+                              )}
+                              {alert.city && (
+                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                  📍 {alert.city}
+                                </Badge>
+                              )}
+                              {alert.state && (
+                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                  {alert.state}
+                                </Badge>
+                              )}
+                              {alert.minValue != null && (
+                                <Badge variant="secondary" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                  Min {formatCurrency(alert.minValue)}
+                                </Badge>
+                              )}
+                              {alert.maxValue != null && (
+                                <Badge variant="secondary" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                  Max {formatCurrency(alert.maxValue)}
+                                </Badge>
+                              )}
+                              {!alert.professionalType && !alert.shiftType && !alert.city && !alert.state && alert.minValue == null && alert.maxValue == null && (
+                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500">
+                                  Qualquer plantão
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-2">
+                              Criado em {formatDate(alert.createdAt)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Switch
+                              checked={alert.active}
+                              onCheckedChange={() => handleToggleAlert(alert.id, alert.active)}
+                              className="data-[state=checked]:bg-emerald-600"
+                            />
+                            <button
+                              onClick={() => handleDeleteAlert(alert.id)}
+                              className="w-7 h-7 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg flex items-center justify-center transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4 space-y-4">

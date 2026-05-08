@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles } from 'lucide-react'
+import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles, Heart, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ShiftItem {
@@ -52,7 +52,7 @@ interface ShiftItem {
 }
 
 export function PlantoesTab() {
-  const { user, setSelectedShiftId, setShowAuthModal, setAuthMode } = useAppStore()
+  const { user, setSelectedShiftId, setShowAuthModal, setAuthMode, toggleFavorite } = useAppStore()
   const [shifts, setShifts] = useState<ShiftItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -66,6 +66,7 @@ export function PlantoesTab() {
   const [showCreateShift, setShowCreateShift] = useState(false)
   const [comparisonIds, setComparisonIds] = useState<string[]>([])
   const [showComparisonDialog, setShowComparisonDialog] = useState(false)
+  const [favoriteIds, setFavoriteIdsLocal] = useState<string[]>([])
 
   const loadShifts = useCallback(async () => {
     setLoading(true)
@@ -92,12 +93,56 @@ export function PlantoesTab() {
     }
   }, [search, city, state, professionalType, minValue, maxValue, sortBy])
 
+  // Load user favorites
+  useEffect(() => {
+    if (!user) return
+    const loadFavorites = async () => {
+      try {
+        const res = await fetch(`/api/favorites?userId=${user.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const ids = data.map((f: { shiftId: string }) => f.shiftId)
+          setFavoriteIdsLocal(ids)
+        }
+      } catch { /* */ }
+    }
+    loadFavorites()
+  }, [user])
+
   useEffect(() => {
     loadShifts()
   }, [loadShifts])
 
   const handleShiftClick = (shiftId: string) => {
     setSelectedShiftId(shiftId)
+  }
+
+  const handleToggleFavorite = async (shiftId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (!user) {
+      setAuthMode('login')
+      setShowAuthModal(true)
+      return
+    }
+    try {
+      const isFav = favoriteIds.includes(shiftId)
+      if (isFav) {
+        await fetch(`/api/favorites/${shiftId}?userId=${user.id}`, { method: 'DELETE' })
+      } else {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, shiftId }),
+        })
+      }
+      setFavoriteIdsLocal(prev =>
+        prev.includes(shiftId) ? prev.filter(id => id !== shiftId) : [...prev, shiftId]
+      )
+      toggleFavorite(shiftId)
+      toast.success(isFav ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
+    } catch {
+      toast.error('Erro ao atualizar favoritos')
+    }
   }
 
   const handleCreateShift = () => {
@@ -190,12 +235,12 @@ export function PlantoesTab() {
         </Select>
       </div>
 
-      {/* Filters */}
-      {showFilters && (
+      {/* Filters - smooth toggle with max-height transition */}
+      <div className={`filter-panel ${showFilters ? 'expanded' : 'collapsed'}`}>
         <Card className="rounded-xl shadow-sm border-0">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">Filtros</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros</p>
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
@@ -207,7 +252,7 @@ export function PlantoesTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">Cidade</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400">Cidade</label>
                 <Input
                   placeholder="Cidade"
                   value={city}
@@ -216,7 +261,7 @@ export function PlantoesTab() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">Estado</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400">Estado</label>
                 <Input
                   placeholder="UF"
                   value={state}
@@ -227,7 +272,7 @@ export function PlantoesTab() {
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-gray-500">Tipo de Profissional</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400">Tipo de Profissional</label>
               <Select value={professionalType} onValueChange={setProfessionalType}>
                 <SelectTrigger className="rounded-lg h-9 text-sm">
                   <SelectValue placeholder="Todos os tipos" />
@@ -242,7 +287,7 @@ export function PlantoesTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">Valor mín. (R$)</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400">Valor mín. (R$)</label>
                 <Input
                   type="number"
                   placeholder="0"
@@ -252,7 +297,7 @@ export function PlantoesTab() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">Valor máx. (R$)</label>
+                <label className="text-xs text-gray-500 dark:text-gray-400">Valor máx. (R$)</label>
                 <Input
                   type="number"
                   placeholder="9999"
@@ -264,7 +309,7 @@ export function PlantoesTab() {
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {/* Results count */}
       <div className="flex items-center justify-between">
@@ -285,8 +330,8 @@ export function PlantoesTab() {
       {/* Shift List */}
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-28 rounded-xl animate-pulse" />
+          {[1, 2, 3, 4].map((i, idx) => (
+            <div key={i} className="shimmer-skeleton-card h-28 rounded-xl staggered-card" style={{ animationDelay: `${idx * 100}ms` }} />
           ))}
         </div>
       ) : shifts.length === 0 ? (
@@ -308,16 +353,18 @@ export function PlantoesTab() {
         <div className="space-y-3 relative">
           {/* Gradient overlay at bottom when scrollable */}
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent z-10" />
-          {shifts.map((shift) => {
+          {shifts.map((shift, index) => {
             const isNew = new Date().getTime() - new Date(shift.date).getTime() < 2 * 24 * 60 * 60 * 1000
             const isSelected = comparisonIds.includes(shift.id)
+            const isFav = favoriteIds.includes(shift.id)
             return (
             <Card
               key={shift.id}
               className={cn(
-                "rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 relative",
+                "rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 relative staggered-card quick-action-card",
                 isSelected && 'ring-2 ring-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10'
               )}
+              style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => handleShiftClick(shift.id)}
             >
               <CardContent className="p-4">
@@ -387,6 +434,30 @@ export function PlantoesTab() {
                       </span>
                     </div>
                   </div>
+                </div>
+                {/* Quick actions: Favorite + Quick View */}
+                <div className="quick-action-overlay absolute top-3 left-3 flex gap-1.5 z-10">
+                  <button
+                    onClick={(e) => handleToggleFavorite(shift.id, e)}
+                    className={cn(
+                      'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm',
+                      isFav
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30'
+                        : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700'
+                    )}
+                    aria-label={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                  >
+                    <Heart className={cn('w-3.5 h-3.5 transition-all', isFav && 'fill-red-500')} />
+                  </button>
+                </div>
+                <div className="quick-action-overlay absolute bottom-3 right-3 z-10">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleShiftClick(shift.id) }}
+                    className="w-7 h-7 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all duration-200 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    aria-label="Ver detalhes"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </CardContent>
             </Card>

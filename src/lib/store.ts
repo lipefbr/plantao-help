@@ -55,8 +55,8 @@ interface AppState {
   setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard' | 'shifts') => void
 
   // Profile sub-tab
-  profileSubTab: 'info' | 'ratings' | 'favorites'
-  setProfileSubTab: (tab: 'info' | 'ratings' | 'favorites') => void
+  profileSubTab: 'info' | 'ratings' | 'favorites' | 'alerts'
+  setProfileSubTab: (tab: 'info' | 'ratings' | 'favorites' | 'alerts') => void
 
   // Dark mode
   darkMode: boolean

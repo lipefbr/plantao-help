@@ -1,8 +1,8 @@
 # Plantão Help - Worklog
 
 ## Project Status
-**Status**: Production-ready marketplace with rich features, enhanced styling, analytics, admin tools, and smart recommendations
-**Last Updated**: 2025-05-08 (Phase 11 - Recommendations + Comparison + Export + Styling Polish)
+**Status**: Production-ready marketplace with rich features, enhanced styling, analytics, admin tools, smart recommendations, and onboarding
+**Last Updated**: 2025-05-08 (Phase 12 - Onboarding Modal + Enhanced Styling + Quick Actions)
 
 ## Current State
 - Complete marketplace for healthcare shifts (plantões) with all core features working
@@ -770,79 +770,259 @@
 8. **Push Notifications**: No browser push notifications
 9. **Multi-language**: Currently Portuguese only
 
-## Phase 11 Changes (Task 11-b - Admin Export + Enhanced Reports + User Statistics API)
+## Phase 12 Changes (Task 4-b - Onboarding Modal + Enhanced Styling + Quick Actions)
 
-### Feature 1: Admin Data Export
+### Feature 1: Onboarding Welcome Modal
 
-#### New API Endpoint
-- **`GET /api/admin/export`** - Returns CSV-formatted data for admin export
-  - Accepts `adminId` query param for verification (requires ADMIN role)
-  - Accepts `type` query param: 'shifts' | 'users' | 'revenue'
-  - Returns CSV with appropriate headers and `Content-Disposition` attachment
-  - For shifts: title, status, date, value, city, state, seller, buyer, hospital
-  - For users: name, email, role, status, city, state, professionalDoc, createdAt
-  - For revenue: month, totalRevenue, shiftCount, avgValue (grouped by month from sold shifts)
+#### New Component (`src/components/onboarding-modal.tsx`)
+- **Multi-step wizard dialog** that appears on first login after admin approval
+- **4 steps**:
+  1. **"Bem-vindo ao Plantão Help!"** - Welcome with Stethoscope icon, app description
+  2. **"Como funciona"** - 3-step visual: Publicar plantões → Comprar plantões → Avaliar e ganhar reputação, with staggered card animation
+  3. **"Complete seu perfil"** - Shows profile completion status (phone, city, state, professionalDoc) with checkmarks, "Completar agora" and "Depois" buttons
+  4. **"Pronto para começar!"** - Quick actions: "Publicar Plantão" and "Buscar Plantões" buttons
+- **Progress dots** at bottom (elongated active dot, filled completed dots, empty upcoming dots)
+- **Skip button** ("Pular") on each step (X button in header + bottom skip link)
+- **Navigation**: "Voltar" / "Próximo" buttons with ArrowRight icon
+- **Smooth transitions**: `animate-fadeIn` on step content, `staggered-card` on how-it-works items
+- **Gradient header**: Emerald-to-teal gradient with decorative orbs and parallax rotation
+- **localStorage tracking**: Key `plantao-help-onboarding-{userId}`, only shows for APPROVED non-admin users
+- **Auto-show**: 800ms delay after page load for smooth UX
+- **Integration**: Added to `page.tsx` as top-level component, navigates to profile edit tab from step 3
 
-#### Admin Tab Changes (`src/components/admin-tab.tsx`)
-- Added `exportingType` state and `handleExport()` function to DashboardPanel
-- Added "Exportar Dados" card in Dashboard panel after Revenue Report card:
-  - **"Exportar Plantões"** button - emerald green with Download icon
-  - **"Exportar Usuários"** button - blue with Download icon
-  - **"Exportar Receita"** button - amber with Download icon
-  - Each button triggers CSV download via Blob + URL.createObjectURL
-  - Loading state with Loader2 spinner while generating
-  - Disabled state on all buttons during export
-  - Responsive grid: 1 column on mobile, 3 columns on desktop
-- Added `Download` icon to lucide-react imports
+### Feature 2: Enhanced Home Tab Styling
 
-### Feature 2: User Statistics API
+#### Time-of-Day Greeting
+- Changed "Olá," to dynamic greeting: "Bom dia," (5-12), "Boa tarde," (12-18), "Boa noite," (18-5)
+- Uses `getGreeting()` function based on `new Date().getHours()`
 
-#### New API Endpoint
-- **`GET /api/users/[id]/stats`** - Returns comprehensive user statistics
-  - Total shifts published, sold, cancelled
-  - Total shifts bought
-  - Total earned (from sold shifts)
-  - Total spent (on bought shifts)
-  - Average rating received
-  - Most common city/state for shifts
-  - Most common shift type (Diurno/Noturno/Misto)
-  - Account age in days
-  - Profile completion percentage (based on 8 fields: email, phone, city, state, professionalDoc, bio, name, document)
-  - Activity score (0-100, based on published + bought + ratings + sold metrics)
-  - Completion rate (% sold vs published excluding cancelled)
-  - Total ratings received count
+#### Hover Ripple Effect on Stat Cards
+- Added `ripple-card` class to all 4 stat cards
+- `createRipple()` function creates a span element at click position with `ripple-effect` class
+- Ripple animates and auto-removes after 600ms
 
-### Feature 3: Enhanced Profile Stats
+#### Smooth Number Counter
+- `animatedStats` state tracks animated values for Available, Published, Bought, Rating
+- `animateNumber()` uses `setInterval` with 20 steps over 800ms to count from 0 to target
+- Rating uses decimal precision (1 decimal place) with 1000ms duration
+- `counter-pulse` CSS class adds subtle scale animation when values update
 
-#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
-- Added `UserStats` interface with typed fields
-- Added `userStats` and `loadingStats` state variables
-- Added `loadUserStats()` function that fetches from `/api/users/[id]/stats`
-- Added "Suas Estatísticas" card below profile info card in "Informações" tab:
-  - Gradient top accent line (emerald-to-teal)
-  - BarChart3 icon with "Suas Estatísticas" title
-  - **Row 1** (4 items grid): Plantões Publicados (TrendingUp), Plantões Vendidos (ShoppingCart), Plantões Comprados (DollarSign), Total Ganho (Award)
-  - **Row 2** (4 items grid): Total Gasto (DollarSign), Avaliação Média (Star), Taxa de Conclusão % (TrendingUp), Membro há dias (CalendarDays)
-  - Each stat has a colored icon background, bold value, and small label
-  - Loading skeleton with 8 placeholder items
-  - Emerald/teal color theme consistent with app
-  - Dark mode support
-- Added new Lucide icon imports: `TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer`
+#### Decorative Gradient Orbs
+- 3 blurred circles (`gradient-orb` class) behind the welcome card:
+  - Large emerald orb (top-left)
+  - Medium teal orb (bottom-right)
+  - Small emerald orb (center)
+- Reduced opacity in dark mode (0.15 vs 0.30 in light mode)
+
+### Feature 3: Enhanced Plantões Tab Styling
+
+#### Skeleton Loading Shimmer
+- Replaced plain `Skeleton` components with `shimmer-skeleton-card` class
+- Animated gradient background (light/dark mode variants) with 1.5s infinite animation
+- Staggered entrance with 100ms delay per skeleton
+
+#### Staggered Card Entrance
+- Added `staggered-card` class to each shift card with `animationDelay: index * 50ms`
+- Cards fade in and slide up with 0.4s cubic-bezier easing
+
+#### Hover Lift + Shadow
+- Added `hover:-translate-y-1 hover:shadow-lg` to shift cards
+- Smooth `transition-all duration-200`
+
+#### Smooth Filter Panel Toggle
+- Replaced conditional rendering (`{showFilters && ...}`) with `filter-panel` CSS class
+- Uses `max-height` transition (0→400px) with `collapsed`/`expanded` states
+- Smooth opacity transition (0→1) alongside height
+
+#### Quick Actions on Shift Cards
+- **Heart/Favorite button** (top-left): Toggles favorite via API, red fill when favorited, subtle on desktop (hover), always visible on mobile
+- **Quick View button** (bottom-right): Opens shift detail with Eye icon
+- Both use `quick-action-overlay` CSS class for hover/show behavior
+- `quick-action-card` class on card enables the overlay trigger
+- Mobile: always visible (`@media (hover: none)` override)
+
+#### Favorite State Management
+- Added `favoriteIds` local state + `loadFavorites()` on mount
+- `handleToggleFavorite()` calls API + updates local + store state
+- Uses `toggleFavorite` from Zustand store for cross-component sync
+
+### Feature 4: Enhanced Shift Detail Styling
+
+#### Smooth Expand/Collapse for Description
+- Added `descriptionExpanded` state
+- Uses `expand-collapse` CSS class with `collapsed` (4.5em max-height) / `expanded` (500px max-height)
+- "Ver mais" / "Ver menos" button shows only for descriptions > 120 characters
+- Smooth 0.3s cubic-bezier transition
+
+#### Pulsing Ring Around Seller Avatar
+- Added `animate-pulseRing` class to seller Avatar component
+- CSS keyframe creates expanding emerald box-shadow pulse (0→8px→0)
+- 2s infinite animation
+
+#### Gradient Border on Main Info Card
+- Added `gradient-border-card` class to main shift info card
+- CSS `::before` pseudo-element with mask-composite gradient border
+- Light mode: emerald→teal gradient; Dark mode: emerald→dark→green gradient
+
+### Feature 5: Enhanced Bottom Navigation
+
+#### Active Tab Indicator Line
+- Sliding emerald line above the tab icons
+- Uses `tab-indicator-line` CSS class with `slideIndicator` animation
+- Position calculated: `left: (activeIndex / totalItems) * 100%`
+- `transition-all duration-300 ease-out` for smooth sliding
+
+#### Haptic-like Scale
+- `active:scale-90` on all tab buttons for press feedback
+
+#### Badge Notification Count on Meus Tab
+- Shows shift count badge on "Meus" tab when user has shifts
+- Fetches count from `/api/shifts?sellerId={userId}&allStatuses=true`
+- Badge: emerald background, white text, `animate-badge-pulse` for attention
+- Shows "9+" for counts > 9
+
+### Global CSS Additions (`src/app/globals.css`)
+- **`.staggered-card`**: `staggeredIn` keyframe (fade + translateY + scale), 0.4s cubic-bezier
+- **`.animate-pulseRing`**: `pulseRing` keyframe (emerald box-shadow 0→8px→0), 2s infinite
+- **`.expand-collapse`**: Smooth max-height + opacity transition for text truncation
+- **`.gradient-border-card`**: Gradient border via `::before` pseudo-element with mask-composite
+- **`.ripple-card` / `.ripple-effect`**: Click ripple with expanding circle animation
+- **`.tab-indicator-line`**: `slideIndicator` keyframe (scaleX 0→1), 0.3s cubic-bezier
+- **`.filter-panel`**: Smooth max-height toggle for filter sections (collapsed/expanded)
+- **`.shimmer-skeleton-card`**: Animated gradient background for skeleton loading
+- **`.gradient-orb`**: Blurred decorative circles with light/dark opacity
+- **`.quick-action-overlay`**: Hover-activated overlay for quick actions (always visible on touch)
+- **`.counter-pulse`**: `counterPulse` keyframe (scale 1→1.15→1), 0.3s ease-out
 
 ### Files Created
-- `src/app/api/admin/export/route.ts` - Admin CSV export API (shifts, users, revenue)
-- `src/app/api/users/[id]/stats/route.ts` - User statistics API endpoint
+- `src/components/onboarding-modal.tsx` - Welcome onboarding wizard (4-step dialog)
 
 ### Files Modified
-- `src/components/admin-tab.tsx` - Added export state, handleExport function, "Exportar Dados" card with 3 export buttons, Download icon import
-- `src/components/perfil-tab.tsx` - Added UserStats interface, stats state, loadUserStats function, "Suas Estatísticas" stats card, new icon imports
+- `src/app/page.tsx` - Added OnboardingModal component import and rendering
+- `src/app/globals.css` - Added 11 new CSS utilities, keyframes, and classes
+- `src/components/home-tab.tsx` - Time-of-day greeting, ripple effect, number counter, gradient orbs
+- `src/components/plantoes-tab.tsx` - Shimmer skeletons, staggered entrance, hover lift, filter toggle, quick actions (favorite + view)
+- `src/components/shift-detail.tsx` - Expand/collapse description, pulsing avatar ring, gradient border
+- `src/components/bottom-nav.tsx` - Active indicator line, haptic scale, badge count
 
 ### Testing
 - ✅ Lint passes clean (0 errors, 0 warnings)
-- ✅ GET /api/admin/export?type=shifts returns valid CSV with headers and data
-- ✅ GET /api/admin/export?type=users returns valid CSV with user data
-- ✅ GET /api/admin/export?type=revenue returns valid CSV with monthly revenue
-- ✅ GET /api/admin/export rejects non-admin users (403)
-- ✅ GET /api/admin/export validates type parameter
-- ✅ GET /api/users/[id]/stats returns comprehensive stats (tested with dr.silva: 3 published, 1 sold, 1 bought, R$1600 earned, R$2200 spent, 4.0 rating, 33% completion rate)
 - ✅ No compilation errors in dev log
+
+
+## Phase 13 Changes (Task 4-a - Shift Alert System + Rating Distribution Chart)
+
+### Feature 1: Shift Alert/Watch System
+
+#### Database Changes
+- Added `ShiftAlert` model to `prisma/schema.prisma` with fields: id, userId, professionalType, city, state, minValue, maxValue, shiftType, active, createdAt
+- Added `alerts ShiftAlert[]` relation to User model
+- Ran `bun run db:push` to apply schema changes
+
+#### New API Endpoints
+- **`GET /api/alerts?userId=<id>`** - Returns user's shift alerts, ordered by createdAt desc
+- **`POST /api/alerts`** - Creates a new shift alert (body: userId, professionalType, city, state, minValue, maxValue, shiftType)
+  - Validates userId is provided
+  - Verifies user exists before creating
+  - Nullifies empty string fields
+  - Returns created alert with status 201
+- **`DELETE /api/alerts/[id]`** - Deletes a shift alert (body: userId for ownership verification)
+  - Returns 403 if userId doesn't match alert owner
+  - Returns 404 if alert not found
+- **`PATCH /api/alerts/[id]`** - Toggles alert active/inactive (body: userId, active)
+  - Returns 403 if userId doesn't match alert owner
+  - Returns updated alert
+
+#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+- Added 5th sub-tab "Alertas" with Bell icon to the TabsList
+- Added `ShiftAlertItem` interface and `BRAZILIAN_STATES` constant (27 states)
+- Added state: `alerts`, `loadingAlerts`, `showAlertForm`, `alertForm`, `savingAlert`
+- Added `loadAlerts()`, `handleCreateAlert()`, `handleDeleteAlert()`, `handleToggleAlert()` functions
+- **AlertsPanel** within "Alertas" tab content:
+  - Card with Bell icon header, "Criar" button to open form
+  - **Alert creation form** (shown when "Criar" is clicked):
+    - Professional Type select (Qualquer tipo / Médico / Enfermeiro / Téc. Enfermagem)
+    - City text input + State select (dropdown with all 27 Brazilian states)
+    - Min Value and Max Value number inputs
+    - Shift Type select (Qualquer tipo / ☀️ Diurno / 🌙 Noturno / 🌅 Misto)
+    - Validates at least one criteria is set
+    - Cancel button resets form and hides form
+  - **Alert list**: Each alert shows criteria as color-coded badges:
+    - Professional type = emerald badge
+    - Shift type = blue badge with emoji
+    - City = gray badge with 📍
+    - State = gray badge
+    - Min/Max value = amber badge with formatted currency
+    - "Qualquer plantão" fallback badge when no criteria
+    - Created date shown below badges
+  - **Toggle active/inactive**: Switch component with emerald checked state
+  - **Delete button**: Red trash icon button with confirmation toast
+  - **Loading skeleton**: 3 animated placeholder cards
+  - **Empty state**: Bell icon with "Crie alertas para ser notificado quando plantões compatíveis forem publicados"
+  - Inactive alerts shown with reduced opacity (opacity-60)
+
+### Feature 2: Rating Distribution Chart
+
+#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+- Added `RatingDistribution` component inside "Avaliações" TabsContent (shown when ratings exist)
+- **Visual design**:
+  - Card with amber-to-emerald gradient accent bar at top
+  - BarChart3 icon header "Distribuição de Avaliações"
+  - **Left side**: Average rating as large bold number, star icons, total ratings count
+  - **Right side**: Horizontal bar chart with 5 rows (5★ to 1★):
+    - Each row: star count label (5★, 4★, etc.), colored progress bar, count number
+    - Bar width proportional to count (max count = widest bar)
+    - Emerald gradient bars (`bg-gradient-to-r from-emerald-400 to-emerald-500`)
+    - Smooth transition animation (duration-500)
+    - Gray background track for bars
+  - Responsive flex layout with shrink-0 on average display
+
+### Store Changes (`src/lib/store.ts`)
+- Updated `profileSubTab` type from `'info' | 'ratings' | 'favorites'` to `'info' | 'ratings' | 'favorites' | 'alerts'`
+- Updated `setProfileSubTab` function signature accordingly
+
+### Files Created
+- `src/app/api/alerts/route.ts` - GET and POST for shift alerts
+- `src/app/api/alerts/[id]/route.ts` - DELETE and PATCH for individual alert
+
+### Files Modified
+- `prisma/schema.prisma` - Added ShiftAlert model and alerts relation to User
+- `src/lib/store.ts` - Updated profileSubTab type to include 'alerts'
+- `src/components/perfil-tab.tsx` - Added Alertas tab, AlertsPanel, RatingDistribution chart, new icons (Bell, Plus, Trash2, Sun, MoonStar, Sunrise), alert state and handlers
+
+### Testing
+- ✅ Lint passes clean (0 errors, 0 warnings)
+- ✅ GET /api/alerts?userId=cl_test returns empty alerts array
+- ✅ POST /api/alerts creates alert correctly with professionalType and state
+- ✅ ShiftAlert model exists in Prisma Client
+- ✅ No compilation errors
+
+---
+Task ID: Phase 12-orchestrator
+Agent: Main Orchestrator
+Task: Phase 12 - QA testing, feature development, styling improvements, and worklog maintenance
+
+Work Log:
+- Cleaned up duplicate Phase 11 content from worklog.md (removed lines 773-849)
+- Performed comprehensive QA testing via agent-browser across all tabs (Homepage, Doctor Dashboard, Plantões, Meus Plantões, Perfil, Concursos, Admin Panel with all sub-tabs) - No errors found
+- Verified lint passes clean (0 errors, 0 warnings)
+- Delegated feature development to two parallel subagents
+- Verified API endpoints working (alerts API, shifts API, homepage)
+- Confirmed all new features compile and serve correctly
+
+Stage Summary:
+- QA: All tabs functional, no browser errors, lint clean
+- New Features Added (by subagents):
+  1. Shift Alert/Watch System - Users can create shift criteria alerts (new ShiftAlert model, 3 API endpoints, AlertsPanel in Profile tab)
+  2. Rating Distribution Chart - Visual bar chart showing 5-star to 1-star distribution in Profile Avaliações tab
+  3. Onboarding Welcome Modal - 4-step wizard for first-time users (welcome, how it works, complete profile, get started)
+  4. Quick Actions on Shift Cards - Heart/Favorite and Quick View buttons on marketplace shift cards
+- Styling Enhancements (by subagents):
+  1. Time-of-day greeting (Bom dia/Boa tarde/Boa noite) on Home tab
+  2. Shimmer skeleton loading, staggered card entrance animations, hover lift+shadow on Plantões tab
+  3. Smooth filter panel toggle, gradient orbs behind welcome card
+  4. Expand/collapse long descriptions, pulsing seller avatar ring, gradient border on Shift Detail
+  5. Active tab indicator line, haptic scale on Bottom Navigation
+  6. 11 new CSS utility classes added to globals.css
+- No bugs found during QA
+- All features verified working via API testing

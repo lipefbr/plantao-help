@@ -14,6 +14,7 @@ import { AdminTab } from '@/components/admin-tab'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { OnboardingModal } from '@/components/onboarding-modal'
 
 function TabContent() {
   const { activeTab, selectedShiftId, setSelectedShiftId } = useAppStore()
@@ -79,6 +80,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <TopHeader />
       <AuthModal />
+      <OnboardingModal />
       <Suspense fallback={null}>
         <DeepLinkHandler />
       </Suspense>

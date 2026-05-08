@@ -54,6 +54,7 @@ model User {
   shiftsBought     Shift[]     @relation("ShiftBuyer")
   ratingsGiven     Rating[]    @relation("RatingRater")
   ratingsReceived  Rating[]    @relation("RatingReceiver")
+  alerts           ShiftAlert[]
 }
 
 model Hospital {
@@ -156,4 +157,19 @@ model Notification {
   type      String   // INFO, SUCCESS, WARNING
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model ShiftAlert {
+  id                String   @id @default(cuid())
+  userId            String
+  professionalType  String?  // MEDICO, ENFERMEIRO, etc. (null = any)
+  city              String?  // null = any
+  state             String?  // null = any
+  minValue          Float?   // minimum shift value
+  maxValue          Float?   // maximum shift value
+  shiftType         String?  // Diurno, Noturno, Misto (null = any)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id])
 }

@@ -716,3 +716,190 @@ textarea::placeholder {
 .sort-arrow-open {
   transform: rotate(180deg);
 }
+
+/* ===== Staggered card entrance ===== */
+@keyframes staggeredIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.staggered-card {
+  opacity: 0;
+  animation: staggeredIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Pulse ring for avatars ===== */
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+.animate-pulseRing {
+  animation: pulseRing 2s ease-in-out infinite;
+}
+
+/* ===== Smooth expand/collapse ===== */
+.expand-collapse {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+.expand-collapse.collapsed {
+  max-height: 4.5em;
+  opacity: 1;
+}
+.expand-collapse.expanded {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* ===== Gradient border card ===== */
+.gradient-border-card {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.gradient-border-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, oklch(0.696 0.17 162.48), oklch(0.508 0.118 165.612), oklch(0.6 0.118 184.704));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+.dark .gradient-border-card::before {
+  background: linear-gradient(135deg, oklch(0.696 0.17 162.48), oklch(0.432 0.095 166.913), oklch(0.596 0.145 163.225));
+}
+
+/* ===== Hover ripple effect on cards ===== */
+.ripple-card {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-card .ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  transform: scale(0);
+  animation: ripple 0.6s ease-out;
+  pointer-events: none;
+}
+
+/* ===== Active tab indicator line ===== */
+@keyframes slideIndicator {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.tab-indicator-line {
+  animation: slideIndicator 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Smooth filter panel toggle ===== */
+.filter-panel {
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+.filter-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+.filter-panel.expanded {
+  max-height: 400px;
+  opacity: 1;
+}
+
+/* ===== Shimmer skeleton for shift cards ===== */
+@keyframes shimmerCard {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer-skeleton-card {
+  background: linear-gradient(
+    90deg,
+    oklch(0.94 0.01 166.113) 0%,
+    oklch(0.97 0.015 166.113) 40%,
+    oklch(0.94 0.01 166.113) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmerCard 1.5s ease-in-out infinite;
+}
+.dark .shimmer-skeleton-card {
+  background: linear-gradient(
+    90deg,
+    oklch(0.22 0.02 166.113) 0%,
+    oklch(0.28 0.025 166.113) 40%,
+    oklch(0.22 0.02 166.113) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmerCard 1.5s ease-in-out infinite;
+}
+
+/* ===== Decorative gradient orbs ===== */
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+.dark .gradient-orb {
+  opacity: 0.15;
+}
+
+/* ===== Quick action hover overlay ===== */
+.quick-action-overlay {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.quick-action-card:hover .quick-action-overlay,
+.quick-action-card:focus-within .quick-action-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Always visible on touch devices */
+@media (hover: none) {
+  .quick-action-overlay {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Counter number animation ===== */
+@keyframes counterPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.counter-pulse {
+  animation: counterPulse 0.3s ease-out;
+}

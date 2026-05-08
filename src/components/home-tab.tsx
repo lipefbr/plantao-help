@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/lib/store'
 import { formatCurrency, formatDate, formatTimeAgo, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -62,6 +62,47 @@ export function HomeTab() {
   const [recommendedShifts, setRecommendedShifts] = useState<RecommendedShiftItem[]>([])
   const [recommendedLoading, setRecommendedLoading] = useState(false)
   const [trustCounts, setTrustCounts] = useState({ shifts: 0, verified: 0 })
+  const [animatedStats, setAnimatedStats] = useState({ available: 0, published: 0, bought: 0, rating: 0 })
+
+  // Time-of-day greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour >= 5 && hour < 12) return 'Bom dia,'
+    if (hour >= 12 && hour < 18) return 'Boa tarde,'
+    return 'Boa noite,'
+  }
+
+  // Ripple effect on click
+  const createRipple = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const card = e.currentTarget
+    const rect = card.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const ripple = document.createElement('span')
+    ripple.className = 'ripple-effect'
+    ripple.style.left = `${x}px`
+    ripple.style.top = `${y}px`
+    ripple.style.width = ripple.style.height = `${Math.max(rect.width, rect.height)}px`
+    card.appendChild(ripple)
+    setTimeout(() => ripple.remove(), 600)
+  }, [])
+
+  // Smooth number counter for logged-in stats
+  const animateNumber = useCallback((target: number, setter: (v: number) => void, duration = 800) => {
+    const steps = 20
+    const increment = target / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= target) {
+        setter(target)
+        clearInterval(timer)
+      } else {
+        setter(Math.round(current * 10) / 10)
+      }
+    }, duration / steps)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     loadFeaturedShifts()
@@ -76,6 +117,19 @@ export function HomeTab() {
       loadRecommendedShifts()
     }
   }, [user])
+
+  // Animate stats when they load
+  useEffect(() => {
+    if (!user || loading) return
+    const cleanups: (() => void)[] = []
+    cleanups.push(animateNumber(shifts.length, v => setAnimatedStats(prev => ({ ...prev, available: v }))))
+    cleanups.push(animateNumber(myShiftsCount, v => setAnimatedStats(prev => ({ ...prev, published: v }))))
+    cleanups.push(animateNumber(boughtShiftsCount, v => setAnimatedStats(prev => ({ ...prev, bought: v }))))
+    if (userRating > 0) {
+      cleanups.push(animateNumber(userRating, v => setAnimatedStats(prev => ({ ...prev, rating: v })), 1000))
+    }
+    return () => cleanups.forEach(c => c())
+  }, [user, loading, shifts.length, myShiftsCount, boughtShiftsCount, userRating, animateNumber])
 
   // Counter animation for Trust Bar (logged-out page)
   useEffect(() => {
@@ -421,15 +475,19 @@ export function HomeTab() {
   // Logged in - dashboard
   return (
     <div className="space-y-5">
-      {/* Welcome - with shimmer border wrapper */}
-      <div className="shimmer-border">
+      {/* Welcome - with shimmer border wrapper & decorative gradient orbs */}
+      <div className="shimmer-border relative">
+        {/* Decorative gradient orbs for depth */}
+        <div className="gradient-orb w-48 h-48 bg-emerald-400/50 -top-16 -left-16 z-0" />
+        <div className="gradient-orb w-32 h-32 bg-teal-400/40 -bottom-8 right-8 z-0" />
+        <div className="gradient-orb w-24 h-24 bg-emerald-300/30 top-1/2 left-1/2 z-0" />
       <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-[14px] p-5 text-white relative overflow-hidden">
         {/* Parallax rotating gradient pseudo-element */}
         <div className="absolute inset-0 animate-parallax-rotate opacity-20" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.12), transparent, rgba(255,255,255,0.06), transparent)', transformOrigin: 'center center' }} />
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
         <div className="relative z-10">
-          <p className="text-emerald-100 text-sm">Olá,</p>
+          <p className="text-emerald-100 text-sm">{getGreeting()}</p>
           <h2 className="text-xl font-bold animate-typewriter inline-block pr-1">{user.name}</h2>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full">{getRoleLabel(user.role)}</span>
@@ -486,42 +544,42 @@ export function HomeTab() {
         </svg>
       </div>
 
-      {/* Stats */}
+      {/* Stats with ripple effect and animated counters */}
       <div className="grid grid-cols-4 gap-2">
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
-            <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="w-7 h-7 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-base font-bold text-gray-800">{shifts.length}</p>
-            <p className="text-[9px] text-gray-500">Disponíveis</p>
+            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.available || shifts.length}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Disponíveis</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
-            <div className="w-7 h-7 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Briefcase className="w-3.5 h-3.5 text-teal-600" />
+            <div className="w-7 h-7 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Briefcase className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             </div>
-            <p className="text-base font-bold text-gray-800">{myShiftsCount}</p>
-            <p className="text-[9px] text-gray-500">Publicados</p>
+            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.published || myShiftsCount}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Publicados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
-            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <DollarSign className="w-3.5 h-3.5 text-blue-600" />
+            <div className="w-7 h-7 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <DollarSign className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             </div>
-            <p className="text-base font-bold text-gray-800">{boughtShiftsCount}</p>
-            <p className="text-[9px] text-gray-500">Comprados</p>
+            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.bought || boughtShiftsCount}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Comprados</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200">
+        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-200 ripple-card cursor-pointer" onClick={createRipple}>
           <CardContent className="p-2.5 text-center">
-            <div className="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Star className="w-3.5 h-3.5 text-amber-600" />
+            <div className="w-7 h-7 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             </div>
-            <p className="text-base font-bold text-gray-800">{userRating > 0 ? userRating.toFixed(1) : '-'}</p>
-            <p className="text-[9px] text-gray-500">Avaliação</p>
+            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.rating > 0 ? animatedStats.rating.toFixed(1) : (userRating > 0 ? userRating.toFixed(1) : '-')}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Avaliação</p>
           </CardContent>
         </Card>
       </div>

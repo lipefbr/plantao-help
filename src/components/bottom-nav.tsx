@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Home, Calendar, Trophy, Briefcase, User, Shield } from 'lucide-react'
 import { useAppStore, type TabType } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,22 @@ const adminItem: { tab: TabType; label: string; icon: React.ElementType } = {
 
 export function BottomNav() {
   const { activeTab, setActiveTab, setSelectedShiftId, user } = useAppStore()
+  const [myShiftsCount, setMyShiftsCount] = useState(0)
+
+  // Load shifts count for badge
+  useEffect(() => {
+    if (!user || user.role === 'ADMIN') return
+    const loadCount = async () => {
+      try {
+        const res = await fetch(`/api/shifts?sellerId=${user.id}&allStatuses=true`)
+        if (res.ok) {
+          const data = await res.json()
+          setMyShiftsCount(data.length)
+        }
+      } catch { /* */ }
+    }
+    loadCount()
+  }, [user])
 
   const items = user?.role === 'ADMIN' ? [...navItems, adminItem] : navItems
 
@@ -29,18 +46,32 @@ export function BottomNav() {
     setActiveTab(tab)
   }
 
-  // Bounce animation key for tab switching
-  const getBounceClass = (isActive: boolean) =>
-    isActive ? 'animate-successPop' : ''
+  // Find the index of the active tab for the indicator line
+  const activeIndex = items.findIndex(item => item.tab === activeTab)
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] pb-safe">
       {/* Top border gradient */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
+
+      {/* Active tab indicator line - slides to active tab */}
+      <div className="relative h-[2px]">
+        <div
+          className="absolute top-0 h-full bg-emerald-500 rounded-full tab-indicator-line transition-all duration-300 ease-out"
+          style={{
+            width: `${100 / items.length}%`,
+            left: `${(activeIndex / items.length) * 100}%`,
+          }}
+        />
+      </div>
+
       <div className="max-w-2xl mx-auto flex items-center justify-around">
         {items.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.tab
+          const isMeusTab = item.tab === 'meus-plantoes'
+          const showBadge = isMeusTab && myShiftsCount > 0
+
           return (
             <button
               key={item.tab}
@@ -70,8 +101,14 @@ export function BottomNav() {
                   'w-[18px] h-[18px] transition-all duration-300 relative z-10',
                   isActive && 'stroke-[2.5px]'
                 )} />
+                {/* Badge notification count on Meus tab */}
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-badge-pulse">
+                    {myShiftsCount > 9 ? '9+' : myShiftsCount}
+                  </span>
+                )}
               </div>
-              {/* Tooltip on hover for desktop */}
+              {/* Label */}
               <span className={cn(
                 'text-[10px] mt-0.5 transition-all duration-300',
                 isActive ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'font-medium'

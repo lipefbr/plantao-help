@@ -94,6 +94,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   const [submittingRating, setSubmittingRating] = useState(false)
   const [showBuyConfirm, setShowBuyConfirm] = useState(false)
   const [countdown, setCountdown] = useState<string>('')
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
 
   const isFavorite = favoriteIds.includes(shiftId)
 
@@ -319,8 +320,8 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         </div>
       </div>
 
-      {/* Main Info Card */}
-      <Card className="rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
+      {/* Main Info Card - with gradient border */}
+      <Card className="gradient-border-card rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
         <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white relative overflow-hidden">
           {/* Parallax scrolling background effect */}
           <div className="absolute inset-0 animate-parallax-rotate opacity-10" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.1), transparent, rgba(255,255,255,0.05), transparent)', transformOrigin: 'center center' }} />
@@ -397,8 +398,18 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
             </span>
           </div>
           {shift.description && (
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-sm text-gray-600 leading-relaxed">{shift.description}</p>
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className={`expand-collapse ${descriptionExpanded ? 'expanded' : 'collapsed'}`}>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{shift.description}</p>
+              </div>
+              {shift.description.length > 120 && (
+                <button
+                  onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                  className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 hover:underline transition-colors"
+                >
+                  {descriptionExpanded ? 'Ver menos' : 'Ver mais'}
+                </button>
+              )}
             </div>
           )}
         </CardContent>
@@ -436,11 +447,13 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         <CardContent className="p-4">
           <p className="text-xs text-gray-400 font-medium mb-2 uppercase tracking-wide">Vendedor</p>
           <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 border-2 border-emerald-200 dark:border-emerald-800">
-              <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
-                {shift.seller.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="w-10 h-10 border-2 border-emerald-200 dark:border-emerald-800 animate-pulseRing">
+                <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
+                  {shift.seller.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 verified-stamp">
                 <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{shift.seller.name}</p>
