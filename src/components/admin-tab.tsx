@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore, type UserRole } from '@/lib/store'
-import { formatCurrency, formatDate, getRoleLabel, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -126,7 +126,7 @@ function DashboardPanel() {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-3">
-        {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className={cn('rounded-xl', i % 2 === 0 ? 'h-28' : 'h-24')} />)}
       </div>
     )
   }
@@ -137,14 +137,14 @@ function DashboardPanel() {
     <div className="space-y-4">
       {/* Key metrics */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-900">
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-emerald-400">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-800/30 rounded-lg flex items-center justify-center">
                 <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalUsers?.total || 0}</p>
+            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalUsers?.total || 0}</p>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">Usuários</p>
             <div className="flex gap-1 mt-1 flex-wrap">
               {stats.totalUsers?.byRole && Object.entries(stats.totalUsers.byRole).map(([role, count]: [string, any]) => (
@@ -156,14 +156,14 @@ function DashboardPanel() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900">
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-blue-400">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800/30 rounded-lg flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalShifts?.total || 0}</p>
+            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalShifts?.total || 0}</p>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">Plantões</p>
             <div className="flex gap-1 mt-1 flex-wrap">
               {stats.totalShifts?.byStatus && Object.entries(stats.totalShifts.byStatus).map(([status, count]: [string, any]) => (
@@ -175,27 +175,27 @@ function DashboardPanel() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-900">
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-amber-400">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-amber-100 dark:bg-amber-800/30 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
-            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{formatCurrency(stats.revenue || 0)}</p>
+            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{formatCurrency(stats.revenue || 0)}</p>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">Receita (plantões vendidos)</p>
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Média: {formatCurrency(stats.averageShiftValue || 0)}/plantão</p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-900">
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-purple-400">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-purple-100 dark:bg-purple-800/30 rounded-lg flex items-center justify-center">
                 <Trophy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalContests?.total || 0}</p>
+            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalContests?.total || 0}</p>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">Concursos</p>
             <div className="flex gap-1 mt-1">
               <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800">Ativos: {stats.totalContests?.byStatus?.ACTIVE || 0}</span>
@@ -315,7 +315,7 @@ function UsersPanel() {
       </div>
 
       {loading ? (
-        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className={cn('rounded-xl', i === 2 ? 'h-24' : 'h-20')} />)}</div>
       ) : users.length === 0 ? (
         <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum usuário encontrado</CardContent></Card>
       ) : (
@@ -857,16 +857,3 @@ function FeesPanel() {
   )
 }
 
-// ──────────────────────────────────────
-// HELPERS
-// ──────────────────────────────────────
-function getProfessionalTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    MEDICO: 'bg-blue-100 text-blue-800',
-    ENFERMEIRO: 'bg-purple-100 text-purple-800',
-    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
-    EMPRESA: 'bg-teal-100 text-teal-800',
-    ADMIN: 'bg-gray-100 text-gray-800',
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
-}

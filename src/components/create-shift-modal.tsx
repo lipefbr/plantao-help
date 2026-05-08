@@ -125,44 +125,44 @@ export function CreateShiftModal({ open, onClose, onCreated }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Título *</Label>
-            <Input placeholder="Plantão UTI Adulto" value={title} onChange={e => setTitle(e.target.value)} required className="rounded-lg" />
+            <Input placeholder="Plantão UTI Adulto" value={title} onChange={e => setTitle(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
           </div>
           <div className="space-y-2">
             <Label>Descrição</Label>
-            <Textarea placeholder="Detalhes do plantão..." value={description} onChange={e => setDescription(e.target.value)} className="rounded-lg resize-none" rows={2} />
+            <Textarea placeholder="Detalhes do plantão..." value={description} onChange={e => setDescription(e.target.value)} className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none" rows={2} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Data *</Label>
-              <Input type="date" value={date} onChange={e => setDate(e.target.value)} required className="rounded-lg" />
+              <Input type="date" value={date} onChange={e => setDate(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
             </div>
             <div className="space-y-2">
               <Label>Valor (R$) *</Label>
-              <Input type="number" step="0.01" placeholder="500.00" value={value} onChange={e => setValue(e.target.value)} required className="rounded-lg" />
+              <Input type="number" step="0.01" placeholder="500.00" value={value} onChange={e => setValue(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Início *</Label>
-              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="rounded-lg" />
+              <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
             </div>
             <div className="space-y-2">
               <Label>Fim *</Label>
-              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="rounded-lg" />
+              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Local *</Label>
-            <Input placeholder="Hospital XYZ - Ala A" value={location} onChange={e => setLocation(e.target.value)} required className="rounded-lg" />
+            <Input placeholder="Hospital XYZ - Ala A" value={location} onChange={e => setLocation(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Cidade *</Label>
-              <Input placeholder="São Paulo" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg" />
+              <Input placeholder="São Paulo" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" />
             </div>
             <div className="space-y-2">
               <Label>Estado *</Label>
-              <Input placeholder="SP" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg" maxLength={2} />
+              <Input placeholder="SP" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400" maxLength={2} />
             </div>
           </div>
           <div className="space-y-2">

@@ -12,7 +12,8 @@ import { MeusPlantoesTab } from '@/components/meus-plantoes-tab'
 import { PerfilTab } from '@/components/perfil-tab'
 import { AdminTab } from '@/components/admin-tab'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 function TabContent() {
   const { activeTab, selectedShiftId, setSelectedShiftId } = useAppStore()
@@ -34,7 +35,7 @@ function TabContent() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
+        transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'plantoes' && <PlantoesTab />}
@@ -45,6 +46,21 @@ function TabContent() {
       </motion.div>
     </AnimatePresence>
   )
+}
+
+function DeepLinkHandler() {
+  const { setSelectedShiftId, setActiveTab } = useAppStore()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const shiftId = searchParams.get('shift')
+    if (shiftId) {
+      setSelectedShiftId(shiftId)
+      setActiveTab('plantoes')
+    }
+  }, [searchParams, setSelectedShiftId, setActiveTab])
+
+  return null
 }
 
 export default function Home() {
@@ -63,6 +79,9 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <TopHeader />
       <AuthModal />
+      <Suspense fallback={null}>
+        <DeepLinkHandler />
+      </Suspense>
 
       <main className="pt-14 pb-20">
         <div className="max-w-2xl mx-auto px-4 py-4">

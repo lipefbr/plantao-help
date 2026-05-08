@@ -83,3 +83,51 @@ export function getStatusColor(status: string): string {
 export function renderStars(rating: number): string {
   return '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating))
 }
+
+export function getProfessionalTypeColor(type: string): string {
+  const colors: Record<string, string> = {
+    MEDICO: 'bg-blue-100 text-blue-800',
+    ENFERMEIRO: 'bg-purple-100 text-purple-800',
+    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
+    EMPRESA: 'bg-teal-100 text-teal-800',
+    ADMIN: 'bg-gray-100 text-gray-800',
+  }
+  return colors[type] || 'bg-gray-100 text-gray-800'
+}
+
+export function formatTimeAgo(date: string | Date): string {
+  const now = new Date()
+  const d = new Date(date)
+  const diffMs = now.getTime() - d.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 1) return 'agora'
+  if (diffMins < 60) return `${diffMins}min atrás`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h atrás`
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays < 7) return `${diffDays}d atrás`
+  return formatDate(date)
+}
+
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 11) {
+    return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`
+  }
+  return phone
+}
+
+export function shareShiftLink(shiftId: string): string {
+  // Returns a shareable link for the shift
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}?shift=${shiftId}`
+  }
+  return ''
+}
+
+export function shareToWhatsApp(text: string, link: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text + ' ' + link)}`
+}

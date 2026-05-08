@@ -45,7 +45,7 @@ export function TopHeader() {
             <div className="flex items-center justify-center w-8 h-8 bg-emerald-600 rounded-lg shadow-sm">
               <Stethoscope className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tracking-tight">
+            <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400 tracking-tight">
               Plantão<span className="text-emerald-500 dark:text-emerald-300">Help</span>
             </span>
           </div>
@@ -101,6 +101,7 @@ export function TopHeader() {
           </div>
         </div>
       </header>
+      <div className="fixed top-14 left-0 right-0 z-40 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 h-[2px]" />
       <NotificationCenter />
     </>
   )

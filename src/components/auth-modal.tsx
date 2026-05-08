@@ -186,7 +186,7 @@ export function AuthModal() {
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="space-y-2">
@@ -199,7 +199,7 @@ export function AuthModal() {
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required
-                  className="rounded-lg pr-10"
+                  className="rounded-lg pr-10 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                 />
                 <button
                   type="button"
@@ -239,7 +239,7 @@ export function AuthModal() {
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 required
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="space-y-2">
@@ -251,7 +251,7 @@ export function AuthModal() {
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 required
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="space-y-2">
@@ -265,7 +265,7 @@ export function AuthModal() {
                   onChange={(e) => setRegPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="rounded-lg pr-10"
+                  className="rounded-lg pr-10 shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                 />
                 <button
                   type="button"
@@ -297,7 +297,7 @@ export function AuthModal() {
                 placeholder="000.000.000-00"
                 value={regDocument}
                 onChange={(e) => setRegDocument(e.target.value)}
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="space-y-2">
@@ -307,7 +307,7 @@ export function AuthModal() {
                 placeholder={`Número do ${getProfessionalDocLabel()}`}
                 value={regProfessionalDoc}
                 onChange={(e) => setRegProfessionalDoc(e.target.value)}
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="space-y-2">
@@ -317,7 +317,7 @@ export function AuthModal() {
                 placeholder="(00) 00000-0000"
                 value={regPhone}
                 onChange={(e) => setRegPhone(e.target.value)}
-                className="rounded-lg"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -328,7 +328,7 @@ export function AuthModal() {
                   placeholder="São Paulo"
                   value={regCity}
                   onChange={(e) => setRegCity(e.target.value)}
-                  className="rounded-lg"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                 />
               </div>
               <div className="space-y-2">
@@ -338,7 +338,7 @@ export function AuthModal() {
                   placeholder="SP"
                   value={regState}
                   onChange={(e) => setRegState(e.target.value)}
-                  className="rounded-lg"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                   maxLength={2}
                 />
               </div>
@@ -351,7 +351,7 @@ export function AuthModal() {
                   placeholder="Hospital XYZ"
                   value={regCompanyName}
                   onChange={(e) => setRegCompanyName(e.target.value)}
-                  className="rounded-lg"
+                  className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                 />
               </div>
             )}
@@ -362,7 +362,7 @@ export function AuthModal() {
                 placeholder="Conte um pouco sobre você..."
                 value={regBio}
                 onChange={(e) => setRegBio(e.target.value)}
-                className="rounded-lg resize-none"
+                className="rounded-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
                 rows={2}
               />
             </div>

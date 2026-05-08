@@ -156,6 +156,26 @@ export async function PUT(
         },
       })
 
+      // Create notification for the seller
+      await db.notification.create({
+        data: {
+          userId: shift.sellerId,
+          title: 'Plantão Vendido!',
+          message: `Seu plantão '${shift.title}' foi comprado por ${buyer.name}`,
+          type: 'SUCCESS',
+        },
+      })
+
+      // Create notification for the buyer
+      await db.notification.create({
+        data: {
+          userId: buyerId,
+          title: 'Plantão Comprado!',
+          message: `Você comprou o plantão '${shift.title}'`,
+          type: 'SUCCESS',
+        },
+      })
+
       return NextResponse.json(updatedShift)
     }
 
@@ -165,6 +185,18 @@ export async function PUT(
           { error: 'Plantão já está cancelado' },
           { status: 400 }
         )
+      }
+
+      // If shift had a buyer, notify them before cancelling
+      if (shift.buyerId) {
+        await db.notification.create({
+          data: {
+            userId: shift.buyerId,
+            title: 'Plantão Cancelado',
+            message: `O plantão '${shift.title}' foi cancelado pelo vendedor`,
+            type: 'WARNING',
+          },
+        })
       }
 
       const updatedShift = await db.shift.update({

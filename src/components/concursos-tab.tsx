@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore, type UserRole } from '@/lib/store'
-import { formatDate, getRoleLabel, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+import { formatDate, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Trophy, MapPin, Calendar, ExternalLink, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ContestDetail } from '@/components/contest-detail'
 
 interface ContestItem {
   id: string
@@ -31,7 +32,7 @@ interface ContestItem {
 }
 
 export function ConcursosTab() {
-  const { user } = useAppStore()
+  const { user, selectedContestId, setSelectedContestId } = useAppStore()
   const [contests, setContests] = useState<ContestItem[]>([])
   const [loading, setLoading] = useState(true)
   const [city, setCity] = useState(user?.city || '')
@@ -64,6 +65,16 @@ export function ConcursosTab() {
   useEffect(() => {
     loadContests()
   }, [loadContests])
+
+  // If a contest is selected, show contest detail instead
+  if (selectedContestId) {
+    return (
+      <ContestDetail
+        contestId={selectedContestId}
+        onBack={() => setSelectedContestId(null)}
+      />
+    )
+  }
 
   const clearFilters = () => {
     setCity('')
@@ -155,13 +166,13 @@ export function ConcursosTab() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+            <Skeleton key={i} className="h-32 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : contests.length === 0 ? (
-        <Card className="rounded-xl">
+        <Card className="rounded-2xl bg-gray-50 border-0">
           <CardContent className="p-8 text-center">
-            <Trophy className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+            <Trophy className="w-12 h-12 mx-auto text-gray-300 mb-3 animate-pulse" />
             <p className="text-gray-600 font-medium">Nenhum concurso encontrado</p>
             <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros de busca</p>
           </CardContent>
@@ -169,7 +180,11 @@ export function ConcursosTab() {
       ) : (
         <div className="space-y-3">
           {contests.map((contest) => (
-            <Card key={contest.id} className="rounded-xl shadow-sm border-0 hover:shadow-md transition-shadow">
+            <Card
+              key={contest.id}
+              className="rounded-xl shadow-sm border-0 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
+              onClick={() => setSelectedContestId(contest.id)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -217,14 +232,4 @@ export function ConcursosTab() {
       )}
     </div>
   )
-}
-
-function getProfessionalTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    MEDICO: 'bg-blue-100 text-blue-800',
-    ENFERMEIRO: 'bg-purple-100 text-purple-800',
-    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
-    EMPRESA: 'bg-teal-100 text-teal-800',
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +40,7 @@ export function HomeTab() {
   const [loading, setLoading] = useState(true)
   const [userRating, setUserRating] = useState<number>(0)
   const [myShiftsCount, setMyShiftsCount] = useState(0)
+  const [boughtShiftsCount, setBoughtShiftsCount] = useState(0)
 
   useEffect(() => {
     loadFeaturedShifts()
@@ -49,6 +50,7 @@ export function HomeTab() {
     if (user) {
       loadUserRating()
       loadMyShiftsCount()
+      loadBoughtShiftsCount()
     }
   }, [user])
 
@@ -92,6 +94,19 @@ export function HomeTab() {
     }
   }
 
+  const loadBoughtShiftsCount = async () => {
+    if (!user) return
+    try {
+      const res = await fetch(`/api/shifts?buyerId=${user.id}&status=SOLD`)
+      if (res.ok) {
+        const data = await res.json()
+        setBoughtShiftsCount(data.length)
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
   const handleShiftClick = (shiftId: string) => {
     setSelectedShiftId(shiftId)
     setActiveTab('plantoes')
@@ -103,9 +118,17 @@ export function HomeTab() {
       <div className="space-y-6">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden">
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full [animation:shimmer_3s_infinite]" />
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
           <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
           <div className="absolute top-1/2 right-4 w-20 h-20 bg-white/5 rounded-full" />
+          {/* Decorative dots pattern */}
+          <div className="absolute bottom-4 right-4 grid grid-cols-4 gap-1.5 opacity-20">
+            {[...Array(16)].map((_, i) => (
+              <div key={i} className="w-1.5 h-1.5 bg-white rounded-full" />
+            ))}
+          </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -122,7 +145,7 @@ export function HomeTab() {
                 setAuthMode('login')
                 setShowAuthModal(true)
               }}
-              className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold rounded-lg shadow-lg"
+              className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold rounded-lg h-12 text-base shadow-xl"
             >
               Entrar agora
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -161,7 +184,33 @@ export function HomeTab() {
           </div>
         </div>
 
-        {/* Features */}
+        {/* How it Works */}
+        <div>
+          <h3 className="text-base font-semibold text-gray-800 mb-3">Como funciona?</h3>
+          <div className="space-y-3">
+            {[
+              { step: '1', icon: '📋', title: 'Cadastre-se', desc: 'Crie sua conta com CRM/COREN e aguarde aprovação', color: 'from-emerald-50 to-white' },
+              { step: '2', icon: '📅', title: 'Publique ou Busque', desc: 'Anuncie seus plantões ou encontre oportunidades', color: 'from-teal-50 to-white' },
+              { step: '3', icon: '🤝', title: 'Feche o Negócio', desc: 'Compre ou venda plantões com segurança', color: 'from-amber-50 to-white' },
+              { step: '4', icon: '⭐', title: 'Avalie', desc: 'Avalie a experiência e fortaleça a comunidade', color: 'from-purple-50 to-white' },
+            ].map((item) => (
+              <Card key={item.step} className={`rounded-xl border-0 shadow-sm bg-gradient-to-r ${item.color}`}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                    <span className="text-lg">{item.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800">{item.title}</p>
+                    <p className="text-xs text-gray-500">{item.desc}</p>
+                  </div>
+                  <span className="text-2xl font-black text-emerald-200">{item.step}</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Features Grid */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white">
             <CardContent className="p-4 text-center">
@@ -193,20 +242,41 @@ export function HomeTab() {
           </Card>
         </div>
 
+        {/* Trust Bar */}
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xl font-bold">{shifts.length}+</p>
+                <p className="text-[10px] text-emerald-100">Plantões Ativos</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold">100%</p>
+                <p className="text-[10px] text-emerald-100">Verificados</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold">24h</p>
+                <p className="text-[10px] text-emerald-100">Suporte</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Recent shifts preview */}
         <div>
           <h3 className="text-base font-semibold text-gray-800 mb-3">Plantões em destaque</h3>
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
+                <Skeleton key={i} className="h-24 rounded-xl animate-pulse" />
               ))}
             </div>
           ) : shifts.length === 0 ? (
-            <Card className="rounded-xl">
-              <CardContent className="p-6 text-center text-gray-500">
-                <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                <p className="text-sm">Nenhum plantão disponível no momento</p>
+            <Card className="rounded-2xl bg-gray-50 border-0">
+              <CardContent className="p-8 text-center">
+                <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
+                <p className="text-sm text-gray-500">Nenhum plantão disponível no momento</p>
+                <p className="text-xs text-gray-400 mt-1">Novos plantões são adicionados frequentemente!</p>
               </CardContent>
             </Card>
           ) : (
@@ -214,7 +284,7 @@ export function HomeTab() {
               {shifts.map((shift) => (
                 <Card
                   key={shift.id}
-                  className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                  className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
                   onClick={() => handleShiftClick(shift.id)}
                 >
                   <CardContent className="p-4">
@@ -232,7 +302,7 @@ export function HomeTab() {
                       </div>
                       <div className="text-right ml-3">
                         <p className="text-emerald-700 font-bold text-sm">{formatCurrency(shift.value)}</p>
-                        <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(shift.professionalType))}>
+                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                           {getRoleLabel(shift.professionalType)}
                         </span>
                       </div>
@@ -313,32 +383,41 @@ export function HomeTab() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <Card className="rounded-xl border-0 shadow-sm">
-          <CardContent className="p-3 text-center">
-            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Calendar className="w-4 h-4 text-emerald-600" />
+          <CardContent className="p-2.5 text-center">
+            <div className="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <p className="text-lg font-bold text-gray-800">{shifts.length}</p>
-            <p className="text-[10px] text-gray-500">Disponíveis</p>
+            <p className="text-base font-bold text-gray-800">{shifts.length}</p>
+            <p className="text-[9px] text-gray-500">Disponíveis</p>
           </CardContent>
         </Card>
         <Card className="rounded-xl border-0 shadow-sm">
-          <CardContent className="p-3 text-center">
-            <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Briefcase className="w-4 h-4 text-teal-600" />
+          <CardContent className="p-2.5 text-center">
+            <div className="w-7 h-7 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Briefcase className="w-3.5 h-3.5 text-teal-600" />
             </div>
-            <p className="text-lg font-bold text-gray-800">{myShiftsCount}</p>
-            <p className="text-[10px] text-gray-500">Meus Plantões</p>
+            <p className="text-base font-bold text-gray-800">{myShiftsCount}</p>
+            <p className="text-[9px] text-gray-500">Publicados</p>
           </CardContent>
         </Card>
         <Card className="rounded-xl border-0 shadow-sm">
-          <CardContent className="p-3 text-center">
-            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-1">
-              <Star className="w-4 h-4 text-amber-600" />
+          <CardContent className="p-2.5 text-center">
+            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <DollarSign className="w-3.5 h-3.5 text-blue-600" />
             </div>
-            <p className="text-lg font-bold text-gray-800">{userRating > 0 ? userRating.toFixed(1) : '-'}</p>
-            <p className="text-[10px] text-gray-500">Avaliação</p>
+            <p className="text-base font-bold text-gray-800">{boughtShiftsCount}</p>
+            <p className="text-[9px] text-gray-500">Comprados</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl border-0 shadow-sm">
+          <CardContent className="p-2.5 text-center">
+            <div className="w-7 h-7 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-1">
+              <Star className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+            <p className="text-base font-bold text-gray-800">{userRating > 0 ? userRating.toFixed(1) : '-'}</p>
+            <p className="text-[9px] text-gray-500">Avaliação</p>
           </CardContent>
         </Card>
       </div>
@@ -396,14 +475,15 @@ export function HomeTab() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
+              <Skeleton key={i} className="h-24 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : shifts.length === 0 ? (
-          <Card className="rounded-xl">
-            <CardContent className="p-6 text-center text-gray-500">
-              <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-              <p className="text-sm">Nenhum plantão disponível</p>
+          <Card className="rounded-2xl bg-gray-50 border-0">
+            <CardContent className="p-8 text-center">
+              <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
+              <p className="text-sm text-gray-500">Nenhum plantão disponível</p>
+              <p className="text-xs text-gray-400 mt-1">Novos plantões aparecem em breve!</p>
             </CardContent>
           </Card>
         ) : (
@@ -411,7 +491,7 @@ export function HomeTab() {
             {shifts.map((shift) => (
               <Card
                 key={shift.id}
-                className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
                 onClick={() => handleShiftClick(shift.id)}
               >
                 <CardContent className="p-4">
@@ -443,7 +523,7 @@ export function HomeTab() {
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-emerald-700 font-bold text-sm">{formatCurrency(shift.value)}</p>
-                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(shift.professionalType))}>
+                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                         {getRoleLabel(shift.professionalType)}
                       </span>
                     </div>
@@ -456,14 +536,4 @@ export function HomeTab() {
       </div>
     </div>
   )
-}
-
-function getProfessionalTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    MEDICO: 'bg-blue-100 text-blue-800',
-    ENFERMEIRO: 'bg-purple-100 text-purple-800',
-    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
-    EMPRESA: 'bg-teal-100 text-teal-800',
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
 }

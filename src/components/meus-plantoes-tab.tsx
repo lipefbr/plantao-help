@@ -106,7 +106,7 @@ export function MeusPlantoesTab() {
 
   const ShiftCard = ({ shift, type }: { shift: ShiftItem; type: 'published' | 'bought' }) => (
     <Card
-      className="rounded-xl shadow-sm border-0 hover:shadow-md transition-shadow cursor-pointer"
+      className="rounded-xl shadow-sm border-0 hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
       onClick={() => handleShiftClick(shift.id)}
     >
       <CardContent className="p-4">
@@ -162,7 +162,7 @@ export function MeusPlantoesTab() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} className="h-24 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
@@ -178,10 +178,11 @@ export function MeusPlantoesTab() {
 
           <TabsContent value="published" className="mt-4">
             {publishedShifts.length === 0 ? (
-              <Card className="rounded-xl">
+              <Card className="rounded-2xl bg-gray-50 border-0">
                 <CardContent className="p-8 text-center">
-                  <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                  <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
                   <p className="text-sm text-gray-500">Você ainda não publicou nenhum plantão</p>
+                  <p className="text-xs text-gray-400 mt-1">Publique seu primeiro plantão para começar!</p>
                 </CardContent>
               </Card>
             ) : (
@@ -195,10 +196,11 @@ export function MeusPlantoesTab() {
 
           <TabsContent value="bought" className="mt-4">
             {boughtShifts.length === 0 ? (
-              <Card className="rounded-xl">
+              <Card className="rounded-2xl bg-gray-50 border-0">
                 <CardContent className="p-8 text-center">
-                  <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                  <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
                   <p className="text-sm text-gray-500">Você ainda não comprou nenhum plantão</p>
+                  <p className="text-xs text-gray-400 mt-1">Explore os plantões disponíveis no marketplace!</p>
                 </CardContent>
               </Card>
             ) : (

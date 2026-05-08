@@ -134,6 +134,7 @@
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -145,6 +146,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.5 0.1 166.113);
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.4 0.03 166.113);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0.05 166.113);
+}
 
 /* Smooth transitions */
 * {
@@ -154,4 +161,32 @@
 /* Bottom nav safe area */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Shimmer animation for hero section */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible styles */
+*:focus-visible {
+  outline: 2px solid oklch(0.508 0.118 165.612);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection color */
+::selection {
+  background: oklch(0.845 0.143 164.978 / 0.3);
+  color: inherit;
 }

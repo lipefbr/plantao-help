@@ -47,11 +47,11 @@ export function BottomNav() {
               )}
             >
               {isActive && (
-                <span className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-500 rounded-full" />
+                <span className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 bg-emerald-500 rounded-full animate-bounce" />
               )}
               <div className={cn(
                 'flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300',
-                isActive && 'bg-emerald-50 shadow-sm'
+                isActive && 'bg-emerald-100 shadow-sm scale-110'
               )}>
                 <Icon className={cn(
                   'w-[18px] h-[18px] transition-all duration-300',

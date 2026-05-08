@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state')
     const professionalType = searchParams.get('professionalType')
     const status = searchParams.get('status') || 'AVAILABLE'
-    const minPrice = searchParams.get('minPrice')
-    const maxPrice = searchParams.get('maxPrice')
+    const minPrice = searchParams.get('minPrice') || searchParams.get('minValue')
+    const maxPrice = searchParams.get('maxPrice') || searchParams.get('maxValue')
+    const sortBy = searchParams.get('sortBy')
     const search = searchParams.get('search')
     const sellerId = searchParams.get('sellerId')
     const buyerId = searchParams.get('buyerId')
@@ -61,11 +62,11 @@ export async function GET(request: NextRequest) {
         },
         hospital: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: sortBy === 'price_asc' ? { value: 'asc' } : sortBy === 'price_desc' ? { value: 'desc' } : { createdAt: 'desc' },
     })
 
     // Calculate average rating for each seller
-    const shiftsRatings = await Promise.all(
+    let shiftsRatings = await Promise.all(
       shifts.map(async (shift) => {
         const sellerRatings = await db.rating.findMany({
           where: { receiverId: shift.sellerId },
@@ -86,6 +87,11 @@ export async function GET(request: NextRequest) {
         }
       })
     )
+
+    // Sort by rating if requested (must be done after fetching ratings)
+    if (sortBy === 'rating') {
+      shiftsRatings = [...shiftsRatings].sort((a, b) => b.seller.avgRating - a.seller.avgRating)
+    }
 
     return NextResponse.json(shiftsRatings)
   } catch (error) {

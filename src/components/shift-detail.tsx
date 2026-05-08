@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,9 +11,20 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import {
   ArrowLeft, MapPin, Clock, DollarSign, Star, Building2,
-  User, Phone, Shield, Loader2, MessageSquare, Heart
+  User, Phone, Shield, Loader2, MessageSquare, Heart, Share2
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { shareToWhatsApp, shareShiftLink } from '@/lib/utils'
 
 interface ShiftDetail {
   id: string
@@ -81,6 +92,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   const [ratingStars, setRatingStars] = useState(5)
   const [ratingComment, setRatingComment] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
+  const [showBuyConfirm, setShowBuyConfirm] = useState(false)
 
   const isFavorite = favoriteIds.includes(shiftId)
 
@@ -217,11 +229,11 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Skeleton className="w-8 h-8 rounded-full" />
-          <Skeleton className="h-6 w-32" />
+          <Skeleton className="w-8 h-8 rounded-xl" />
+          <Skeleton className="h-6 w-32 rounded-xl" />
         </div>
         <Skeleton className="h-40 rounded-xl" />
-        <Skeleton className="h-20 rounded-xl" />
+        <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-20 rounded-xl" />
       </div>
     )
@@ -249,24 +261,37 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
           </button>
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 truncate">Detalhes do Plantão</h2>
         </div>
-        <button
-          onClick={handleToggleFavorite}
-          className={cn(
-            'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300',
-            isFavorite
-              ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
-              : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
-          )}
-        >
-          <Heart className={cn(
-            'w-4.5 h-4.5 transition-all duration-300',
-            isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-400'
-          )} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (!shift) return
+              const text = `🏥 Plantão: ${shift.title}\n📍 ${shift.city}/${shift.state}\n📅 ${formatDate(shift.date)}\n💰 ${formatCurrency(shift.value)}\n\nDisponível no Plantão Help!`
+              const link = shareShiftLink(shiftId)
+              window.open(shareToWhatsApp(text, link), '_blank')
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Share2 className="w-4 h-4 text-gray-400" />
+          </button>
+          <button
+            onClick={handleToggleFavorite}
+            className={cn(
+              'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300',
+              isFavorite
+                ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+            )}
+          >
+            <Heart className={cn(
+              'w-4.5 h-4.5 transition-all duration-300',
+              isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-400'
+            )} />
+          </button>
+        </div>
       </div>
 
       {/* Main Info Card */}
-      <Card className="rounded-xl shadow-sm border-0 overflow-hidden">
+      <Card className="rounded-xl shadow-sm border-0 overflow-hidden border-l-4 border-l-emerald-400">
         <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white">
           <h3 className="text-xl font-bold">{shift.title}</h3>
           <p className="text-emerald-100 text-sm mt-1">{shift.location}</p>
@@ -294,7 +319,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-gray-400" />
-            <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(shift.professionalType))}>
+            <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
               {getRoleLabel(shift.professionalType)}
             </span>
           </div>
@@ -344,7 +369,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm text-gray-800">{shift.seller.name}</p>
               <div className="flex items-center gap-2">
-                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(shift.seller.role))}>
+                <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.seller.role))}>
                   {getRoleLabel(shift.seller.role)}
                 </span>
                 {shift.seller.professionalDoc && (
@@ -375,7 +400,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               </Avatar>
               <div>
                 <p className="font-medium text-sm text-gray-800">{shift.buyer.name}</p>
-                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(shift.buyer.role))}>
+                <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.buyer.role))}>
                   {getRoleLabel(shift.buyer.role)}
                 </span>
               </div>
@@ -469,11 +494,32 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
         </Card>
       )}
 
+      {/* Buy Confirmation Dialog */}
+      <AlertDialog open={showBuyConfirm} onOpenChange={setShowBuyConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Compra</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja comprar o plantão '{shift?.title}' por {shift ? formatCurrency(shift.value) : ''}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBuy}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Confirmar Compra
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Action Buttons */}
       <div className="space-y-2">
         {canBuy && (
           <Button
-            onClick={handleBuy}
+            onClick={() => setShowBuyConfirm(true)}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 text-base font-semibold"
             disabled={buying}
           >
@@ -508,13 +554,3 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   )
 }
 
-function getProfessionalTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    MEDICO: 'bg-blue-100 text-blue-800',
-    ENFERMEIRO: 'bg-purple-100 text-purple-800',
-    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
-    EMPRESA: 'bg-teal-100 text-teal-800',
-    ADMIN: 'bg-gray-100 text-gray-800',
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
-}

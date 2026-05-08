@@ -1,6 +1,34 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const contest = await db.contest.findUnique({
+      where: { id },
+    })
+
+    if (!contest) {
+      return NextResponse.json(
+        { error: 'Concurso não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(contest)
+  } catch (error) {
+    console.error('Get contest error:', error)
+    return NextResponse.json(
+      { error: 'Erro ao buscar concurso' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

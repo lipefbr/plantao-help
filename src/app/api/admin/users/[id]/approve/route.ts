@@ -71,6 +71,27 @@ export async function PUT(
       },
     })
 
+    // Create notification for the user
+    if (status === 'APPROVED') {
+      await db.notification.create({
+        data: {
+          userId: id,
+          title: 'Cadastro Aprovado!',
+          message: 'Seu cadastro no Plantão Help foi aprovado. Bem-vindo(a)!',
+          type: 'SUCCESS',
+        },
+      })
+    } else if (status === 'REJECTED') {
+      await db.notification.create({
+        data: {
+          userId: id,
+          title: 'Cadastro Rejeitado',
+          message: 'Infelizmente seu cadastro não foi aprovado. Entre em contato para mais informações.',
+          type: 'WARNING',
+        },
+      })
+    }
+
     return NextResponse.json(updatedUser)
   } catch (error) {
     console.error('Approve user error:', error)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star } from 'lucide-react'
+import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ShiftItem {
@@ -51,6 +51,9 @@ export function PlantoesTab() {
   const [city, setCity] = useState(user?.city || '')
   const [state, setState] = useState(user?.state || '')
   const [professionalType, setProfessionalType] = useState('')
+  const [minValue, setMinValue] = useState('')
+  const [maxValue, setMaxValue] = useState('')
+  const [sortBy, setSortBy] = useState('recent')
   const [showFilters, setShowFilters] = useState(false)
   const [showCreateShift, setShowCreateShift] = useState(false)
 
@@ -63,6 +66,9 @@ export function PlantoesTab() {
       if (city) params.set('city', city)
       if (state) params.set('state', state)
       if (professionalType) params.set('professionalType', professionalType)
+      if (minValue) params.set('minValue', minValue)
+      if (maxValue) params.set('maxValue', maxValue)
+      if (sortBy && sortBy !== 'recent') params.set('sortBy', sortBy)
 
       const res = await fetch(`/api/shifts?${params.toString()}`)
       if (res.ok) {
@@ -74,7 +80,7 @@ export function PlantoesTab() {
     } finally {
       setLoading(false)
     }
-  }, [search, city, state, professionalType])
+  }, [search, city, state, professionalType, minValue, maxValue, sortBy])
 
   useEffect(() => {
     loadShifts()
@@ -98,9 +104,13 @@ export function PlantoesTab() {
     setState('')
     setProfessionalType('')
     setSearch('')
+    setMinValue('')
+    setMaxValue('')
+    setSortBy('recent')
   }
 
-  const hasActiveFilters = city || state || professionalType
+  const activeFilterCount = [city, state, professionalType, minValue, maxValue].filter(Boolean).length
+  const hasActiveFilters = activeFilterCount > 0
 
   return (
     <div className="space-y-4">
@@ -115,17 +125,40 @@ export function PlantoesTab() {
             className="pl-9 rounded-xl bg-white border-gray-200"
           />
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className={cn(
-            'rounded-xl h-10 w-10 shrink-0',
-            showFilters ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white'
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="icon"
+            className={cn(
+              'rounded-xl h-10 w-10 shrink-0',
+              showFilters ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white'
+            )}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+          </Button>
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
           )}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-        </Button>
+        </div>
+      </div>
+
+      {/* Sort Select */}
+      <div className="flex items-center gap-2">
+        <ArrowUpDown className="w-4 h-4 text-gray-400 shrink-0" />
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="rounded-lg h-9 text-sm w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Mais recentes</SelectItem>
+            <SelectItem value="price_asc">Menor preço</SelectItem>
+            <SelectItem value="price_desc">Maior preço</SelectItem>
+            <SelectItem value="rating">Melhor avaliação</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Filters */}
@@ -178,6 +211,28 @@ export function PlantoesTab() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Valor mín. (R$)</label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={minValue}
+                  onChange={(e) => setMinValue(e.target.value)}
+                  className="rounded-lg text-sm h-9"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Valor máx. (R$)</label>
+                <Input
+                  type="number"
+                  placeholder="9999"
+                  value={maxValue}
+                  onChange={(e) => setMaxValue(e.target.value)}
+                  className="rounded-lg text-sm h-9"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -193,15 +248,22 @@ export function PlantoesTab() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
+            <Skeleton key={i} className="h-28 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : shifts.length === 0 ? (
-        <Card className="rounded-xl">
+        <Card className="rounded-2xl bg-gray-50 border-0">
           <CardContent className="p-8 text-center">
-            <Search className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+            <Search className="w-12 h-12 mx-auto text-gray-300 mb-3 animate-pulse" />
             <p className="text-gray-600 font-medium">Nenhum plantão encontrado</p>
             <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros de busca</p>
+            <Button
+              variant="outline"
+              className="mt-3 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+              onClick={clearFilters}
+            >
+              Limpar filtros
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -209,7 +271,7 @@ export function PlantoesTab() {
           {shifts.map((shift) => (
             <Card
               key={shift.id}
-              className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400"
               onClick={() => handleShiftClick(shift.id)}
             >
               <CardContent className="p-4">
@@ -244,7 +306,7 @@ export function PlantoesTab() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-emerald-700 font-bold">{formatCurrency(shift.value)}</p>
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block', getProfessionalTypeColor(shift.professionalType))}>
+                    <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                       {getRoleLabel(shift.professionalType)}
                     </span>
                     <div className="mt-1">
@@ -279,16 +341,6 @@ export function PlantoesTab() {
       )}
     </div>
   )
-}
-
-function getProfessionalTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    MEDICO: 'bg-blue-100 text-blue-800',
-    ENFERMEIRO: 'bg-purple-100 text-purple-800',
-    TECNICO_ENFERMAGEM: 'bg-orange-100 text-orange-800',
-    EMPRESA: 'bg-teal-100 text-teal-800',
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800'
 }
 
 function getShiftStatusColor(status: string): string {

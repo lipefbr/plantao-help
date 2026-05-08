@@ -46,6 +46,10 @@ interface AppState {
   selectedShiftId: string | null
   setSelectedShiftId: (id: string | null) => void
 
+  // Selected contest for detail view
+  selectedContestId: string | null
+  setSelectedContestId: (id: string | null) => void
+
   // Admin sub-tab
   adminSubTab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard'
   setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard') => void
@@ -92,6 +96,10 @@ export const useAppStore = create<AppState>()(
       // Selected shift
       selectedShiftId: null,
       setSelectedShiftId: (id) => set({ selectedShiftId: id }),
+
+      // Selected contest
+      selectedContestId: null,
+      setSelectedContestId: (id) => set({ selectedContestId: id }),
 
       // Admin sub-tab
       adminSubTab: 'dashboard',
