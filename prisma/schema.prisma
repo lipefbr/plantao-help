@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  MEDICO
+  ENFERMEIRO
+  TECNICO_ENFERMAGEM
+  EMPRESA
+  ADMIN
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ShiftStatus {
+  AVAILABLE
+  SOLD
+  CANCELLED
+}
+
+enum ContestStatus {
+  ACTIVE
+  CLOSED
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  password            String
+  name                String
+  role                UserRole
+  registrationStatus  RegistrationStatus  @default(PENDING)
+  document            String?             // CPF or CNPJ
+  professionalDoc     String?             // CRM, COREN, etc.
+  phone               String?
+  city                String?
+  state               String?
+  avatar              String?
+  bio                 String?
+  companyName         String?             // For EMPRESA role
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  shiftsPosted     Shift[]     @relation("ShiftSeller")
+  shiftsBought     Shift[]     @relation("ShiftBuyer")
+  ratingsGiven     Rating[]    @relation("RatingRater")
+  ratingsReceived  Rating[]    @relation("RatingReceiver")
+}
+
+model Hospital {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  city      String
+  state     String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shifts Shift[]
+}
+
+model Shift {
+  id                String      @id @default(cuid())
+  title             String
+  description       String?
+  date              DateTime
+  startTime         String      // HH:mm format
+  endTime           String      // HH:mm format
+  value             Float
+  location          String
+  city              String
+  state             String
+  status            ShiftStatus @default(AVAILABLE)
+  professionalType  UserRole    // Which professional type can take this shift
+  sellerId          String
+  buyerId           String?
+  hospitalId        String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  seller    User      @relation("ShiftSeller", fields: [sellerId], references: [id])
+  buyer     User?     @relation("ShiftBuyer", fields: [buyerId], references: [id])
+  hospital  Hospital? @relation(fields: [hospitalId], references: [id])
+  ratings   Rating[]
+}
+
+model Rating {
+  id          String   @id @default(cuid())
+  shiftId     String
+  raterId     String
+  receiverId  String
+  stars       Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  shift     Shift @relation(fields: [shiftId], references: [id])
+  rater     User  @relation("RatingRater", fields: [raterId], references: [id])
+  receiver  User  @relation("RatingReceiver", fields: [receiverId], references: [id])
+
+  @@unique([shiftId, raterId])
+}
+
+model Contest {
+  id                String         @id @default(cuid())
+  title             String
+  description       String?
+  professionalType  UserRole       // Which professional type this contest is for
+  city              String
+  state             String
+  deadline          DateTime?
+  link              String?
+  status            ContestStatus  @default(ACTIVE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model RegistrationFee {
+  id                String   @id @default(cuid())
+  professionalType  UserRole @unique
+  value             Float
+  description       String?
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  city      String
+  state     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
