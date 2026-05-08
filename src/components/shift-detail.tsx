@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import {
   ArrowLeft, MapPin, Clock, DollarSign, Star, Building2,
-  User, Phone, Shield, Loader2, MessageSquare
+  User, Phone, Shield, Loader2, MessageSquare, Heart
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -72,7 +72,7 @@ interface Props {
 }
 
 export function ShiftDetail({ shiftId, onBack }: Props) {
-  const { user, setShowAuthModal, setAuthMode } = useAppStore()
+  const { user, setShowAuthModal, setAuthMode, favoriteIds, toggleFavorite } = useAppStore()
   const [shift, setShift] = useState<ShiftDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [buying, setBuying] = useState(false)
@@ -82,9 +82,34 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   const [ratingComment, setRatingComment] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
 
+  const isFavorite = favoriteIds.includes(shiftId)
+
   useEffect(() => {
     loadShift()
   }, [shiftId])
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      setAuthMode('login')
+      setShowAuthModal(true)
+      return
+    }
+    try {
+      if (isFavorite) {
+        await fetch(`/api/favorites/${shiftId}?userId=${user.id}`, { method: 'DELETE' })
+      } else {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, shiftId }),
+        })
+      }
+      toggleFavorite(shiftId)
+      toast.success(isFavorite ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
+    } catch {
+      toast.error('Erro ao atualizar favoritos')
+    }
+  }
 
   const loadShift = async () => {
     setLoading(true)
@@ -214,14 +239,30 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 truncate">Detalhes do Plantão</h2>
+        </div>
         <button
-          onClick={onBack}
-          className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+          onClick={handleToggleFavorite}
+          className={cn(
+            'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300',
+            isFavorite
+              ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+              : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+          )}
         >
-          <ArrowLeft className="w-4 h-4 text-gray-600" />
+          <Heart className={cn(
+            'w-4.5 h-4.5 transition-all duration-300',
+            isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-400'
+          )} />
         </button>
-        <h2 className="text-lg font-bold text-gray-800 truncate">Detalhes do Plantão</h2>
       </div>
 
       {/* Main Info Card */}

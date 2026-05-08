@@ -26,9 +26,13 @@ import {
 } from '@/components/ui/dialog'
 import {
   Shield, Users, Building2, Trophy, MapPin, DollarSign,
-  Check, X, Plus, Edit, Trash2, Loader2, Search
+  Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
+  Calendar, Star
 } from 'lucide-react'
 import { toast } from 'sonner'
+
+const adminSubTabs = ['dashboard', 'users', 'hospitals', 'contests', 'locations', 'fees'] as const
+type AdminSubTab = typeof adminSubTabs[number]
 
 export function AdminTab() {
   const { adminSubTab, setAdminSubTab, user } = useAppStore()
@@ -36,18 +40,22 @@ export function AdminTab() {
   if (user?.role !== 'ADMIN') {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
-        <Shield className="w-12 h-12 text-gray-300 mb-3" />
-        <p className="text-gray-500">Acesso restrito a administradores</p>
+        <Shield className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+        <p className="text-gray-500 dark:text-gray-400">Acesso restrito a administradores</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-bold text-gray-800">Painel Administrativo</h2>
+      <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Painel Administrativo</h2>
 
-      <Tabs value={adminSubTab} onValueChange={(v) => setAdminSubTab(v as typeof adminSubTab)} className="w-full">
-        <TabsList className="w-full bg-gray-100 rounded-xl p-1 flex flex-wrap h-auto gap-1">
+      <Tabs value={adminSubTab} onValueChange={(v) => setAdminSubTab(v as AdminSubTab)} className="w-full">
+        <TabsList className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-1 flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="dashboard" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+            <TrendingUp className="w-3.5 h-3.5 mr-1" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="users" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
             <Users className="w-3.5 h-3.5 mr-1" />
             Usuários
@@ -70,6 +78,9 @@ export function AdminTab() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard" className="mt-4">
+          <DashboardPanel />
+        </TabsContent>
         <TabsContent value="users" className="mt-4">
           <UsersPanel />
         </TabsContent>
@@ -86,6 +97,162 @@ export function AdminTab() {
           <FeesPanel />
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────
+// DASHBOARD PANEL
+// ──────────────────────────────────────
+function DashboardPanel() {
+  const { user } = useAppStore()
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user) loadStats()
+  }, [user])
+
+  const loadStats = async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/stats?adminId=${user.id}`)
+      if (res.ok) setStats(await res.json())
+    } catch { /* */ }
+    finally { setLoading(false) }
+  }
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  return (
+    <div className="space-y-4">
+      {/* Key metrics */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-900">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-800/30 rounded-lg flex items-center justify-center">
+                <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalUsers?.total || 0}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Usuários</p>
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {stats.totalUsers?.byRole && Object.entries(stats.totalUsers.byRole).map(([role, count]: [string, any]) => (
+                <span key={role} className={cn('text-[8px] px-1.5 py-0.5 rounded-full font-medium', getProfessionalTypeColor(role))}>
+                  {getRoleLabel(role)}: {count}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800/30 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalShifts?.total || 0}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Plantões</p>
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {stats.totalShifts?.byStatus && Object.entries(stats.totalShifts.byStatus).map(([status, count]: [string, any]) => (
+                <span key={status} className={cn('text-[8px] px-1.5 py-0.5 rounded-full font-medium', getStatusColor(status))}>
+                  {getStatusLabel(status)}: {count}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-900">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-800/30 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{formatCurrency(stats.revenue || 0)}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Receita (plantões vendidos)</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Média: {formatCurrency(stats.averageShiftValue || 0)}/plantão</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-900">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-800/30 rounded-lg flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalContests?.total || 0}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">Concursos</p>
+            <div className="flex gap-1 mt-1">
+              <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800">Ativos: {stats.totalContests?.byStatus?.ACTIVE || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Extra stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="rounded-xl border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <Building2 className="w-4 h-4 mx-auto text-teal-600 mb-1" />
+            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalHospitals || 0}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Hospitais</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <MapPin className="w-4 h-4 mx-auto text-rose-600 mb-1" />
+            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalLocations || 0}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Localizações</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <Star className="w-4 h-4 mx-auto text-amber-600 mb-1" />
+            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalRatings || 0}</p>
+            <p className="text-[9px] text-gray-500 dark:text-gray-400">Avaliações</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent pending registrations */}
+      {stats.recentRegistrations && stats.recentRegistrations.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cadastros Pendentes</h3>
+          <div className="space-y-2">
+            {stats.recentRegistrations.map((u: any) => (
+              <Card key={u.id} className="rounded-xl shadow-sm border-0">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full font-medium', getProfessionalTypeColor(u.role))}>
+                        {getRoleLabel(u.role)}
+                      </span>
+                      {u.city && <span className="text-[9px] text-gray-400">{u.city}/{u.state}</span>}
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-yellow-100 text-yellow-800">Pendente</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

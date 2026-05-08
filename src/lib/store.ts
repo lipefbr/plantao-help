@@ -19,6 +19,15 @@ export interface AuthUser {
   companyName: string | null
 }
 
+export interface NotificationItem {
+  id: string
+  title: string
+  message: string
+  type: string
+  read: boolean
+  createdAt: string
+}
+
 interface AppState {
   // Navigation
   activeTab: TabType
@@ -38,17 +47,35 @@ interface AppState {
   setSelectedShiftId: (id: string | null) => void
 
   // Admin sub-tab
-  adminSubTab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees'
-  setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees') => void
+  adminSubTab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard'
+  setAdminSubTab: (tab: 'users' | 'hospitals' | 'contests' | 'locations' | 'fees' | 'dashboard') => void
 
   // Profile sub-tab
-  profileSubTab: 'info' | 'ratings'
-  setProfileSubTab: (tab: 'info' | 'ratings') => void
+  profileSubTab: 'info' | 'ratings' | 'favorites'
+  setProfileSubTab: (tab: 'info' | 'ratings' | 'favorites') => void
+
+  // Dark mode
+  darkMode: boolean
+  setDarkMode: (dark: boolean) => void
+  toggleDarkMode: () => void
+
+  // Notifications
+  showNotifications: boolean
+  setShowNotifications: (show: boolean) => void
+  notifications: NotificationItem[]
+  setNotifications: (notifications: NotificationItem[]) => void
+  unreadCount: number
+  setUnreadCount: (count: number) => void
+
+  // Favorites (local cache for UI)
+  favoriteIds: string[]
+  setFavoriteIds: (ids: string[]) => void
+  toggleFavorite: (id: string) => void
 }
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Navigation
       activeTab: 'home',
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -67,12 +94,42 @@ export const useAppStore = create<AppState>()(
       setSelectedShiftId: (id) => set({ selectedShiftId: id }),
 
       // Admin sub-tab
-      adminSubTab: 'users',
+      adminSubTab: 'dashboard',
       setAdminSubTab: (tab) => set({ adminSubTab: tab }),
 
       // Profile sub-tab
       profileSubTab: 'info',
       setProfileSubTab: (tab) => set({ profileSubTab: tab }),
+
+      // Dark mode
+      darkMode: false,
+      setDarkMode: (dark) => set({ darkMode: dark }),
+      toggleDarkMode: () => set({ darkMode: !get().darkMode }),
+
+      // Notifications
+      showNotifications: false,
+      setShowNotifications: (show) => set({ showNotifications: show }),
+      notifications: [],
+      setNotifications: (notifications) => {
+        set({
+          notifications,
+          unreadCount: notifications.filter(n => !n.read).length
+        })
+      },
+      unreadCount: 0,
+      setUnreadCount: (count) => set({ unreadCount: count }),
+
+      // Favorites
+      favoriteIds: [],
+      setFavoriteIds: (ids) => set({ favoriteIds: ids }),
+      toggleFavorite: (id) => {
+        const current = get().favoriteIds
+        set({
+          favoriteIds: current.includes(id)
+            ? current.filter(f => f !== id)
+            : [...current, id]
+        })
+      },
     }),
     {
       name: 'plantao-help-store',
@@ -80,6 +137,8 @@ export const useAppStore = create<AppState>()(
         user: state.user,
         isLoggedIn: state.isLoggedIn,
         activeTab: state.activeTab,
+        darkMode: state.darkMode,
+        favoriteIds: state.favoriteIds,
       }),
     }
   )

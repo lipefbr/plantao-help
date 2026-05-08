@@ -12,6 +12,7 @@ import { MeusPlantoesTab } from '@/components/meus-plantoes-tab'
 import { PerfilTab } from '@/components/perfil-tab'
 import { AdminTab } from '@/components/admin-tab'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect } from 'react'
 
 function TabContent() {
   const { activeTab, selectedShiftId, setSelectedShiftId } = useAppStore()
@@ -47,8 +48,19 @@ function TabContent() {
 }
 
 export default function Home() {
+  const { darkMode } = useAppStore()
+
+  // Apply dark mode class to html element
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <TopHeader />
       <AuthModal />
 

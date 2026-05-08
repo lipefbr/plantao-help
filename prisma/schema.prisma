@@ -138,3 +138,22 @@ model Location {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  shiftId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, shiftId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

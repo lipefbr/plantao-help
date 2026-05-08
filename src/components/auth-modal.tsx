@@ -168,7 +168,7 @@ export function AuthModal() {
 
   return (
     <Dialog open={showAuthModal} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-center text-emerald-700">
             {authMode === 'login' ? 'Entrar na sua conta' : 'Criar conta'}

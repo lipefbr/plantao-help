@@ -54,6 +54,16 @@
 - `prisma/schema.prisma` - Database schema
 - `prisma/seed.ts` - Seed data script
 
+## API Routes - Favorites, Notifications & Admin Stats (Task: api-fav-notif)
+- **Created**: 2024-01-XX by api-fav-notif agent
+- **Files Added**:
+  - `src/app/api/favorites/route.ts` - GET (list user favorites with shift details + seller avgRating) and POST (add favorite)
+  - `src/app/api/favorites/[shiftId]/route.ts` - DELETE (remove favorite by userId + shiftId)
+  - `src/app/api/notifications/route.ts` - GET (list user notifications, ordered by createdAt desc) and POST (create notification with type INFO/SUCCESS/WARNING)
+  - `src/app/api/notifications/[id]/read/route.ts` - PUT (mark notification as read, verifies userId ownership)
+  - `src/app/api/admin/stats/route.ts` - GET (admin dashboard stats with role verification: totalUsers by role, totalShifts by status, totalContests by status, totalHospitals, totalLocations, totalRatings, recentRegistrations, recentShifts, averageShiftValue, revenue)
+- **Patterns Followed**: Same as existing shifts API for seller avgRating calculation, standard Next.js Route Handler pattern with `db` from `@/lib/db`
+
 ## Unresolved Issues / Next Steps
 1. **Authentication**: Currently using simple email/password comparison (no JWT/sessions) - should add proper auth for production
 2. **File Uploads**: Document upload (CRM, COREN, CPF) not yet implemented - currently text fields only
