@@ -746,9 +746,36 @@ export function PerfilTab() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Plantão Help</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Versão 1.0.0 • Marketplace de Plantões</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Versão 1.1.0 • Marketplace de Plantões</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Legal links */}
+          <Card className="rounded-xl shadow-sm border-0">
+            <CardContent className="p-0">
+              <button className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl">
+                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Termos de Uso</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Condições de uso da plataforma</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
+              <div className="border-t border-gray-100 dark:border-gray-800" />
+              <button className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-b-xl">
+                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Política de Privacidade</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Como tratamos seus dados</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
             </CardContent>
           </Card>
         </TabsContent>

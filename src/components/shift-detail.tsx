@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import {
   ArrowLeft, MapPin, Clock, DollarSign, Star, Building2,
-  User, Phone, Shield, Loader2, MessageSquare, Heart, Share2
+  User, Phone, Shield, Loader2, MessageSquare, Heart, Share2, Timer
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -93,8 +93,37 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
   const [ratingComment, setRatingComment] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
   const [showBuyConfirm, setShowBuyConfirm] = useState(false)
+  const [countdown, setCountdown] = useState<string>('')
 
   const isFavorite = favoriteIds.includes(shiftId)
+
+  useEffect(() => {
+    if (!shift) return
+    const updateCountdown = () => {
+      // Parse the date correctly - shift.date may be ISO string or date-only string
+      const dateStr = typeof shift.date === 'string' ? shift.date.split('T')[0] : new Date(shift.date).toISOString().split('T')[0]
+      const shiftDate = new Date(`${dateStr}T${shift.startTime}:00`)
+      if (isNaN(shiftDate.getTime())) {
+        setCountdown('')
+        return
+      }
+      const now = new Date()
+      const diff = shiftDate.getTime() - now.getTime()
+      if (diff <= 0) {
+        setCountdown('Em andamento ou encerrado')
+        return
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      if (days > 0) setCountdown(`${days}d ${hours}h ${mins}min`)
+      else if (hours > 0) setCountdown(`${hours}h ${mins}min`)
+      else setCountdown(`${mins}min`)
+    }
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 60000)
+    return () => clearInterval(interval)
+  }, [shift])
 
   useEffect(() => {
     loadShift()
@@ -305,6 +334,18 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
               <span className="text-sm">{shift.startTime} - {shift.endTime}</span>
             </div>
           </div>
+          <div className="flex items-center gap-3 mt-2">
+            <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-white/30', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+              {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+            </span>
+          </div>
+          {countdown && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Timer className="w-4 h-4 text-emerald-200" />
+              <span className="text-emerald-100 text-xs">Inicia em:</span>
+              <span className="text-white text-xs font-semibold">{countdown}</span>
+            </div>
+          )}
           <div className="mt-3 text-2xl font-bold">{formatCurrency(shift.value)}</div>
         </div>
         <CardContent className="p-4 space-y-3">
@@ -321,6 +362,9 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
             <Shield className="w-4 h-4 text-gray-400" />
             <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
               {getRoleLabel(shift.professionalType)}
+            </span>
+            <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+              {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
             </span>
           </div>
           {shift.description && (

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase } from 'lucide-react'
+import { FaqHelpSection } from '@/components/faq-help-section'
 
 interface ShiftItem {
   id: string
@@ -305,6 +306,11 @@ export function HomeTab() {
                         <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                           {getRoleLabel(shift.professionalType)}
                         </span>
+                        <div className="mt-1">
+                          <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+                            {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -321,6 +327,9 @@ export function HomeTab() {
             <ArrowRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
+
+        {/* FAQ & Help */}
+        <FaqHelpSection />
       </div>
     )
   }
@@ -526,6 +535,11 @@ export function HomeTab() {
                       <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
                         {getRoleLabel(shift.professionalType)}
                       </span>
+                      <div className="mt-1">
+                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+                          {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -534,6 +548,9 @@ export function HomeTab() {
           </div>
         )}
       </div>
+
+      {/* FAQ & Help */}
+      <FaqHelpSection />
     </div>
   )
 }

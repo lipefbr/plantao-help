@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -240,7 +240,7 @@ export function PlantoesTab() {
       {/* Results count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {loading ? 'Buscando...' : `${shifts.length} plantão${shifts.length !== 1 ? 'ões' : ''} encontrado${shifts.length !== 1 ? 's' : ''}`}
+          {loading ? 'Buscando...' : `${shifts.length} plant${shifts.length !== 1 ? 'ões' : 'ão'} encontrado${shifts.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 
@@ -310,8 +310,8 @@ export function PlantoesTab() {
                       {getRoleLabel(shift.professionalType)}
                     </span>
                     <div className="mt-1">
-                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getShiftStatusColor(shift.status))}>
-                        {getShiftStatusLabel(shift.status)}
+                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+                        {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
                       </span>
                     </div>
                   </div>

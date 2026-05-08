@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { formatCurrency, formatDate, renderStars, getRoleLabel, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+import { formatCurrency, formatDate, renderStars, getRoleLabel, getStatusColor, getStatusLabel, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calendar, MapPin, Clock, Star, Briefcase, LogIn, User, RefreshCw } from 'lucide-react'
+import { Calendar, MapPin, Clock, Star, Briefcase, LogIn, User, RefreshCw, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 
 interface ShiftItem {
   id: string
@@ -140,14 +140,23 @@ export function MeusPlantoesTab() {
           </div>
           <div className="text-right shrink-0">
             <p className="text-emerald-700 font-bold text-sm">{formatCurrency(shift.value)}</p>
-            <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium inline-block mt-1', getStatusColor(shift.status))}>
-              {getStatusLabel(shift.status)}
+            <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium inline-block mt-1 border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+              {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
             </span>
+            <div className="mt-1">
+              <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium inline-block', getStatusColor(shift.status))}>
+                {getStatusLabel(shift.status)}
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
   )
+
+  // Financial calculations
+  const totalEarned = publishedShifts.filter(s => s.status === 'SOLD').reduce((sum, s) => sum + s.value, 0)
+  const totalSpent = boughtShifts.reduce((sum, s) => sum + s.value, 0)
 
   return (
     <div className="space-y-4">
@@ -157,6 +166,44 @@ export function MeusPlantoesTab() {
           <RefreshCw className="w-3.5 h-3.5" />
           Atualizar
         </Button>
+      </div>
+
+      {/* Financial Summary */}
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-5 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+        <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-3">
+            <DollarSign className="w-5 h-5" />
+            <h3 className="font-semibold text-sm">Resumo Financeiro</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-200" />
+                <p className="text-emerald-200 text-[11px]">Total Ganho</p>
+              </div>
+              <p className="text-lg font-bold">{formatCurrency(totalEarned)}</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <TrendingDown className="w-3.5 h-3.5 text-emerald-200" />
+                <p className="text-emerald-200 text-[11px]">Total Gasto</p>
+              </div>
+              <p className="text-lg font-bold">{formatCurrency(totalSpent)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-white/20">
+            <div>
+              <p className="text-emerald-200 text-[11px]">Publicados</p>
+              <p className="text-base font-bold">{publishedShifts.length}</p>
+            </div>
+            <div>
+              <p className="text-emerald-200 text-[11px]">Comprados</p>
+              <p className="text-base font-bold">{boughtShifts.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {loading ? (

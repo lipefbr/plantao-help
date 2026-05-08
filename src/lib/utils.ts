@@ -131,3 +131,32 @@ export function shareShiftLink(shiftId: string): string {
 export function shareToWhatsApp(text: string, link: string): string {
   return `https://wa.me/?text=${encodeURIComponent(text + ' ' + link)}`
 }
+
+export function getShiftType(startTime: string, endTime: string): 'Diurno' | 'Noturno' | 'Misto' {
+  const start = parseInt(startTime.split(':')[0])
+  const end = parseInt(endTime.split(':')[0])
+  // Diurno: starts 6-12, ends before 20
+  // Noturno: starts 18-23, ends after 0
+  // Misto: mixed hours
+  if (start >= 6 && start < 18 && end <= 20) return 'Diurno'
+  if ((start >= 18 || start < 6) && (end <= 8 || end > 0)) return 'Noturno'
+  return 'Misto'
+}
+
+export function getShiftTypeColor(type: string): string {
+  const colors: Record<string, string> = {
+    Diurno: 'bg-amber-100 text-amber-800',
+    Noturno: 'bg-indigo-100 text-indigo-800',
+    Misto: 'bg-gray-100 text-gray-800',
+  }
+  return colors[type] || 'bg-gray-100 text-gray-800'
+}
+
+export function getShiftTypeIcon(type: string): string {
+  const icons: Record<string, string> = {
+    Diurno: '☀️',
+    Noturno: '🌙',
+    Misto: '🌅',
+  }
+  return icons[type] || '⏰'
+}

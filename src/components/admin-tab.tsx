@@ -27,9 +27,14 @@ import {
 import {
   Shield, Users, Building2, Trophy, MapPin, DollarSign,
   Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
-  Calendar, Star
+  Calendar, Star, BarChart3
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer,
+} from 'recharts'
 
 const adminSubTabs = ['dashboard', 'users', 'hospitals', 'contests', 'locations', 'fees'] as const
 type AdminSubTab = typeof adminSubTabs[number]
@@ -104,13 +109,33 @@ export function AdminTab() {
 // ──────────────────────────────────────
 // DASHBOARD PANEL
 // ──────────────────────────────────────
+const CHART_COLORS = ['#10B981', '#14B8A6', '#F59E0B', '#A855F7', '#F43F5E', '#3B82F6']
+
+const STATUS_COLORS: Record<string, string> = {
+  AVAILABLE: '#10B981',
+  SOLD: '#3B82F6',
+  CANCELLED: '#F43F5E',
+}
+
+const ROLE_COLORS: Record<string, string> = {
+  MEDICO: '#10B981',
+  ENFERMEIRO: '#14B8A6',
+  TECNICO_ENFERMAGEM: '#F59E0B',
+  EMPRESA: '#A855F7',
+}
+
 function DashboardPanel() {
   const { user } = useAppStore()
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(true)
 
   useEffect(() => {
-    if (user) loadStats()
+    if (user) {
+      loadStats()
+      loadAnalytics()
+    }
   }, [user])
 
   const loadStats = async () => {
@@ -121,6 +146,16 @@ function DashboardPanel() {
       if (res.ok) setStats(await res.json())
     } catch { /* */ }
     finally { setLoading(false) }
+  }
+
+  const loadAnalytics = async () => {
+    if (!user) return
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/analytics?adminId=${user.id}`)
+      if (res.ok) setAnalytics(await res.json())
+    } catch { /* */ }
+    finally { setAnalyticsLoading(false) }
   }
 
   if (loading) {
@@ -253,6 +288,209 @@ function DashboardPanel() {
           </div>
         </div>
       )}
+
+      {/* ── Gráficos Section ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gráficos</h3>
+        </div>
+
+        {analyticsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map(i => (
+              <Skeleton key={i} className="h-56 rounded-xl" />
+            ))}
+          </div>
+        ) : analytics ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Bar Chart - Plantões por Mês */}
+            <Card className="rounded-xl shadow-sm border-0">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Plantões por Mês</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={analytics.monthlyShifts} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#d1d5db' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      name="Plantões"
+                      fill="#10B981"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Line Chart - Receita Mensal */}
+            <Card className="rounded-xl shadow-sm border-0">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Receita Mensal</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={analytics.monthlyRevenue} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#d1d5db' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => `R$${v}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        fontSize: '12px',
+                      }}
+                      formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Receita']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Receita"
+                      stroke="#059669"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#059669', r: 4, strokeWidth: 2, stroke: '#fff' }}
+                      activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Pie Chart - Status dos Plantões */}
+            <Card className="rounded-xl shadow-sm border-0">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Status dos Plantões</p>
+                {analytics.shiftStatus && analytics.shiftStatus.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={analytics.shiftStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={75}
+                        paddingAngle={3}
+                        dataKey="value"
+                        nameKey="name"
+                        stroke="none"
+                      >
+                        {analytics.shiftStatus.map((entry: any, index: number) => (
+                          <Cell
+                            key={`cell-status-${index}`}
+                            fill={STATUS_COLORS[entry.status] || CHART_COLORS[index % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          fontSize: '12px',
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value: string) => (
+                          <span className="text-xs text-gray-600 dark:text-gray-400">{value}</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum dado disponível
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pie Chart - Usuários por Tipo */}
+            <Card className="rounded-xl shadow-sm border-0">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Usuários por Tipo</p>
+                {analytics.userRoles && analytics.userRoles.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={analytics.userRoles}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={75}
+                        paddingAngle={3}
+                        dataKey="value"
+                        nameKey="name"
+                        stroke="none"
+                      >
+                        {analytics.userRoles.map((entry: any, index: number) => (
+                          <Cell
+                            key={`cell-role-${index}`}
+                            fill={ROLE_COLORS[entry.role] || CHART_COLORS[index % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          fontSize: '12px',
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value: string) => (
+                          <span className="text-xs text-gray-600 dark:text-gray-400">{value}</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+                    Nenhum dado disponível
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
