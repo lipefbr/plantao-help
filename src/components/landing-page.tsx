@@ -565,10 +565,9 @@ export function LandingPage() {
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button
-              variant="outline"
               size="lg"
               onClick={handleLogin}
-              className="h-13 px-8 text-base rounded-xl border-white/30 text-white hover:bg-white/10 hover:text-white transition-all duration-300"
+              className="h-13 px-8 text-base rounded-xl bg-white/15 text-white border border-white/25 hover:bg-white/25 hover:border-white/40 transition-all duration-300 backdrop-blur-sm font-semibold"
             >
               Entrar na sua conta
             </Button>
