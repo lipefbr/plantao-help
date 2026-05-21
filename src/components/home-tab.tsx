@@ -262,9 +262,11 @@ export function HomeTab() {
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Stethoscope className="w-6 h-6" />
-              </div>
+              <img
+                src="/logo.jpg"
+                alt="Plantão Help"
+                className="w-10 h-10 rounded-xl object-cover shadow-sm"
+              />
             </div>
             <h2 className="text-2xl font-bold mb-2">Plantão Help</h2>
             <p className="text-emerald-100 text-sm leading-relaxed mb-4">

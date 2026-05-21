@@ -1278,3 +1278,73 @@ Complete landing page with the following sections:
 ### Testing
 - ✅ Lint passes clean
 - ✅ Dev server running without errors
+
+## Phase 17 Changes (PWA Setup + Logo Replacement)
+
+### PWA Setup
+- **Web App Manifest** (`/public/manifest.json`) - Complete PWA manifest with:
+  - App name: "Plantão Help - Marketplace de Plantões"
+  - Short name: "PlantãoHelp"
+  - Standalone display mode, portrait orientation
+  - Theme color: #059669 (emerald-600)
+  - Background color: #ffffff
+  - Portuguese (pt-BR) language
+  - 192x192 and 512x512 icons (any + maskable purposes)
+  - Categories: medical, business
+
+- **Service Worker** (`/public/sw.js`) - Network-first caching strategy:
+  - Caches static assets on install (/, manifest, icons, logo)
+  - Network-first with cache fallback for pages
+  - API calls always go to network (no caching)
+  - Auto-activates with skipWaiting and clients.claim
+  - Cleans old caches on activate
+
+- **PWA Icons** (`/public/icons/`) - Generated from uploaded logo:
+  - icon-192x192.png (13KB)
+  - icon-512x512.png (70KB)
+  - apple-touch-icon.png (12KB, 180x180)
+  - favicon-32x32.png (1.4KB)
+  - favicon-16x16.png (697B)
+
+- **Layout Meta Tags** (`src/app/layout.tsx`) - Full PWA support:
+  - Link to manifest.json
+  - Apple touch icon, favicon links
+  - Apple mobile web app meta tags (capable, status bar, title)
+  - Mobile web app capable meta tag
+  - MS application tile color
+  - Open Graph tags (type, site name, title, description, image)
+  - Service worker registration script (inline)
+  - Format detection disabled for telephone
+
+### Logo Replacement
+- Uploaded logo (blue shield with white cross, "Plantão" in blue, "Help" in green, "ATENDIMENTO 24 HORAS" subtitle) replaced Stethoscope icon across all components:
+  - **Top Header**: Logo image (9x9, rounded-xl) replaces green Stethoscope icon
+  - **Landing Page Navbar**: Logo image replaces Stethoscope icon
+  - **Landing Page Footer**: Logo image replaces Stethoscope icon
+  - **Landing Page Hero**: Logo displayed as main hero image with rounded-2xl corners in gradient background
+  - **Landing Page Hero Overlay Card**: Logo image replaces Calendar icon
+  - **Home Tab Hero (logged-out)**: Logo image replaces Stethoscope icon
+  - Original `/hero-medical.png` (broken) replaced with actual logo
+
+### Files Created
+- `/public/manifest.json` - PWA manifest
+- `/public/sw.js` - Service worker
+- `/public/icons/icon-192x192.png` - PWA icon 192x192
+- `/public/icons/icon-512x512.png` - PWA icon 512x512
+- `/public/icons/apple-touch-icon.png` - Apple touch icon 180x180
+- `/public/icons/favicon-32x32.png` - Favicon 32x32
+- `/public/icons/favicon-16x16.png` - Favicon 16x16
+- `/public/logo.jpg` - Full logo image for in-app use
+
+### Files Modified
+- `src/app/layout.tsx` - Added PWA meta tags, manifest link, service worker registration, icon links
+- `src/components/top-header.tsx` - Replaced Stethoscope icon with logo image (rounded-xl)
+- `src/components/landing-page.tsx` - Replaced Stethoscope icon in navbar, footer, hero with logo image; replaced broken hero-medical.png with logo
+- `src/components/home-tab.tsx` - Replaced Stethoscope icon in logged-out hero with logo image
+
+### Testing
+- ✅ Lint passes clean
+- ✅ Dev server running without errors
+- ✅ All logo images have rounded corners (rounded-xl / rounded-2xl)
+- ✅ PWA manifest accessible at /manifest.json
+- ✅ Service worker will register on page load

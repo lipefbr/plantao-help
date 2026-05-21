@@ -92,9 +92,11 @@ export function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30">
-              <Stethoscope className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/logo.jpg"
+              alt="Plantão Help"
+              className="w-9 h-9 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
+            />
             <span className="text-xl font-bold tracking-tight">
               <span className="gradient-text">Plantão</span>
               <span className="text-emerald-600 dark:text-emerald-400">Help</span>
@@ -179,18 +181,20 @@ export function LandingPage() {
 
             {/* Right - Hero Image / Visual */}
             <div className="relative animate-hero-float">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-emerald-200/30 dark:shadow-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-emerald-200/30 dark:shadow-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 flex items-center justify-center p-8 sm:p-12 min-h-[320px]">
                 <img
-                  src="/hero-medical.png"
-                  alt="Profissionais da saúde colaborando"
-                  className="w-full h-auto object-cover"
+                  src="/logo.jpg"
+                  alt="Plantão Help - Logo"
+                  className="w-full max-w-xs rounded-2xl object-cover shadow-lg"
                 />
                 {/* Overlay card */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center shrink-0">
-                      <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
+                    <img
+                      src="/logo.jpg"
+                      alt="Plantão Help"
+                      className="w-10 h-10 rounded-xl object-cover shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">Plantão UTI Adulto - Noturno</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">São Paulo, SP • R$ 1.200,00</p>
@@ -582,9 +586,11 @@ export function LandingPage() {
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-                  <Stethoscope className="w-4 h-4 text-white" />
-                </div>
+                <img
+                  src="/logo.jpg"
+                  alt="Plantão Help"
+                  className="w-8 h-8 rounded-lg object-cover"
+                />
                 <span className="text-lg font-bold text-white">
                   Plantão<span className="text-emerald-400">Help</span>
                 </span>
