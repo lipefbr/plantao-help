@@ -632,7 +632,7 @@ export function ShiftDetail({ shiftId, onBack }: Props) {
             <div className="flex flex-col items-center flex-1">
               <div className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold',
-                shift.status === 'AVAILABLE' ? 'bg-emerald-500 text-white animate-badge-pulse' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                shift.status === 'AVAILABLE' ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
               )}>
                 {shift.status === 'AVAILABLE' ? '●' : '✓'}
               </div>

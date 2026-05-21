@@ -410,7 +410,7 @@ export function PlantoesTab() {
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
                       {isNew && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500 text-white rounded-full font-bold animate-badge-pulse shrink-0">Novo</span>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500 text-white rounded-full font-bold shrink-0">Novo</span>
                       )}
                     </div>
                     {shift.hospital && (

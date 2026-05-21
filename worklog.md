@@ -1348,3 +1348,29 @@ Complete landing page with the following sections:
 - ✅ All logo images have rounded corners (rounded-xl / rounded-2xl)
 - ✅ PWA manifest accessible at /manifest.json
 - ✅ Service worker will register on page load
+
+## Phase 14 Changes (Remove animate-badge-pulse Animation)
+
+### Bug Fix
+- **Removed `animate-badge-pulse` from ALL components** - The pulsing box-shadow animation (`0 0 0 8px`) was creating a large glowing overlay that blocked visibility of content behind it. User reported "nao consigo ver nada atrs" (can't see anything behind it).
+
+### Components Fixed
+- `src/components/home-tab.tsx` - Removed `animate-badge-pulse` from Concursos dot indicator
+- `src/components/bottom-nav.tsx` - Removed `animate-badge-pulse` from Meus tab badge count
+- `src/components/top-header.tsx` - Removed `animate-badge-pulse` from notification bell badge
+- `src/components/notification-center.tsx` - Removed `animate-badge-pulse` from unread count badge AND unread dot indicator
+- `src/components/plantoes-tab.tsx` - Removed `animate-badge-pulse` from "Novo" badge
+- `src/components/shift-detail.tsx` - Removed `animate-badge-pulse` from Available status indicator
+- `src/components/concursos-tab.tsx` - Replaced `animate-badge-pulse` with `ring-2 ring-red-400/50` for urgent badges
+
+### CSS Cleanup
+- Removed `--animate-badge-pulse` CSS variable from globals.css
+- Removed `@keyframes badge-pulse` from globals.css
+- Removed `.animate-badge-pulse` utility class from globals.css
+
+### Testing
+- ✅ Lint passes clean
+- ✅ No compilation errors in dev log
+
+### Cron Job
+- Created 15-minute review cycle (job ID: 163069)

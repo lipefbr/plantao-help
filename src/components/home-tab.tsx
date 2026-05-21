@@ -610,8 +610,8 @@ export function HomeTab() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/40 rounded-xl flex items-center justify-center relative">
                 <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-                {/* Pulsing dot indicator */}
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-badge-pulse" />
+                {/* Dot indicator */}
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Concursos Abertos</p>

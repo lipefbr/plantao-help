@@ -62,7 +62,7 @@
   --animate-borderGrow: borderGrow 0.3s ease-out forwards;
   --animate-float: float 3s ease-in-out infinite;
   --animate-ripple: ripple 0.6s ease-out;
-  --animate-badge-pulse: badge-pulse 2s ease-in-out infinite;
+
   --animate-shimmer-slow: shimmer-slow 3s linear infinite;
   --animate-typewriter: typewriter 1s step-end infinite;
   --animate-breathe: breathe 3s ease-in-out infinite;
@@ -360,16 +360,6 @@ textarea::placeholder {
   }
 }
 
-/* ===== Badge pulse animation ===== */
-@keyframes badge-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-}
-
 /* ===== Slow shimmer animation ===== */
 @keyframes shimmer-slow {
   0% {
@@ -406,9 +396,6 @@ textarea::placeholder {
 }
 .animate-ripple {
   animation: ripple 0.6s ease-out;
-}
-.animate-badge-pulse {
-  animation: badge-pulse 2s ease-in-out infinite;
 }
 .animate-shimmer-slow {
   background-size: 200% auto;

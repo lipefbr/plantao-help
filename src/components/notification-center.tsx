@@ -204,7 +204,7 @@ export function NotificationCenter() {
               <Bell className="w-5 h-5 text-emerald-600" />
               Notificações
               {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-badge-pulse">
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                   {unreadCount}
                 </span>
               )}
@@ -285,7 +285,7 @@ export function NotificationCenter() {
                           </p>
                           {/* Pulse on unread */}
                           {!notif.read && (
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0 animate-badge-pulse" />
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
                           )}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">

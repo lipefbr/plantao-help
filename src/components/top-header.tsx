@@ -98,7 +98,7 @@ export function TopHeader() {
                     <Bell className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </span>
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-gray-900 shadow-sm shadow-red-200 dark:shadow-red-900/30 animate-badge-pulse">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-gray-900 shadow-sm shadow-red-200 dark:shadow-red-900/30">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}

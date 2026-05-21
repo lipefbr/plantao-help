@@ -294,7 +294,7 @@ export function ConcursosTab() {
                             <span className={cn(
                               'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium border',
                               urgency.bgColor, urgency.color, urgency.borderColor,
-                              isUrgent && 'animate-badge-pulse'
+                              isUrgent && 'ring-2 ring-red-400/50'
                             )}>
                               <UrgencyIcon className="w-2.5 h-2.5" />
                               {urgency.label}
