@@ -79,11 +79,11 @@ export function LandingPage() {
   const isVisible = (id: string) => visibleSections.has(id)
 
   const handleSignup = () => {
-    router.push('/mobile/register')
+    router.push('/register')
   }
 
   const handleLogin = () => {
-    router.push('/mobile/login')
+    router.push('/login')
   }
 
   return (

@@ -1724,3 +1724,73 @@ Stage Summary:
 - Demo credentials collapsed by default (cleaner UI, still accessible)
 - All navigation and auth flows verified working
 - Note: Vision API (VLM/z-ai vision) was unavailable during this task — could not visually compare with reference image. Design was based on modern login screen best practices. If user wants pixel-perfect match to reference, the vision service needs to be restored or user should provide specific design details.
+
+---
+Task ID: 18
+Agent: main (orchestrator)
+Task: Web version auth pages + clean up /mobile/login — create proper web /login and /register pages (split-screen), point landing page buttons to them, and strip the status bar + title block from the mobile auth shell (per user reference image)
+
+Work Log:
+- Read worklog.md to understand project history (emerald theme, mobile-auth-shell shared by /mobile/login and /mobile/register, landing page uses handleLogin/handleSignup that previously routed to /mobile/login and /mobile/register)
+- Read current state of: `src/components/mobile-auth-shell.tsx`, `src/app/mobile/login/page.tsx`, `src/app/mobile/register/page.tsx`, `src/components/landing-page.tsx`
+- User uploaded reference screenshot `Captura de Tela 2026-06-23 às 03.40.51.png` — attempted VLM analysis (z-ai vision CLI) multiple times with resized image but service timed out repeatedly. Proceeded based on user's explicit text instructions:
+  1. Landing page "Entrar" and "Criar Conta" buttons must be a proper WEB version (not mobile-app style)
+  2. /mobile route is for webview only — DO NOT touch /mobile
+  3. /mobile/login: remove the "PlantãoHelp / Marketplace de plantões" title block AND the top status bar (time "03:31", battery icons, "Online" badge)
+
+- **Updated `src/components/mobile-auth-shell.tsx`** (shared by /mobile/login and /mobile/register):
+  - Removed the entire top status bar section (Signal/Wifi/BatteryFull icons + live clock + "Online" badge)
+  - Removed `currentTime` state and the 60-second clock interval
+  - Removed unused imports: `Wifi, BatteryFull, Signal` and `useState`
+  - Removed the "PlantãoHelp / Marketplace de plantões" heading + subtitle block (logo is now shown alone with a subtle rounded-2xl frame)
+  - Kept: minimal top bar with ONLY the dark-mode toggle (right-aligned), logo, scrollable content area, trust footer, dark-mode class effect, logged-in redirect
+  - Updated docstring to explain it's designed for webview embedding (no chrome)
+
+- **Created `src/app/login/page.tsx`** — new proper WEB login page:
+  - Full-screen split-screen layout: left branding panel (hidden on mobile, lg:w-1/2) + right form panel
+  - Left panel: emerald→teal gradient with decorative blurs, dot pattern, shimmer animation; "Voltar ao início" link, logo, "Plataforma #1" badge, hero heading "Bem-vindo de volta ao seu marketplace de plantões", feature bullets (ShieldCheck/TrendingUp/Star icons), 3-stat grid (500+ profissionais, 50+ cidades, 4.8★ avaliação), testimonial card (Dr. Rafael Mendes)
+  - Right panel: header with mobile logo + dark-mode toggle; centered form with "Entrar na sua conta" heading, email field (Mail icon), password field (Lock icon + show/hide toggle), "Esqueci a senha" link, "Entrar" primary button (emerald, ArrowRight), "ou" divider, "Criar conta gratuita" outline button (UserPlus icon → links to /register), collapsible demo credentials (Médico/Enfermeiro/Admin with click-to-fill), footer with copyright + nav links
+  - Dark-mode aware throughout, full responsive (single column on mobile, split-screen on lg+)
+  - Reuses existing `/api/auth/login` and `/api/auth/forgot-password` endpoints; redirects to `/mobile` on success
+  - Forgot-password dialog preserved (gradient header, email input, success state)
+  - Success state with CheckCircle2 animation + redirect
+
+- **Created `src/app/register/page.tsx`** — new proper WEB register page:
+  - Same split-screen layout as /login for consistency
+  - Left panel: "Crie sua conta gratuita" value prop, benefits (CheckCircle2/ShieldCheck/Star), stats grid
+  - Right panel: "Criar conta gratuita" heading, 4-column role selector grid (Médico/Enfermeiro/Téc. Enfermagem/Empresa with CRM/COREN/CNPJ labels), name/email/password fields (with icons), 5-bar password strength meter (Fraca→Muito forte), professional doc / phone / city / state fields (with MapPin/Phone icons), conditional company name field (EMPRESA only), bio textarea, registration fee notice (amber), "Criar conta gratuita" submit button, terms note, "Já tem conta? Faça login" link → /login
+  - Reuses existing `/api/auth/register` and `/api/admin/fees` endpoints; redirects to `/mobile` on success
+  - Fixed the register page to use `useEffect` for fee loading (the old mobile register used `useState(() => {...})` which is an anti-pattern; the web version correctly uses `useEffect`)
+
+- **Updated `src/components/landing-page.tsx`**:
+  - Changed `handleSignup` from `router.push('/mobile/register')` → `router.push('/register')`
+  - Changed `handleLogin` from `router.push('/mobile/login')` → `router.push('/login')`
+  - All 5 CTAs across the landing page (navbar Entrar/Criar Conta, hero "Começar Gratuitamente"/"Já tenho conta", pricing cards, CTA section "Criar Conta Gratuitamente"/"Entrar na sua conta") now route to the proper web auth pages
+
+- Ran `bun run lint` — passes clean (0 errors, 0 warnings)
+
+- Verified with agent-browser (snapshot + interaction):
+  - `/login` page: split-screen confirmed (left "Bem-vindo de volta ao seu marketplace de plantões" h1, right "Entrar na sua conta" h2, EMAIL/SENHA fields, Esqueci a senha, Entrar button, Criar conta gratuita button, Ver contas de demonstração toggle, footer links). NO status bar present.
+  - `/register` page: split-screen confirmed ("Junte-se a centenas de profissionais da saúde" h1, "Criar conta gratuita" h2, 4 role buttons, NOME/EMAIL/SENHA/CRM/TELEFONE/CIDADE/ESTADO/BIO fields, Criar conta gratuita submit, Faça login link). NO status bar.
+  - `/mobile/login` page: cleaned up confirmed — first interactive element is "Modo escuro" button (top-right), then "Bem-vindo de volta 👋" h2 form heading. NO "PlantãoHelp" title, NO "Marketplace de plantões" subtitle, NO time/battery/Online status bar. "Criar conta gratuita" button still present at bottom.
+  - Landing page: clicked "Entrar" button → navigated to `/login` ✓
+  - Full login flow: filled demo creds (dr.silva@medico.com / 123456) on `/login`, clicked Entrar → successfully authenticated, redirected to `/mobile`, dashboard shows "Dr. Carlos Silva" ✓
+  - Screenshots saved: /tmp/web-login-final.png, /tmp/web-register-final.png, /tmp/mobile-login-final.png
+
+Stage Summary:
+- **Files created**:
+  - `src/app/login/page.tsx` — full web login (split-screen, ~330 lines)
+  - `src/app/register/page.tsx` — full web register (split-screen, ~430 lines)
+- **Files modified**:
+  - `src/components/mobile-auth-shell.tsx` — removed status bar + title block (now 102 lines, down from 139)
+  - `src/components/landing-page.tsx` — handleLogin/handleSignup now route to /login and /register
+- **Route map after this phase**:
+  - `/` (landing page) → "Entrar" / "Criar Conta" buttons → `/login` and `/register` (WEB versions)
+  - `/login` (web) → on success → `/mobile` (app dashboard)
+  - `/register` (web) → on success → `/mobile` (app dashboard)
+  - `/login` "Criar conta gratuita" button → `/register`
+  - `/register` "Faça login" link → `/login`
+  - `/mobile/login` and `/mobile/register` (mobile-app style, for webview) — cleaned of status bar + title block; "Criar conta gratuita" button at bottom of /mobile/login links to /mobile/register (preserved)
+  - `/mobile` (app dashboard) — UNCHANGED per user instruction ("não mexa nele")
+- **Verification**: lint clean; agent-browser confirms all routes 200, split-screen renders, login flow works end-to-end, /mobile/login stripped of chrome
+- **Note**: VLM/z-ai vision service was unavailable (timed out on every attempt) so visual comparison with the user's reference image could not be performed. Verification was done via agent-browser accessibility snapshots (text/structure) and interaction testing instead. The structure matches the user's explicit text instructions: no status bar, no "PlantãoHelp / Marketplace de plantões" title.
