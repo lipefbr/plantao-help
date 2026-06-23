@@ -55,22 +55,12 @@ export function TopHeader() {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-100/50 dark:border-gray-800/50 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center justify-between h-14 px-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center">
             <img
               src="/logo.jpg"
               alt="Plantão Help"
-              className="w-9 h-9 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
+              className="w-10 h-10 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
             />
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold tracking-tight gradient-text">
-                Plantão<span className="text-emerald-500 dark:text-emerald-300">Help</span>
-              </span>
-              {/* Breathing green live indicator */}
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-pulseSoft" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-400/50" />
-              </span>
-            </div>
           </div>
 
           <div className="flex items-center gap-2">
