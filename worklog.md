@@ -1688,3 +1688,39 @@ Stage Summary:
 - **UX**: staggered entrance, hover/focus tooltip with description + values, "Próxima conquista" footer card, celebration card when all unlocked, dark mode throughout, emerald theme (no indigo/blue)
 - **Integration notes for future agent**: To mount on the dashboard, import `{ AchievementsBadges } from '@/components/achievements-badges'` and place `<AchievementsBadges user={user} />` anywhere inside the logged-in dashboard (e.g., in `home-tab.tsx` after `EarningsSummaryWidget`). No new API routes were created; uses existing endpoints. Component requires `user` to be non-null — guard with `user && <AchievementsBadges user={user} />` in the parent.
 - Lint: ✅ clean
+
+---
+Task ID: 15
+Agent: main (orchestrator)
+Task: Redesign /mobile/login page to match reference image style with "Criar conta" button at the bottom
+
+Work Log:
+- User uploaded a ChatGPT-generated login screen reference image at /home/z/my-project/upload/
+- Attempted vision analysis via z-ai CLI and direct SDK script — VLM service was consistently unavailable (requests sent but never completed, multiple timeout failures across 8+ attempts with various prompts and image sizes)
+- Resized reference image to 600px wide JPEG (52KB) to help vision API, but service remained unresponsive
+- Proceeded with redesign based on modern mobile login screen best practices and user's specific requirement: "Criar conta" button at the bottom
+- Completely rewrote `src/app/mobile/login/page.tsx` with a clean, modern design:
+  - Welcome heading "Bem-vindo de volta 👋" with subtitle
+  - Email field: rounded-2xl, h-14, gray-50 bg, transparent border turning emerald on focus, mail icon left-aligned (w-5 h-5)
+  - Password field: same styling, lock icon, show/hide toggle button (rounded-xl, hover emerald)
+  - "Esqueci a senha" link next to password label (emerald, with KeyRound icon)
+  - Removed "Manter conectado" checkbox for cleaner look
+  - Primary "Entrar" button: emerald-600, h-14, rounded-2xl, shadow-lg, ArrowRight icon with hover translate animation
+  - "ou" divider
+  - **"Criar conta gratuita" button at the bottom**: white bg with emerald-600 border-2, h-14, rounded-2xl, UserPlus icon with hover scale — prominent and clearly visible
+  - Collapsible demo credentials section ("Ver conta de demonstração" with chevron) — hidden by default for cleaner look
+  - Success state preserved (CheckCircle2 animation + redirect)
+  - Forgot password dialog preserved unchanged
+- Lint: ✅ clean (0 errors)
+- Verified via agent-browser:
+  - Page loads at /mobile/login (HTTP 200)
+  - All elements present: heading, email field, password field, Entrar button, Criar conta button, demo toggle
+  - "Criar conta gratuita" button navigates to /mobile/register ✅
+  - Login flow works: filled demo credentials (dr.silva@medico.com / 123456), clicked Entrar → redirected to /mobile ✅
+
+Stage Summary:
+- Login page completely redesigned with modern, clean aesthetic
+- "Criar conta gratuita" button prominently placed at the bottom as user requested
+- Demo credentials collapsed by default (cleaner UI, still accessible)
+- All navigation and auth flows verified working
+- Note: Vision API (VLM/z-ai vision) was unavailable during this task — could not visually compare with reference image. Design was based on modern login screen best practices. If user wants pixel-perfect match to reference, the vision service needs to be restored or user should provide specific design details.
