@@ -12,6 +12,7 @@ import { MeusPlantoesTab } from '@/components/meus-plantoes-tab'
 import { PerfilTab } from '@/components/perfil-tab'
 import { AdminTab } from '@/components/admin-tab'
 import { OnboardingModal } from '@/components/onboarding-modal'
+import { ScrollToTop } from '@/components/scroll-to-top'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -110,7 +111,7 @@ export default function MobileApp() {
       <div className="relative w-full sm:max-w-md sm:rounded-[2.5rem] sm:border sm:border-gray-200 dark:sm:border-gray-800 sm:shadow-2xl sm:shadow-emerald-200/40 dark:sm:shadow-emerald-900/20 bg-background text-foreground sm:overflow-hidden min-h-screen sm:min-h-0 sm:h-[92vh] sm:max-h-[920px] flex flex-col">
         <TopHeader />
 
-        <main className="flex-1 overflow-y-auto pt-14 pb-20">
+        <main id="mobile-scroll-container" className="flex-1 overflow-y-auto pt-14 pb-20">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <Suspense fallback={null}>
               <DeepLinkHandler />
@@ -118,6 +119,8 @@ export default function MobileApp() {
             <TabContent />
           </div>
         </main>
+
+        <ScrollToTop targetId="mobile-scroll-container" />
 
         <BottomNav />
       </div>

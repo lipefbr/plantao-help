@@ -1582,3 +1582,109 @@ Complete landing page with the following sections:
 4. **Shift reminders**: Add countdown reminders for upcoming shifts via notifications
 5. **Profile completion gamification**: Add badges/rewards for completing profile sections
 6. **Earnings chart**: Add a small sparkline chart showing earnings trend over time in the widget
+
+---
+Task ID: 17-b
+Agent: full-stack-developer
+Task: Create earnings trend sparkline chart for dashboard
+
+Work Log:
+- Read worklog.md (first 60 lines + last 200 lines) to understand previous agent work and project conventions (emerald theme, dark mode, recharts usage pattern in admin-tab.tsx, existing EarningsSummaryWidget).
+- Inspected existing artifacts for context: `src/components/earnings-summary-widget.tsx` (do-not-modify reference), `src/lib/utils.ts` (formatCurrency), `src/lib/store.ts` (user.id), `src/components/admin-tab.tsx` (recharts LineChart example), `src/components/home-tab.tsx` (EarningsSummaryWidget placement pattern).
+- Confirmed recharts v2.15.4 with AreaChart available in node_modules.
+- Created `src/components/earnings-trend-chart.tsx` with:
+  - `getLast6Months()` helper returning `{ key, label, fullLabel, year, month }` using Portuguese month arrays (Jan-Dez abbr, Janeiro-Dezembro full names).
+  - `ChartTooltip` custom tooltip component styled per spec (`bg-white dark:bg-gray-800 border ... rounded-lg shadow-md px-3 py-2 text-xs`) showing fullLabel + formatCurrency.
+  - `EarningsTrendChart` component (named + default export) that:
+    * Accepts `userId` prop.
+    * Fetches `/api/shifts?sellerId={userId}&status=SOLD` in useEffect with cancellation guard.
+    * Groups earnings by month for the last 6 months (sum of `value`), uses useMemo for chartData + stats.
+    * Renders emerald gradient AreaChart (stroke `#10b981`, fill gradient `#10b981` 45% -> transparent), height 140px, smooth monotone curve, dots + active dots, hidden Y-axis, custom tooltip, dashed emerald cursor.
+    * Header row: TrendingUp icon + "Tendência de Ganhos" title on left, "Últimos 6 meses" subtitle on right.
+    * Below chart: 3 mini-stats grid (`grid-cols-3 gap-2 mt-3`) with "Melhor mês" (value + best month name), "Média mensal", "Total 6 meses" — each in `p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center` with `text-[10px] text-gray-500 uppercase tracking-wide` label and `text-sm font-bold text-emerald-600 dark:text-emerald-400` value.
+    * Loading state: full skeleton card (header pulses, chart skeleton box, 3 stat skeleton boxes) with animate-pulse.
+    * Empty state (no sold shifts in last 6 months): friendly "Sem dados suficientes" message with TrendingDown icon and "Comece a vender plantões para ver sua tendência de ganhos." subtext.
+    * Dark mode support throughout (lighter grid lines via dark:opacity-20, theme-aware tooltip and text colors).
+- Ran `bun run lint 2>&1 | tail -20` — clean (0 errors, 0 warnings).
+- Checked dev.log — no compilation errors.
+
+Stage Summary:
+- File created: `src/components/earnings-trend-chart.tsx` (new, standalone — did NOT modify earnings-summary-widget.tsx or home-tab.tsx).
+- Exports: `EarningsTrendChart` (named) + default export.
+- Accepts prop: `{ userId: string }`.
+- Integration note: To display on the dashboard, add to `src/components/home-tab.tsx` next to the existing `EarningsSummaryWidget` placement, e.g.:
+  ```tsx
+  import { EarningsTrendChart } from '@/components/earnings-trend-chart'
+  // ... after EarningsSummaryWidget:
+  <EarningsTrendChart userId={user.id} />
+  ```
+- Uses existing `/api/shifts?sellerId={userId}&status=SOLD` endpoint (no new API routes created).
+- All money values formatted via `formatCurrency` from `@/lib/utils`.
+- Theme: emerald/green healthcare, no indigo/blue. Dark mode supported.
+- Lint: clean. Dev log: no errors.
+
+---
+Task ID: 17-a
+Agent: full-stack-developer
+Task: Create Upcoming Shifts countdown widget for dashboard
+
+Work Log:
+- Read worklog.md (first 60 lines + last 200 lines) to understand project history: emerald/green healthcare theme, existing widgets (EarningsSummaryWidget, ProfileCompletionCard), existing utils (getShiftType/getShiftTypeColor/getShiftTypeIcon, formatDate), and the existing countdown pattern in shift-detail.tsx.
+- Reviewed `src/lib/store.ts` (useAppStore hook + user/activeTab/setSelectedShiftId API), `src/lib/utils.ts` (formatting helpers), `src/components/home-tab.tsx` (integration target — read only, not modified), and `src/components/earnings-summary-widget.tsx` (the pattern to mirror for clean orchestrator integration: props = { userId, onSeeAll }).
+- Created `src/components/upcoming-shifts-widget.tsx` exporting `UpcomingShiftsWidget`.
+  - Props: optional `userId`, `onSeeAll`, `onBrowse`. Falls back to `useAppStore.getState().user.id` and store navigation so the orchestrator can drop in `<UpcomingShiftsWidget />` with zero props.
+  - Fetches both `/api/shifts?sellerId={id}&allStatuses=true` (published) and `/api/shifts?buyerId={id}&status=SOLD` (bought) in parallel, dedupes by id, tags each as 'bought' (buyerId matches AND status=SOLD) or 'published'.
+  - Filters out CANCELLED shifts and shifts whose start datetime is in the past; sorts by closest start first; limits to 3.
+  - Live countdown ticks every 60s via a `now` state. Formats as "2d 5h 30min" / "5h 30min" / "30min" / "Em andamento".
+  - Urgency color coding: <24h = red text + `animate-pulse` + Timer icon; <3d = amber; >=3d = emerald. Each urgency has a matching ring/background style (bg-red-50/amber-50/emerald-50 with dark variants).
+  - Card content (per task spec): shift title (line-clamp-2), Comprado/Publicado badge (emerald/teal), live countdown pill, "12/05/2026 • 19:00 - 07:00" with CalendarClock, city/state with MapPin, hospital name with Hospital icon, shift type badge via getShiftType/getShiftTypeColor/getShiftTypeIcon.
+  - Loading state: 3 skeleton cards with `animate-pulse` matching card layout.
+  - Empty state: friendly "Nenhum plantão próximo" message in rounded container with CalendarClock icon and a "Buscar plantões" button that navigates to plantoes tab via store.
+  - Header: gradient emerald-to-teal icon container with AlarmClock, title "Próximos Plantões", subtitle, and "Ver todos" link that calls `useAppStore.getState().setActiveTab('meus-plantoes')` (or the provided `onSeeAll` prop).
+  - Framer Motion staggered entrance (opacity+y, 70ms delay per card, smooth [0.16,1,0.3,1] easing).
+  - Card hover: `hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`.
+  - Clicking a card calls `useAppStore.getState().setSelectedShiftId(shift.id)` so the existing shift-detail flow can open it.
+  - Container styling matches spec exactly: `bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4`, list uses `space-y-3`, each card uses the specified `p-3 rounded-xl border ... hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md transition-all duration-200`.
+  - Date parsing uses the same safe `split('T')[0]` pattern as shift-detail.tsx to avoid the NaN bug noted in Phase 6 worklog.
+  - Fully responsive and dark-mode aware throughout.
+- Ran `cd /home/z/my-project && bun run lint 2>&1 | tail -20` — lint passes clean (0 errors, 0 warnings). Also checked `dev.log` — no compile errors.
+
+Stage Summary:
+- Files created:
+  - `src/components/upcoming-shifts-widget.tsx` — new self-contained `UpcomingShiftsWidget` component (~290 lines, client component).
+- Files modified: none (per task constraints, `home-tab.tsx` was NOT modified).
+- Integration notes for orchestrator (Task 17-b or similar):
+  - Drop `<UpcomingShiftsWidget />` anywhere inside the logged-in dashboard view in `src/components/home-tab.tsx`. Zero props required — it reads `user.id` from `useAppStore` and navigates via the store.
+  - Optional props for full control: `<UpcomingShiftsWidget userId={user.id} onSeeAll={() => setActiveTab('meus-plantoes')} onBrowse={() => setActiveTab('plantoes')} />`.
+  - Suggested placement: after the `EarningsSummaryWidget` and before/after "Recomendados para Você" — it pairs naturally with the financial summary so users see upcoming commitments + money context together.
+  - Reuses existing API endpoints (`/api/shifts?sellerId=...&allStatuses=true` and `/api/shifts?buyerId=...&status=SOLD`) — no new API routes were created.
+  - Reuses existing utils (`formatDate`, `getShiftType`, `getShiftTypeColor`, `getShiftTypeIcon`, `cn`) — no new utility functions needed.
+  - Lint: clean. No test files created (per task constraints).
+
+---
+Task ID: 17-c
+Agent: full-stack-developer
+Task: Create profile gamification badges/achievements for dashboard
+
+Work Log:
+- Read worklog.md (first 60 lines + last 200 lines) to understand prior work and existing conventions (emerald theme, dark mode, shadcn/ui, Framer Motion available)
+- Inspected `src/lib/store.ts` to confirm `AuthUser` shape and verified `/api/users/[id]/stats` returns `accountAgeDays` (avoids needing `createdAt` on the client user object) and `/api/favorites?userId=` returns a favorites array
+- Reviewed `profile-completion-card.tsx` and `earnings-summary-widget.tsx` for styling/prop conventions
+- Created `/home/z/my-project/src/components/achievements-badges.tsx` exporting `AchievementsBadges({ user })`
+- Implemented 8 badges (Primeiro Passo, Vendedor Iniciante, Primeira Venda, Comprador Ativo, Bem Avaliado, Top Vendedor, Membro Fiel, Colecionador) with bronze/silver/gold/platinum tiers per spec
+- Built tier config map with icon bg, icon color, gradient, ring, glow shadow, label, and dot color
+- Added framer-motion staggered entrance (delay = index * 0.06s), hover scale 1.04, focus-within scale for keyboard users
+- Added hover/focus tooltip showing description + current/target values with arrow
+- Added "Próxima conquista" footer highlighting the locked badge with highest progress, plus a celebration message when all badges are unlocked
+- Added skeleton loading state with `animate-pulse`
+- Ran `bun run lint` — passed clean (0 errors, 0 warnings)
+
+Stage Summary:
+- **File created**: `src/components/achievements-badges.tsx` (single self-contained client component, no existing files modified)
+- **Exports**: `AchievementsBadges({ user }: { user: AuthUser })`
+- **Data sources**: `GET /api/users/{id}/stats` (totalPublished, totalSold, totalBought, totalRatingsReceived, accountAgeDays) + `GET /api/favorites?userId={id}` (length) + `user` object from store (phone, city, state, professionalDoc, bio for profile completion)
+- **8 badges implemented exactly per spec**: bronze (Primeiro Passo, Vendedor Iniciante), silver (Primeira Venda, Comprador Ativo, Colecionador), gold (Bem Avaliado, Top Vendedor), platinum (Membro Fiel)
+- **Visual features**: tier-based gradients on unlocked icons, grayscale + opacity-70 on locked, check overlay on unlocked, lock overlay on locked, thin progress bar with current/target when locked, "Completo!" with check when unlocked, tier label dot
+- **UX**: staggered entrance, hover/focus tooltip with description + values, "Próxima conquista" footer card, celebration card when all unlocked, dark mode throughout, emerald theme (no indigo/blue)
+- **Integration notes for future agent**: To mount on the dashboard, import `{ AchievementsBadges } from '@/components/achievements-badges'` and place `<AchievementsBadges user={user} />` anywhere inside the logged-in dashboard (e.g., in `home-tab.tsx` after `EarningsSummaryWidget`). No new API routes were created; uses existing endpoints. Component requires `user` to be non-null — guard with `user && <AchievementsBadges user={user} />` in the parent.
+- Lint: ✅ clean

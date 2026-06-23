@@ -11,6 +11,9 @@ import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapP
 import { FaqHelpSection } from '@/components/faq-help-section'
 import { ProfileCompletionCard } from '@/components/profile-completion-card'
 import { EarningsSummaryWidget } from '@/components/earnings-summary-widget'
+import { UpcomingShiftsWidget } from '@/components/upcoming-shifts-widget'
+import { EarningsTrendChart } from '@/components/earnings-trend-chart'
+import { AchievementsBadges } from '@/components/achievements-badges'
 
 interface ShiftItem {
   id: string
@@ -641,6 +644,12 @@ export function HomeTab() {
       {/* Earnings summary widget */}
       <EarningsSummaryWidget userId={user.id} onSeeAll={() => setActiveTab('meus-plantoes')} />
 
+      {/* Upcoming shifts countdown widget */}
+      <UpcomingShiftsWidget />
+
+      {/* Earnings trend chart (6-month sparkline) */}
+      <EarningsTrendChart userId={user.id} />
+
       {/* Recommended Shifts */}
       <div className="animate-slideUp">
         <div className="flex items-center gap-2 mb-3">
@@ -924,6 +933,9 @@ export function HomeTab() {
           </Card>
         )}
       </div>
+
+      {/* Achievements & Badges (gamification) */}
+      <AchievementsBadges user={user} />
 
       {/* FAQ & Help */}
       <FaqHelpSection />

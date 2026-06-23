@@ -5,6 +5,7 @@ import { useAppStore } from '@/lib/store'
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Heart, Search, Star, Check, ArrowRight, X, Stethoscope, UserPlus, ClipboardList, Trophy } from 'lucide-react'
@@ -142,7 +143,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
             {currentStep.emoji && !currentStep.icon && (
               <div className="text-4xl mb-3">{currentStep.emoji}</div>
             )}
-            <h2 className="text-xl font-bold">{currentStep.title}</h2>
+            <DialogTitle className="text-xl font-bold text-white">{currentStep.title}</DialogTitle>
             {currentStep.description && (
               <p className="text-emerald-100 text-sm mt-1 leading-relaxed">{currentStep.description}</p>
             )}
