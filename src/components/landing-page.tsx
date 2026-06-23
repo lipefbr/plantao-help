@@ -90,12 +90,12 @@ export function LandingPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* ===== NAVBAR ===== */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-20 px-4 sm:px-6">
           <div className="flex items-center">
             <img
               src="/logo.jpg"
               alt="Plantão Help"
-              className="w-10 h-10 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-cover"
             />
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -116,7 +116,7 @@ export function LandingPage() {
       </nav>
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-16 overflow-hidden">
+      <section className="relative pt-20 overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/80 via-white to-white dark:from-emerald-950/30 dark:via-gray-950 dark:to-gray-950" />
         <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl" />
@@ -177,11 +177,11 @@ export function LandingPage() {
 
             {/* Right - Hero Image / Visual */}
             <div className="relative animate-hero-float">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-emerald-200/30 dark:shadow-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 flex items-center justify-center p-8 sm:p-12 min-h-[320px]">
+              <div className="relative flex items-center justify-center p-4 sm:p-8 min-h-[320px]">
                 <img
                   src="/logo.jpg"
                   alt="Plantão Help - Logo"
-                  className="w-full max-w-xs rounded-2xl object-cover shadow-lg"
+                  className="w-full max-w-md object-cover shadow-2xl shadow-emerald-200/40 dark:shadow-emerald-900/30"
                 />
                 {/* Overlay card */}
                 <div className="absolute bottom-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
@@ -581,13 +581,13 @@ export function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-2.5 mb-4">
+              <div className="flex items-center gap-3 mb-4">
                 <img
                   src="/logo.jpg"
                   alt="Plantão Help"
-                  className="w-8 h-8 rounded-lg object-cover"
+                  className="w-14 h-14 object-cover"
                 />
-                <span className="text-lg font-bold text-white">
+                <span className="text-xl font-bold text-white">
                   Plantão<span className="text-emerald-400">Help</span>
                 </span>
               </div>

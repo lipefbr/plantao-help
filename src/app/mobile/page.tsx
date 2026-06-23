@@ -102,28 +102,24 @@ export default function MobileApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/30 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center sm:p-4">
-      {/* Decorative background (desktop only) */}
-      <div className="hidden sm:block absolute top-10 left-10 w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="hidden sm:block absolute bottom-10 right-10 w-96 h-96 bg-teal-200/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/30 dark:from-gray-950 dark:to-gray-900 bg-background text-foreground flex flex-col">
+      {/* Top header - fixed at the top of the viewport */}
+      <TopHeader />
 
-      {/* Phone-like frame on desktop, full screen on mobile */}
-      <div className="relative w-full sm:max-w-md sm:rounded-[2.5rem] sm:border sm:border-gray-200 dark:sm:border-gray-800 sm:shadow-2xl sm:shadow-emerald-200/40 dark:sm:shadow-emerald-900/20 bg-background text-foreground sm:overflow-hidden min-h-screen sm:min-h-0 sm:h-[92vh] sm:max-h-[920px] flex flex-col">
-        <TopHeader />
+      {/* Main content - scrollable, with padding for header and bottom nav */}
+      <main id="mobile-scroll-container" className="flex-1 overflow-y-auto pt-14 pb-20 min-h-screen">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <Suspense fallback={null}>
+            <DeepLinkHandler />
+          </Suspense>
+          <TabContent />
+        </div>
+      </main>
 
-        <main id="mobile-scroll-container" className="flex-1 overflow-y-auto pt-14 pb-20">
-          <div className="max-w-2xl mx-auto px-4 py-4">
-            <Suspense fallback={null}>
-              <DeepLinkHandler />
-            </Suspense>
-            <TabContent />
-          </div>
-        </main>
+      <ScrollToTop targetId="mobile-scroll-container" />
 
-        <ScrollToTop targetId="mobile-scroll-container" />
-
-        <BottomNav />
-      </div>
+      {/* Bottom nav - fixed at the bottom of the viewport */}
+      <BottomNav />
 
       <AuthModal />
       <OnboardingModal />
