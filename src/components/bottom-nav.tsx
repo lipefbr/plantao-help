@@ -50,7 +50,7 @@ export function BottomNav() {
   const activeIndex = items.findIndex(item => item.tab === activeTab)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] pb-safe">
+    <nav className="absolute bottom-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] pb-safe">
       {/* Top border gradient */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent" />
 

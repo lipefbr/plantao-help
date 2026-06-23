@@ -1374,3 +1374,77 @@ Complete landing page with the following sections:
 
 ### Cron Job
 - Created 15-minute review cycle (job ID: 163069)
+
+## Phase 15 Changes (Mobile App Routes: /mobile, /mobile/login, /mobile/register)
+
+### New Architecture
+- **`/`** — Landing page (always shown to logged-out visitors; auto-redirects to `/mobile` if already logged in)
+- **`/mobile/login`** — App-style login page (phone-frame on desktop, full-screen on mobile)
+- **`/mobile/register`** — App-style register page (phone-frame on desktop, full-screen on mobile)
+- **`/mobile`** — Main app shell (phone-frame on desktop, full-screen on mobile) with all tabs
+
+### New Files Created
+- **`src/app/mobile/page.tsx`** — Mobile app shell that reuses all existing tab components (HomeTab, PlantoesTab, ConcursosTab, MeusPlantoesTab, PerfilTab, AdminTab) inside a phone-frame container. Redirects to `/mobile/login` if not authenticated.
+- **`src/app/mobile/login/page.tsx`** — App-style login page with email/password fields, show/hide password toggle, demo credentials helper ("Preencher automaticamente" button), success animation, and redirect to `/mobile` on login.
+- **`src/app/mobile/register/page.tsx`** — App-style register page with role selection cards (Médico/Enfermeiro/Téc. Enfermagem/Empresa), all form fields (name, email, password with strength meter, professional doc, phone, city, state, company name for EMPRESA, bio), registration fee notice, and redirect to `/mobile` on success.
+- **`src/components/mobile-auth-shell.tsx`** — Shared phone-frame shell component used by login and register pages. Features:
+  - Phone-frame design on desktop (max-w-md, rounded-[2.5rem], shadow, border)
+  - Full-screen on mobile (min-h-screen)
+  - Back button (navigates to `/`)
+  - Dark mode toggle
+  - Centered logo with glow effect
+  - "PlantãoHelp" name + "Marketplace de plantões" subtitle with pulsing dot
+  - Scrollable content area
+  - Auto-redirects to `/mobile` if user is already logged in
+
+### Files Modified
+- **`src/app/page.tsx`** — Simplified to always show landing page. Auto-redirects to `/mobile` if user is logged in. Removed all the tab-based app shell code (now lives at `/mobile`).
+- **`src/components/landing-page.tsx`** — 
+  - Removed "PlantãoHelp" text name from navbar, kept ONLY the logo image (w-10 h-10 rounded-xl)
+  - Changed `handleLogin` and `handleSignup` to use `router.push('/mobile/login')` and `router.push('/mobile/register')` instead of opening the AuthModal
+  - Added `useRouter` import
+- **`src/components/top-header.tsx`** — Changed `fixed` to `absolute` positioning for header and gradient line (so they position correctly inside the phone-frame container's `relative` parent)
+- **`src/components/bottom-nav.tsx`** — Changed `fixed` to `absolute` positioning for the nav (so it sticks to the bottom of the phone-frame container, not the viewport)
+
+### User Flow
+1. User visits `/` → sees landing page (only logo in navbar, no name)
+2. User clicks "Entrar" → navigated to `/mobile/login`
+3. User clicks "Criar Conta" → navigated to `/mobile/register`
+4. After successful login/register → redirected to `/mobile` (app shell)
+5. If logged-in user visits `/` → auto-redirected to `/mobile`
+6. If logged-out user visits `/mobile` → auto-redirected to `/mobile/login`
+
+### Mobile App Shell Features
+- Reuses ALL existing components (TopHeader, BottomNav, all tabs, AuthModal, OnboardingModal)
+- Phone-frame container on desktop (448px wide, 92vh tall, rounded corners, shadow)
+- Full-screen on mobile
+- TopHeader is absolute-positioned at top of frame
+- BottomNav is absolute-positioned at bottom of frame
+- Main content area is scrollable between header and nav
+- Loading state shown while redirecting unauthenticated users
+
+### Auth Pages Design
+- **Login page**: Email + password fields with icons, show/hide password toggle, demo credentials box with "Preencher automaticamente" button, success animation with redirect
+- **Register page**: Role selection cards (4 options with icons), all form fields, password strength meter (5 bars), professional doc label changes based on role (CRM/COREN/CNPJ), company name field for EMPRESA, bio textarea, registration fee notice
+
+### QA Testing (via agent-browser)
+- ✅ Landing page (`/`) loads with only logo in navbar (no name text)
+- ✅ "Entrar" button navigates to `/mobile/login`
+- ✅ Login page renders with phone-frame on desktop, logo, form fields, demo helper
+- ✅ Login form submits successfully (tested with dr.silva@medico.com)
+- ✅ After login, redirects to `/mobile` app shell
+- ✅ Mobile app shows dashboard with stats, recommended shifts, activity timeline, FAQ
+- ✅ Tab navigation works (switched to Plantões tab, saw search/filters/shift listings)
+- ✅ Register page (`/mobile/register`) renders with all role cards and form fields
+- ✅ Visiting `/mobile` while logged out redirects to `/mobile/login`
+- ✅ Visiting `/mobile/register` while logged in redirects to `/mobile`
+- ✅ Visiting `/` while logged in redirects to `/mobile`
+- ✅ Lint passes clean (0 errors)
+- ✅ No runtime errors in dev log
+- ✅ Responsive: phone-frame on desktop (1280px), full-screen on mobile (390px)
+
+### Test Credentials (unchanged)
+- **Admin**: admin@plantaohelp.com / admin123
+- **Doctor**: dr.silva@medico.com / 123456
+- **Nurse**: maria@enfermeiro.com / 123456
+- **Technician**: lucas@tecnico.com / 123456

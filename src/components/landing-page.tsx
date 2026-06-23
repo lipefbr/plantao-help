@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,7 +14,8 @@ import {
 import { formatCurrency } from '@/lib/utils'
 
 export function LandingPage() {
-  const { setShowAuthModal, setAuthMode } = useAppStore()
+  const { user } = useAppStore()
+  const router = useRouter()
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set())
   const [stats, setStats] = useState({ shifts: 0, users: 0, cities: 0, rating: 0 })
   const [featuredShifts, setFeaturedShifts] = useState<Array<{
@@ -77,13 +79,11 @@ export function LandingPage() {
   const isVisible = (id: string) => visibleSections.has(id)
 
   const handleSignup = () => {
-    setAuthMode('register')
-    setShowAuthModal(true)
+    router.push('/mobile/register')
   }
 
   const handleLogin = () => {
-    setAuthMode('login')
-    setShowAuthModal(true)
+    router.push('/mobile/login')
   }
 
   return (
@@ -91,16 +91,12 @@ export function LandingPage() {
       {/* ===== NAVBAR ===== */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center">
             <img
               src="/logo.jpg"
               alt="Plantão Help"
-              className="w-9 h-9 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
+              className="w-10 h-10 rounded-xl object-cover shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
             />
-            <span className="text-xl font-bold tracking-tight">
-              <span className="gradient-text">Plantão</span>
-              <span className="text-emerald-600 dark:text-emerald-400">Help</span>
-            </span>
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-400">
             <a href="#features" className="hover:text-emerald-600 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 rounded-sm">Recursos</a>

@@ -53,7 +53,7 @@ export function TopHeader() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-100/50 dark:border-gray-800/50 shadow-sm">
+      <header className="absolute top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border-b border-gray-100/50 dark:border-gray-800/50 shadow-sm">
         <div className="max-w-2xl mx-auto flex items-center justify-between h-14 px-4">
           <div className="flex items-center">
             <img
@@ -118,7 +118,7 @@ export function TopHeader() {
         </div>
       </header>
       {/* Gradient border-bottom line */}
-      <div className="fixed top-14 left-0 right-0 z-40 h-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 opacity-80" />
+      <div className="absolute top-14 left-0 right-0 z-40 h-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 opacity-80" />
       <NotificationCenter />
     </>
   )
