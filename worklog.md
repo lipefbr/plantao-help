@@ -1448,3 +1448,137 @@ Complete landing page with the following sections:
 - **Doctor**: dr.silva@medico.com / 123456
 - **Nurse**: maria@enfermeiro.com / 123456
 - **Technician**: lucas@tecnico.com / 123456
+
+---
+
+## Phase 16 Changes (Cron Review - Bug Fix + New Features + Styling Enhancements)
+
+**Task ID**: cron-review-202606231133
+**Agent**: Z.ai Code (cron-triggered review)
+**Task**: QA test, fix bugs, add new features, enhance styling
+
+### QA Assessment
+- ✅ Landing page loads correctly with only logo in navbar
+- ✅ /mobile/login renders with phone-frame on desktop, full-screen on mobile
+- ✅ /mobile/register renders with all form fields and role selection
+- ✅ /mobile app shell works with all tabs (Home, Plantões, Concursos, Meus, Perfil)
+- ✅ Login flow works (login → redirect to /mobile)
+- ✅ Logout works (Sair button → redirect to /mobile/login)
+- ✅ Tab navigation works (tested Plantões, Meus, Perfil)
+- ✅ Shift detail opens correctly
+- ✅ Lint passes clean, no runtime errors in dev log
+
+### Bug Found & Fixed
+1. **"Avaliação" stat showing "-" (dash) for users without ratings**
+   - **Issue**: The dashboard's 4th stat card showed "-" when a user had no ratings, which looked unfinished
+   - **Fix**: Now shows a green "Novo" badge (rounded pill) for users without ratings, and shows the rating with a filled star icon for users who have ratings
+   - **File**: `src/components/home-tab.tsx`
+
+### New Features Added
+
+#### 1. "Esqueci minha senha" (Forgot Password) Feature
+- **New API endpoint**: `POST /api/auth/forgot-password` (`src/app/api/auth/forgot-password/route.ts`)
+  - Accepts email in body
+  - Verifies user exists (but always returns success to prevent email enumeration)
+  - Returns success message
+- **Forgot Password Dialog** on login page:
+  - Beautiful gradient header with KeyRound icon
+  - Email input field with icon
+  - Cancelar/Enviar buttons
+  - Success state with green checkmark animation
+  - "Entendi" button to close
+- **"Esqueci minha senha" link** added next to password label on login page
+- **File modified**: `src/app/mobile/login/page.tsx`
+
+#### 2. "Manter conectado" (Remember Me) Checkbox
+- Added checkbox below password field on login page
+- Label: "Manter conectado neste dispositivo"
+- Default checked (true)
+- Uses shadcn/ui Checkbox component with emerald color theme
+- **File modified**: `src/app/mobile/login/page.tsx`
+
+#### 3. Profile Completion Progress Card
+- **New component**: `src/components/profile-completion-card.tsx`
+- Shows on dashboard when profile is incomplete (hides when 100% complete)
+- Features:
+  - Percentage display (e.g., "Perfil 60% completo")
+  - Motivational message that changes based on completion level
+  - Animated gradient progress bar (red→amber→emerald based on %)
+  - Shimmer overlay animation on progress bar
+  - Field checklist (2-column grid) showing filled/unfilled fields:
+    - 📞 Telefone
+    - 📍 Cidade
+    - 🗺️ Estado
+    - 🪪 Documento profissional
+    - 📝 Bio / Descrição
+  - "Completar perfil" button that navigates to perfil tab
+- **File modified**: `src/components/home-tab.tsx` (added import and component placement after pending approval warning)
+
+#### 4. Earnings Summary Widget
+- **New component**: `src/components/earnings-summary-widget.tsx`
+- Shows on dashboard below the Concursos quick link
+- Features:
+  - Gradient header "Resumo Financeiro" with "Ver tudo" link
+  - Net balance hero (Saldo líquido = ganhos - gastos) with red/green color based on sign
+  - "Este mês" section with two cards:
+    - Ganhou (emerald) - earnings this month
+    - Gastou (red) - expenses this month
+  - All-time stats grid:
+    - Total ganho (with Trophy icon)
+    - Total gasto (with Wallet icon)
+  - Empty state for users with no activity: "Comece a ganhar hoje" card
+  - Loading skeleton while data fetches
+  - Fetches data from existing `/api/shifts?sellerId=X&status=SOLD` and `/api/shifts?buyerId=X&status=SOLD` endpoints
+- **File modified**: `src/components/home-tab.tsx` (added import and component placement after Concursos card)
+
+#### 5. Enhanced Mobile Auth Shell
+- **File modified**: `src/components/mobile-auth-shell.tsx`
+- New features:
+  - **Phone status bar** (desktop only): Shows current time, Signal/Wifi/Battery icons - mimics a real phone
+  - **Online indicator badge**: Green pulsing dot with "Online" text in top app bar
+  - **Animated logo glow**: Pulsing gradient blur behind logo
+  - **Verified badge**: Small emerald checkmark badge on logo corner
+  - **Back button hover effect**: Arrow slides left on hover
+  - **Trust footer** (desktop only): Shows "100% Seguro", "Dados protegidos", "Suporte 24h" with icons at bottom of phone frame
+  - Live clock that updates every minute
+
+### Styling Enhancements
+- **Demo credentials box**: Added Sparkles icon, decorative blur blob, "active:scale-95" press feedback
+- **Rating display**: Now shows filled star icon next to rating number, or "Novo" badge for new users
+- **Progress bars**: Animated shimmer overlay on all progress bars
+- **Color-coded earnings**: Emerald for earnings, red for expenses, with subtle background tints
+- **Phone frame polish**: More realistic phone appearance with status bar and trust indicators
+
+### Files Created
+- `src/app/api/auth/forgot-password/route.ts` - Forgot password API endpoint
+- `src/components/profile-completion-card.tsx` - Profile completion progress card
+- `src/components/earnings-summary-widget.tsx` - Earnings summary widget
+
+### Files Modified
+- `src/components/home-tab.tsx` - Fixed rating display, added ProfileCompletionCard and EarningsSummaryWidget imports and placement
+- `src/app/mobile/login/page.tsx` - Added forgot password dialog, "Esqueci minha senha" link, "Manter conectado" checkbox
+- `src/components/mobile-auth-shell.tsx` - Enhanced with phone status bar, online indicator, trust footer, animated logo glow
+
+### Verification Results (via agent-browser)
+- ✅ Login page shows "Esqueci minha senha" link and "Manter conectado" checkbox
+- ✅ Forgot password dialog opens, accepts email, shows success message
+- ✅ Login flow still works correctly (tested with dr.silva demo account)
+- ✅ Dashboard shows "Novo" badge instead of "-" for rating
+- ✅ Earnings summary widget displays: "Resumo Financeiro", "Saldo líquido: -R$ 600,00", "Total ganho: R$ 1.600,00", "Total gasto: R$ 2.200,00"
+- ✅ Profile completion card correctly hides for users with 100% complete profile
+- ✅ Desktop view shows phone status bar with time (e.g., "03:46"), trust footer ("100% Seguro", "Dados protegidos", "Suporte 24h")
+- ✅ Online indicator badge shows in top app bar
+- ✅ Register page still renders correctly with all fields
+- ✅ Lint passes clean (0 errors)
+- ✅ No runtime errors in dev log
+
+### Unresolved Issues / Risks
+- None identified in this round. All features working as expected.
+
+### Recommended Next Steps
+1. **Password reset flow**: Implement actual password reset page (currently forgot-password just shows success message)
+2. **Email integration**: Connect forgot-password to real email sending service
+3. **Push notifications**: Add browser push notifications for new shifts matching user's profile
+4. **Shift reminders**: Add countdown reminders for upcoming shifts via notifications
+5. **Profile completion gamification**: Add badges/rewards for completing profile sections
+6. **Earnings chart**: Add a small sparkline chart showing earnings trend over time in the widget

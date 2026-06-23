@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase, Activity, Sparkles } from 'lucide-react'
 import { FaqHelpSection } from '@/components/faq-help-section'
+import { ProfileCompletionCard } from '@/components/profile-completion-card'
+import { EarningsSummaryWidget } from '@/components/earnings-summary-widget'
 
 interface ShiftItem {
   id: string
@@ -50,7 +52,7 @@ interface RecommendedShiftItem extends ShiftItem {
 }
 
 export function HomeTab() {
-  const { user, setActiveTab, setShowAuthModal, setAuthMode, setSelectedShiftId } = useAppStore()
+  const { user, setActiveTab, setShowAuthModal, setAuthMode, setSelectedShiftId, setProfileSubTab } = useAppStore()
   const [shifts, setShifts] = useState<ShiftItem[]>([])
   const [loading, setLoading] = useState(true)
   const [userRating, setUserRating] = useState<number>(0)
@@ -535,6 +537,12 @@ export function HomeTab() {
         </Card>
       )}
 
+      {/* Profile completion progress bar */}
+      <ProfileCompletionCard user={user} onEdit={() => {
+        setActiveTab('perfil')
+        setProfileSubTab('info')
+      }} />
+
       {/* Wave SVG Divider */}
       <div className="-mt-2">
         <svg viewBox="0 0 400 30" className="w-full h-6 fill-emerald-600/5 dark:fill-emerald-900/20" preserveAspectRatio="none">
@@ -576,7 +584,14 @@ export function HomeTab() {
             <div className="w-7 h-7 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
               <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             </div>
-            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.rating > 0 ? animatedStats.rating.toFixed(1) : (userRating > 0 ? userRating.toFixed(1) : '-')}</p>
+            {animatedStats.rating > 0 || userRating > 0 ? (
+              <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse flex items-center justify-center gap-0.5">
+                {(animatedStats.rating > 0 ? animatedStats.rating : userRating).toFixed(1)}
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              </p>
+            ) : (
+              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-full px-2 py-0.5 inline-block">Novo</p>
+            )}
             <p className="text-[9px] text-gray-500 dark:text-gray-400">Avaliação</p>
           </CardContent>
         </Card>
@@ -622,6 +637,9 @@ export function HomeTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Earnings summary widget */}
+      <EarningsSummaryWidget userId={user.id} onSeeAll={() => setActiveTab('meus-plantoes')} />
 
       {/* Recommended Shifts */}
       <div className="animate-slideUp">
