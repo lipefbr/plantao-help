@@ -1,0 +1,1626 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useAppStore, type UserRole } from '@/lib/store'
+     5→import { formatCurrency, formatDate, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+     6→import { Button } from '@/components/ui/button'
+     7→import { Card, CardContent } from '@/components/ui/card'
+     8→import { Input } from '@/components/ui/input'
+     9→import { Label } from '@/components/ui/label'
+    10→import { Textarea } from '@/components/ui/textarea'
+    11→import { Badge } from '@/components/ui/badge'
+    12→import { Skeleton } from '@/components/ui/skeleton'
+    13→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    14→import {
+    15→  Select,
+    16→  SelectContent,
+    17→  SelectItem,
+    18→  SelectTrigger,
+    19→  SelectValue,
+    20→} from '@/components/ui/select'
+    21→import {
+    22→  Dialog,
+    23→  DialogContent,
+    24→  DialogHeader,
+    25→  DialogTitle,
+    26→} from '@/components/ui/dialog'
+    27→import {
+    28→  Shield, Users, Building2, Trophy, MapPin, DollarSign,
+    29→  Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
+    30→  Calendar, Star, BarChart3, Eye, ArrowUpDown, Clock, Banknote,
+    31→  ArrowUpRight, ArrowDownRight, Download
+    32→} from 'lucide-react'
+    33→import { toast } from 'sonner'
+    34→import {
+    35→  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+    36→  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    37→  ResponsiveContainer,
+    38→} from 'recharts'
+    39→
+    40→const adminSubTabs = ['dashboard', 'users', 'shifts', 'hospitals', 'contests', 'locations', 'fees'] as const
+    41→type AdminSubTab = typeof adminSubTabs[number]
+    42→
+    43→export function AdminTab() {
+    44→  const { adminSubTab, setAdminSubTab, user } = useAppStore()
+    45→
+    46→  if (user?.role !== 'ADMIN') {
+    47→    return (
+    48→      <div className="flex flex-col items-center justify-center py-16 px-4">
+    49→        <Shield className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+    50→        <p className="text-gray-500 dark:text-gray-400">Acesso restrito a administradores</p>
+    51→      </div>
+    52→    )
+    53→  }
+    54→
+    55→  return (
+    56→    <div className="space-y-4">
+    57→      <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Painel Administrativo</h2>
+    58→
+    59→      <Tabs value={adminSubTab} onValueChange={(v) => setAdminSubTab(v as AdminSubTab)} className="w-full">
+    60→        <TabsList className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-1 flex flex-wrap h-auto gap-1">
+    61→          <TabsTrigger value="dashboard" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    62→            <TrendingUp className="w-3.5 h-3.5 mr-1" />
+    63→            Dashboard
+    64→          </TabsTrigger>
+    65→          <TabsTrigger value="users" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    66→            <Users className="w-3.5 h-3.5 mr-1" />
+    67→            Usuários
+    68→          </TabsTrigger>
+    69→          <TabsTrigger value="shifts" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    70→            <Calendar className="w-3.5 h-3.5 mr-1" />
+    71→            Plantões
+    72→          </TabsTrigger>
+    73→          <TabsTrigger value="hospitals" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    74→            <Building2 className="w-3.5 h-3.5 mr-1" />
+    75→            Hospitais
+    76→          </TabsTrigger>
+    77→          <TabsTrigger value="contests" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    78→            <Trophy className="w-3.5 h-3.5 mr-1" />
+    79→            Concursos
+    80→          </TabsTrigger>
+    81→          <TabsTrigger value="locations" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    82→            <MapPin className="w-3.5 h-3.5 mr-1" />
+    83→            Locais
+    84→          </TabsTrigger>
+    85→          <TabsTrigger value="fees" className="flex-1 min-w-0 rounded-lg text-[11px] data-[state=active]:bg-emerald-600 data-[state=active]:text-white px-2 py-1.5">
+    86→            <DollarSign className="w-3.5 h-3.5 mr-1" />
+    87→            Taxas
+    88→          </TabsTrigger>
+    89→        </TabsList>
+    90→
+    91→        <TabsContent value="dashboard" className="mt-4">
+    92→          <DashboardPanel />
+    93→        </TabsContent>
+    94→        <TabsContent value="users" className="mt-4">
+    95→          <UsersPanel />
+    96→        </TabsContent>
+    97→        <TabsContent value="shifts" className="mt-4">
+    98→          <ShiftsPanel />
+    99→        </TabsContent>
+   100→        <TabsContent value="hospitals" className="mt-4">
+   101→          <HospitalsPanel />
+   102→        </TabsContent>
+   103→        <TabsContent value="contests" className="mt-4">
+   104→          <ContestsPanel />
+   105→        </TabsContent>
+   106→        <TabsContent value="locations" className="mt-4">
+   107→          <LocationsPanel />
+   108→        </TabsContent>
+   109→        <TabsContent value="fees" className="mt-4">
+   110→          <FeesPanel />
+   111→        </TabsContent>
+   112→      </Tabs>
+   113→    </div>
+   114→  )
+   115→}
+   116→
+   117→// ──────────────────────────────────────
+   118→// DASHBOARD PANEL
+   119→// ──────────────────────────────────────
+   120→const CHART_COLORS = ['#10B981', '#14B8A6', '#F59E0B', '#A855F7', '#F43F5E', '#3B82F6']
+   121→
+   122→const STATUS_COLORS: Record<string, string> = {
+   123→  AVAILABLE: '#10B981',
+   124→  SOLD: '#3B82F6',
+   125→  CANCELLED: '#F43F5E',
+   126→}
+   127→
+   128→const ROLE_COLORS: Record<string, string> = {
+   129→  MEDICO: '#10B981',
+   130→  ENFERMEIRO: '#14B8A6',
+   131→  TECNICO_ENFERMAGEM: '#F59E0B',
+   132→  EMPRESA: '#A855F7',
+   133→}
+   134→
+   135→function DashboardPanel() {
+   136→  const { user } = useAppStore()
+   137→  const [stats, setStats] = useState<any>(null)
+   138→  const [loading, setLoading] = useState(true)
+   139→  const [analytics, setAnalytics] = useState<any>(null)
+   140→  const [analyticsLoading, setAnalyticsLoading] = useState(true)
+   141→  const [exportingType, setExportingType] = useState<'shifts' | 'users' | 'revenue' | null>(null)
+   142→
+   143→  const handleExport = async (type: 'shifts' | 'users' | 'revenue') => {
+   144→    if (!user) return
+   145→    setExportingType(type)
+   146→    try {
+   147→      const res = await fetch(`/api/admin/export?adminId=${user.id}&type=${type}`)
+   148→      if (res.ok) {
+   149→        const text = await res.text()
+   150→        const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' })
+   151→        const url = URL.createObjectURL(blob)
+   152→        const link = document.createElement('a')
+   153→        link.href = url
+   154→        link.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`
+   155→        document.body.appendChild(link)
+   156→        link.click()
+   157→        document.body.removeChild(link)
+   158→        URL.revokeObjectURL(url)
+   159→        toast.success(`${type === 'shifts' ? 'Plantões' : type === 'users' ? 'Usuários' : 'Receita'} exportados com sucesso!`)
+   160→      } else {
+   161→        toast.error('Erro ao exportar dados')
+   162→      }
+   163→    } catch {
+   164→      toast.error('Erro ao exportar dados')
+   165→    } finally {
+   166→      setExportingType(null)
+   167→    }
+   168→  }
+   169→
+   170→  useEffect(() => {
+   171→    if (user) {
+   172→      loadStats()
+   173→      loadAnalytics()
+   174→    }
+   175→  }, [user])
+   176→
+   177→  const loadStats = async () => {
+   178→    if (!user) return
+   179→    setLoading(true)
+   180→    try {
+   181→      const res = await fetch(`/api/admin/stats?adminId=${user.id}`)
+   182→      if (res.ok) setStats(await res.json())
+   183→    } catch { /* */ }
+   184→    finally { setLoading(false) }
+   185→  }
+   186→
+   187→  const loadAnalytics = async () => {
+   188→    if (!user) return
+   189→    setAnalyticsLoading(true)
+   190→    try {
+   191→      const res = await fetch(`/api/admin/analytics?adminId=${user.id}`)
+   192→      if (res.ok) setAnalytics(await res.json())
+   193→    } catch { /* */ }
+   194→    finally { setAnalyticsLoading(false) }
+   195→  }
+   196→
+   197→  if (loading) {
+   198→    return (
+   199→      <div className="grid grid-cols-2 gap-3">
+   200→        {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className={cn('rounded-xl', i % 2 === 0 ? 'h-28' : 'h-24')} />)}
+   201→      </div>
+   202→    )
+   203→  }
+   204→
+   205→  if (!stats) return null
+   206→
+   207→  return (
+   208→    <div className="space-y-4">
+   209→      {/* Key metrics */}
+   210→      <div className="grid grid-cols-2 gap-3">
+   211→        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-emerald-400">
+   212→          <CardContent className="p-4">
+   213→            <div className="flex items-center gap-2 mb-2">
+   214→              <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-800/30 rounded-lg flex items-center justify-center">
+   215→                <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   216→              </div>
+   217→            </div>
+   218→            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalUsers?.total || 0}</p>
+   219→            <p className="text-[10px] text-gray-500 dark:text-gray-400">Usuários</p>
+   220→            <div className="flex gap-1 mt-1 flex-wrap">
+   221→              {stats.totalUsers?.byRole && Object.entries(stats.totalUsers.byRole).map(([role, count]: [string, any]) => (
+   222→                <span key={role} className={cn('text-[8px] px-1.5 py-0.5 rounded-full font-medium', getProfessionalTypeColor(role))}>
+   223→                  {getRoleLabel(role)}: {count}
+   224→                </span>
+   225→              ))}
+   226→            </div>
+   227→          </CardContent>
+   228→        </Card>
+   229→
+   230→        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-blue-400">
+   231→          <CardContent className="p-4">
+   232→            <div className="flex items-center gap-2 mb-2">
+   233→              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800/30 rounded-lg flex items-center justify-center">
+   234→                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+   235→              </div>
+   236→            </div>
+   237→            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalShifts?.total || 0}</p>
+   238→            <p className="text-[10px] text-gray-500 dark:text-gray-400">Plantões</p>
+   239→            <div className="flex gap-1 mt-1 flex-wrap">
+   240→              {stats.totalShifts?.byStatus && Object.entries(stats.totalShifts.byStatus).map(([status, count]: [string, any]) => (
+   241→                <span key={status} className={cn('text-[8px] px-1.5 py-0.5 rounded-full font-medium', getStatusColor(status))}>
+   242→                  {getStatusLabel(status)}: {count}
+   243→                </span>
+   244→              ))}
+   245→            </div>
+   246→          </CardContent>
+   247→        </Card>
+   248→
+   249→        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-amber-400">
+   250→          <CardContent className="p-4">
+   251→            <div className="flex items-center gap-2 mb-2">
+   252→              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-800/30 rounded-lg flex items-center justify-center">
+   253→                <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+   254→              </div>
+   255→            </div>
+   256→            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{formatCurrency(stats.revenue || 0)}</p>
+   257→            <p className="text-[10px] text-gray-500 dark:text-gray-400">Receita (plantões vendidos)</p>
+   258→            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Média: {formatCurrency(stats.averageShiftValue || 0)}/plantão</p>
+   259→          </CardContent>
+   260→        </Card>
+   261→
+   262→        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-900 hover:-translate-y-0.5 transition-transform border-l-4 border-l-purple-400">
+   263→          <CardContent className="p-4">
+   264→            <div className="flex items-center gap-2 mb-2">
+   265→              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-800/30 rounded-lg flex items-center justify-center">
+   266→                <Trophy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+   267→              </div>
+   268→            </div>
+   269→            <p className="text-3xl font-bold text-gray-800 dark:text-gray-200">{stats.totalContests?.total || 0}</p>
+   270→            <p className="text-[10px] text-gray-500 dark:text-gray-400">Concursos</p>
+   271→            <div className="flex gap-1 mt-1">
+   272→              <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800">Ativos: {stats.totalContests?.byStatus?.ACTIVE || 0}</span>
+   273→            </div>
+   274→          </CardContent>
+   275→        </Card>
+   276→      </div>
+   277→
+   278→      {/* Extra stats row */}
+   279→      <div className="grid grid-cols-3 gap-2">
+   280→        <Card className="rounded-xl border-0 shadow-sm">
+   281→          <CardContent className="p-3 text-center">
+   282→            <Building2 className="w-4 h-4 mx-auto text-teal-600 mb-1" />
+   283→            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalHospitals || 0}</p>
+   284→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Hospitais</p>
+   285→          </CardContent>
+   286→        </Card>
+   287→        <Card className="rounded-xl border-0 shadow-sm">
+   288→          <CardContent className="p-3 text-center">
+   289→            <MapPin className="w-4 h-4 mx-auto text-rose-600 mb-1" />
+   290→            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalLocations || 0}</p>
+   291→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Localizações</p>
+   292→          </CardContent>
+   293→        </Card>
+   294→        <Card className="rounded-xl border-0 shadow-sm">
+   295→          <CardContent className="p-3 text-center">
+   296→            <Star className="w-4 h-4 mx-auto text-amber-600 mb-1" />
+   297→            <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{stats.totalRatings || 0}</p>
+   298→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Avaliações</p>
+   299→          </CardContent>
+   300→        </Card>
+   301→      </div>
+   302→
+   303→      {/* ── Relatório de Receita ── */}
+   304→      <RevenueReportCard />
+   305→
+   306→      {/* ── Export Data ── */}
+   307→      <Card className="rounded-xl shadow-sm border-0">
+   308→        <CardContent className="p-4">
+   309→          <div className="flex items-center gap-2 mb-3">
+   310→            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   311→            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Exportar Dados</h3>
+   312→          </div>
+   313→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+   314→            <Button
+   315→              onClick={() => handleExport('shifts')}
+   316→              disabled={exportingType !== null}
+   317→              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs gap-1.5 h-9"
+   318→            >
+   319→              {exportingType === 'shifts' ? (
+   320→                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+   321→              ) : (
+   322→                <Download className="w-3.5 h-3.5" />
+   323→              )}
+   324→              Exportar Plantões
+   325→            </Button>
+   326→            <Button
+   327→              onClick={() => handleExport('users')}
+   328→              disabled={exportingType !== null}
+   329→              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs gap-1.5 h-9"
+   330→            >
+   331→              {exportingType === 'users' ? (
+   332→                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+   333→              ) : (
+   334→                <Download className="w-3.5 h-3.5" />
+   335→              )}
+   336→              Exportar Usuários
+   337→            </Button>
+   338→            <Button
+   339→              onClick={() => handleExport('revenue')}
+   340→              disabled={exportingType !== null}
+   341→              className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs gap-1.5 h-9"
+   342→            >
+   343→              {exportingType === 'revenue' ? (
+   344→                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+   345→              ) : (
+   346→                <Download className="w-3.5 h-3.5" />
+   347→              )}
+   348→              Exportar Receita
+   349→            </Button>
+   350→          </div>
+   351→        </CardContent>
+   352→      </Card>
+   353→
+   354→      {/* Recent pending registrations */}
+   355→      {stats.recentRegistrations && stats.recentRegistrations.length > 0 && (
+   356→        <div>
+   357→          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cadastros Pendentes</h3>
+   358→          <div className="space-y-2">
+   359→            {stats.recentRegistrations.map((u: any) => (
+   360→              <Card key={u.id} className="rounded-xl shadow-sm border-0">
+   361→                <CardContent className="p-3 flex items-center justify-between">
+   362→                  <div className="min-w-0">
+   363→                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name}</p>
+   364→                    <div className="flex items-center gap-1.5 mt-0.5">
+   365→                      <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full font-medium', getProfessionalTypeColor(u.role))}>
+   366→                        {getRoleLabel(u.role)}
+   367→                      </span>
+   368→                      {u.city && <span className="text-[9px] text-gray-400">{u.city}/{u.state}</span>}
+   369→                    </div>
+   370→                  </div>
+   371→                  <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-yellow-100 text-yellow-800">Pendente</span>
+   372→                </CardContent>
+   373→              </Card>
+   374→            ))}
+   375→          </div>
+   376→        </div>
+   377→      )}
+   378→
+   379→      {/* ── Gráficos Section ── */}
+   380→      <div>
+   381→        <div className="flex items-center gap-2 mb-3">
+   382→          <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   383→          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gráficos</h3>
+   384→        </div>
+   385→
+   386→        {analyticsLoading ? (
+   387→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   388→            {[1, 2, 3, 4].map(i => (
+   389→              <Skeleton key={i} className="h-56 rounded-xl" />
+   390→            ))}
+   391→          </div>
+   392→        ) : analytics ? (
+   393→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   394→            {/* Bar Chart - Plantões por Mês */}
+   395→            <Card className="rounded-xl shadow-sm border-0">
+   396→              <CardContent className="p-4">
+   397→                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Plantões por Mês</p>
+   398→                <ResponsiveContainer width="100%" height={200}>
+   399→                  <BarChart data={analytics.monthlyShifts} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+   400→                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+   401→                    <XAxis
+   402→                      dataKey="month"
+   403→                      tick={{ fontSize: 11, fill: '#6b7280' }}
+   404→                      axisLine={{ stroke: '#d1d5db' }}
+   405→                      tickLine={false}
+   406→                    />
+   407→                    <YAxis
+   408→                      tick={{ fontSize: 11, fill: '#6b7280' }}
+   409→                      axisLine={false}
+   410→                      tickLine={false}
+   411→                      allowDecimals={false}
+   412→                    />
+   413→                    <Tooltip
+   414→                      contentStyle={{
+   415→                        borderRadius: '8px',
+   416→                        border: 'none',
+   417→                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+   418→                        fontSize: '12px',
+   419→                      }}
+   420→                    />
+   421→                    <Bar
+   422→                      dataKey="count"
+   423→                      name="Plantões"
+   424→                      fill="#10B981"
+   425→                      radius={[6, 6, 0, 0]}
+   426→                      maxBarSize={40}
+   427→                    />
+   428→                  </BarChart>
+   429→                </ResponsiveContainer>
+   430→              </CardContent>
+   431→            </Card>
+   432→
+   433→            {/* Line Chart - Receita Mensal */}
+   434→            <Card className="rounded-xl shadow-sm border-0">
+   435→              <CardContent className="p-4">
+   436→                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Receita Mensal</p>
+   437→                <ResponsiveContainer width="100%" height={200}>
+   438→                  <LineChart data={analytics.monthlyRevenue} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+   439→                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
+   440→                    <XAxis
+   441→                      dataKey="month"
+   442→                      tick={{ fontSize: 11, fill: '#6b7280' }}
+   443→                      axisLine={{ stroke: '#d1d5db' }}
+   444→                      tickLine={false}
+   445→                    />
+   446→                    <YAxis
+   447→                      tick={{ fontSize: 11, fill: '#6b7280' }}
+   448→                      axisLine={false}
+   449→                      tickLine={false}
+   450→                      tickFormatter={(v: number) => `R$${v}`}
+   451→                    />
+   452→                    <Tooltip
+   453→                      contentStyle={{
+   454→                        borderRadius: '8px',
+   455→                        border: 'none',
+   456→                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+   457→                        fontSize: '12px',
+   458→                      }}
+   459→                      formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Receita']}
+   460→                    />
+   461→                    <Line
+   462→                      type="monotone"
+   463→                      dataKey="revenue"
+   464→                      name="Receita"
+   465→                      stroke="#059669"
+   466→                      strokeWidth={2.5}
+   467→                      dot={{ fill: '#059669', r: 4, strokeWidth: 2, stroke: '#fff' }}
+   468→                      activeDot={{ r: 6, stroke: '#059669', strokeWidth: 2 }}
+   469→                    />
+   470→                  </LineChart>
+   471→                </ResponsiveContainer>
+   472→              </CardContent>
+   473→            </Card>
+   474→
+   475→            {/* Pie Chart - Status dos Plantões */}
+   476→            <Card className="rounded-xl shadow-sm border-0">
+   477→              <CardContent className="p-4">
+   478→                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Status dos Plantões</p>
+   479→                {analytics.shiftStatus && analytics.shiftStatus.length > 0 ? (
+   480→                  <ResponsiveContainer width="100%" height={200}>
+   481→                    <PieChart>
+   482→                      <Pie
+   483→                        data={analytics.shiftStatus}
+   484→                        cx="50%"
+   485→                        cy="50%"
+   486→                        innerRadius={45}
+   487→                        outerRadius={75}
+   488→                        paddingAngle={3}
+   489→                        dataKey="value"
+   490→                        nameKey="name"
+   491→                        stroke="none"
+   492→                      >
+   493→                        {analytics.shiftStatus.map((entry: any, index: number) => (
+   494→                          <Cell
+   495→                            key={`cell-status-${index}`}
+   496→                            fill={STATUS_COLORS[entry.status] || CHART_COLORS[index % CHART_COLORS.length]}
+   497→                          />
+   498→                        ))}
+   499→                      </Pie>
+   500→                      <Tooltip
+   501→                        contentStyle={{
+   502→                          borderRadius: '8px',
+   503→                          border: 'none',
+   504→                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+   505→                          fontSize: '12px',
+   506→                        }}
+   507→                      />
+   508→                      <Legend
+   509→                        verticalAlign="bottom"
+   510→                        height={36}
+   511→                        iconType="circle"
+   512→                        iconSize={8}
+   513→                        formatter={(value: string) => (
+   514→                          <span className="text-xs text-gray-600 dark:text-gray-400">{value}</span>
+   515→                        )}
+   516→                      />
+   517→                    </PieChart>
+   518→                  </ResponsiveContainer>
+   519→                ) : (
+   520→                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+   521→                    Nenhum dado disponível
+   522→                  </div>
+   523→                )}
+   524→              </CardContent>
+   525→            </Card>
+   526→
+   527→            {/* Pie Chart - Usuários por Tipo */}
+   528→            <Card className="rounded-xl shadow-sm border-0">
+   529→              <CardContent className="p-4">
+   530→                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Usuários por Tipo</p>
+   531→                {analytics.userRoles && analytics.userRoles.length > 0 ? (
+   532→                  <ResponsiveContainer width="100%" height={200}>
+   533→                    <PieChart>
+   534→                      <Pie
+   535→                        data={analytics.userRoles}
+   536→                        cx="50%"
+   537→                        cy="50%"
+   538→                        innerRadius={45}
+   539→                        outerRadius={75}
+   540→                        paddingAngle={3}
+   541→                        dataKey="value"
+   542→                        nameKey="name"
+   543→                        stroke="none"
+   544→                      >
+   545→                        {analytics.userRoles.map((entry: any, index: number) => (
+   546→                          <Cell
+   547→                            key={`cell-role-${index}`}
+   548→                            fill={ROLE_COLORS[entry.role] || CHART_COLORS[index % CHART_COLORS.length]}
+   549→                          />
+   550→                        ))}
+   551→                      </Pie>
+   552→                      <Tooltip
+   553→                        contentStyle={{
+   554→                          borderRadius: '8px',
+   555→                          border: 'none',
+   556→                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+   557→                          fontSize: '12px',
+   558→                        }}
+   559→                      />
+   560→                      <Legend
+   561→                        verticalAlign="bottom"
+   562→                        height={36}
+   563→                        iconType="circle"
+   564→                        iconSize={8}
+   565→                        formatter={(value: string) => (
+   566→                          <span className="text-xs text-gray-600 dark:text-gray-400">{value}</span>
+   567→                        )}
+   568→                      />
+   569→                    </PieChart>
+   570→                  </ResponsiveContainer>
+   571→                ) : (
+   572→                  <div className="h-[200px] flex items-center justify-center text-gray-400 text-sm">
+   573→                    Nenhum dado disponível
+   574→                  </div>
+   575→                )}
+   576→              </CardContent>
+   577→            </Card>
+   578→          </div>
+   579→        ) : null}
+   580→      </div>
+   581→    </div>
+   582→  )
+   583→}
+   584→
+   585→// ──────────────────────────────────────
+   586→// USERS PANEL
+   587→// ──────────────────────────────────────
+   588→function UsersPanel() {
+   589→  const { user } = useAppStore()
+   590→  const [users, setUsers] = useState<any[]>([])
+   591→  const [loading, setLoading] = useState(true)
+   592→  const [filterStatus, setFilterStatus] = useState('PENDING')
+   593→
+   594→  const loadUsers = useCallback(async () => {
+   595→    setLoading(true)
+   596→    try {
+   597→      const params = new URLSearchParams()
+   598→      if (filterStatus) params.set('status', filterStatus)
+   599→      const res = await fetch(`/api/admin/users?${params.toString()}`)
+   600→      if (res.ok) setUsers(await res.json())
+   601→    } catch { /* */ }
+   602→    finally { setLoading(false) }
+   603→  }, [filterStatus])
+   604→
+   605→  useEffect(() => { loadUsers() }, [loadUsers])
+   606→
+   607→  const handleApprove = async (userId: string, status: 'APPROVED' | 'REJECTED') => {
+   608→    if (!user) return
+   609→    try {
+   610→      const res = await fetch(`/api/admin/users/${userId}/approve`, {
+   611→        method: 'PUT',
+   612→        headers: { 'Content-Type': 'application/json' },
+   613→        body: JSON.stringify({ status, adminId: user.id }),
+   614→      })
+   615→      if (res.ok) {
+   616→        toast.success(status === 'APPROVED' ? 'Usuário aprovado!' : 'Usuário rejeitado')
+   617→        loadUsers()
+   618→      } else {
+   619→        const data = await res.json()
+   620→        toast.error(data.error || 'Erro ao atualizar status')
+   621→      }
+   622→    } catch {
+   623→      toast.error('Erro ao atualizar status')
+   624→    }
+   625→  }
+   626→
+   627→  return (
+   628→    <div className="space-y-3">
+   629→      <div className="flex items-center justify-between">
+   630→        <Select value={filterStatus} onValueChange={setFilterStatus}>
+   631→          <SelectTrigger className="w-40 rounded-lg h-9 text-sm">
+   632→            <SelectValue />
+   633→          </SelectTrigger>
+   634→          <SelectContent>
+   635→            <SelectItem value="PENDING">Pendentes</SelectItem>
+   636→            <SelectItem value="APPROVED">Aprovados</SelectItem>
+   637→            <SelectItem value="REJECTED">Rejeitados</SelectItem>
+   638→          </SelectContent>
+   639→        </Select>
+   640→      </div>
+   641→
+   642→      {loading ? (
+   643→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className={cn('rounded-xl', i === 2 ? 'h-24' : 'h-20')} />)}</div>
+   644→      ) : users.length === 0 ? (
+   645→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum usuário encontrado</CardContent></Card>
+   646→      ) : (
+   647→        <div className="space-y-2 max-h-96 overflow-y-auto">
+   648→          {users.map((u: any) => (
+   649→            <Card key={u.id} className="rounded-xl shadow-sm border-0">
+   650→              <CardContent className="p-3">
+   651→                <div className="flex items-start justify-between gap-2">
+   652→                  <div className="min-w-0 flex-1">
+   653→                    <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
+   654→                    <p className="text-xs text-gray-500">{u.email}</p>
+   655→                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+   656→                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(u.role))}>
+   657→                        {getRoleLabel(u.role)}
+   658→                      </span>
+   659→                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getStatusColor(u.registrationStatus))}>
+   660→                        {getStatusLabel(u.registrationStatus)}
+   661→                      </span>
+   662→                    </div>
+   663→                    {u.professionalDoc && <p className="text-[10px] text-gray-400 mt-1">Doc: {u.professionalDoc}</p>}
+   664→                    {u.city && <p className="text-[10px] text-gray-400">{u.city}/{u.state}</p>}
+   665→                  </div>
+   666→                  {u.registrationStatus === 'PENDING' && (
+   667→                    <div className="flex gap-1 shrink-0">
+   668→                      <button
+   669→                        onClick={() => handleApprove(u.id, 'APPROVED')}
+   670→                        className="w-8 h-8 bg-emerald-100 hover:bg-emerald-200 rounded-lg flex items-center justify-center transition-colors"
+   671→                      >
+   672→                        <Check className="w-4 h-4 text-emerald-600" />
+   673→                      </button>
+   674→                      <button
+   675→                        onClick={() => handleApprove(u.id, 'REJECTED')}
+   676→                        className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
+   677→                      >
+   678→                        <X className="w-4 h-4 text-red-600" />
+   679→                      </button>
+   680→                    </div>
+   681→                  )}
+   682→                </div>
+   683→              </CardContent>
+   684→            </Card>
+   685→          ))}
+   686→        </div>
+   687→      )}
+   688→    </div>
+   689→  )
+   690→}
+   691→
+   692→// ──────────────────────────────────────
+   693→// HOSPITALS PANEL
+   694→// ──────────────────────────────────────
+   695→function HospitalsPanel() {
+   696→  const { user } = useAppStore()
+   697→  const [hospitals, setHospitals] = useState<any[]>([])
+   698→  const [loading, setLoading] = useState(true)
+   699→  const [showForm, setShowForm] = useState(false)
+   700→  const [editingId, setEditingId] = useState<string | null>(null)
+   701→  const [name, setName] = useState('')
+   702→  const [address, setAddress] = useState('')
+   703→  const [city, setCity] = useState('')
+   704→  const [state, setState] = useState('')
+   705→  const [phone, setPhone] = useState('')
+   706→
+   707→  const loadHospitals = useCallback(async () => {
+   708→    setLoading(true)
+   709→    try {
+   710→      const res = await fetch('/api/hospitals')
+   711→      if (res.ok) setHospitals(await res.json())
+   712→    } catch { /* */ }
+   713→    finally { setLoading(false) }
+   714→  }, [])
+   715→
+   716→  useEffect(() => { loadHospitals() }, [loadHospitals])
+   717→
+   718→  const resetForm = () => {
+   719→    setName(''); setAddress(''); setCity(''); setState(''); setPhone('')
+   720→    setEditingId(null); setShowForm(false)
+   721→  }
+   722→
+   723→  const handleEdit = (h: any) => {
+   724→    setName(h.name); setAddress(h.address || ''); setCity(h.city); setState(h.state); setPhone(h.phone || '')
+   725→    setEditingId(h.id); setShowForm(true)
+   726→  }
+   727→
+   728→  const handleSubmit = async (e: React.FormEvent) => {
+   729→    e.preventDefault()
+   730→    if (!user) return
+   731→    try {
+   732→      const url = editingId ? `/api/hospitals/${editingId}` : '/api/hospitals'
+   733→      const method = editingId ? 'PUT' : 'POST'
+   734→      const body: any = { name, address, city, state, phone, userId: user.id }
+   735→      if (editingId) body.id = editingId
+   736→
+   737→      const res = await fetch(url, {
+   738→        method,
+   739→        headers: { 'Content-Type': 'application/json' },
+   740→        body: JSON.stringify(body),
+   741→      })
+   742→      if (res.ok) {
+   743→        toast.success(editingId ? 'Hospital atualizado!' : 'Hospital criado!')
+   744→        resetForm()
+   745→        loadHospitals()
+   746→      } else {
+   747→        const data = await res.json()
+   748→        toast.error(data.error || 'Erro ao salvar hospital')
+   749→      }
+   750→    } catch {
+   751→      toast.error('Erro ao salvar hospital')
+   752→    }
+   753→  }
+   754→
+   755→  const handleDelete = async (id: string) => {
+   756→    if (!user || !confirm('Tem certeza que deseja excluir este hospital?')) return
+   757→    try {
+   758→      const res = await fetch(`/api/hospitals/${id}?userId=${user.id}`, { method: 'DELETE' })
+   759→      if (res.ok) {
+   760→        toast.success('Hospital excluído!')
+   761→        loadHospitals()
+   762→      } else {
+   763→        toast.error('Erro ao excluir hospital')
+   764→      }
+   765→    } catch {
+   766→      toast.error('Erro ao excluir hospital')
+   767→    }
+   768→  }
+   769→
+   770→  return (
+   771→    <div className="space-y-3">
+   772→      <div className="flex items-center justify-between">
+   773→        <p className="text-sm text-gray-500">{hospitals.length} hospitais</p>
+   774→        <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs">
+   775→          <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+   776→        </Button>
+   777→      </div>
+   778→
+   779→      {showForm && (
+   780→        <Card className="rounded-xl shadow-sm border-0">
+   781→          <CardContent className="p-4 space-y-3">
+   782→            <p className="text-sm font-medium text-gray-700">{editingId ? 'Editar Hospital' : 'Novo Hospital'}</p>
+   783→            <form onSubmit={handleSubmit} className="space-y-3">
+   784→              <Input placeholder="Nome *" value={name} onChange={e => setName(e.target.value)} required className="rounded-lg text-sm" />
+   785→              <Input placeholder="Endereço" value={address} onChange={e => setAddress(e.target.value)} className="rounded-lg text-sm" />
+   786→              <div className="grid grid-cols-2 gap-2">
+   787→                <Input placeholder="Cidade *" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg text-sm" />
+   788→                <Input placeholder="UF *" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg text-sm" maxLength={2} />
+   789→              </div>
+   790→              <Input placeholder="Telefone" value={phone} onChange={e => setPhone(e.target.value)} className="rounded-lg text-sm" />
+   791→              <div className="flex gap-2">
+   792→                <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm">Salvar</Button>
+   793→                <Button type="button" variant="outline" onClick={resetForm} className="rounded-lg text-sm">Cancelar</Button>
+   794→              </div>
+   795→            </form>
+   796→          </CardContent>
+   797→        </Card>
+   798→      )}
+   799→
+   800→      {loading ? (
+   801→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+   802→      ) : hospitals.length === 0 ? (
+   803→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum hospital cadastrado</CardContent></Card>
+   804→      ) : (
+   805→        <div className="space-y-2 max-h-96 overflow-y-auto">
+   806→          {hospitals.map((h: any) => (
+   807→            <Card key={h.id} className="rounded-xl shadow-sm border-0">
+   808→              <CardContent className="p-3 flex items-center justify-between">
+   809→                <div className="min-w-0 flex-1">
+   810→                  <p className="text-sm font-medium text-gray-800 truncate">{h.name}</p>
+   811→                  <p className="text-xs text-gray-500">{h.city}/{h.state}</p>
+   812→                </div>
+   813→                <div className="flex gap-1 shrink-0">
+   814→                  <button onClick={() => handleEdit(h)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center">
+   815→                    <Edit className="w-3.5 h-3.5 text-gray-600" />
+   816→                  </button>
+   817→                  <button onClick={() => handleDelete(h.id)} className="w-8 h-8 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center">
+   818→                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
+   819→                  </button>
+   820→                </div>
+   821→              </CardContent>
+   822→            </Card>
+   823→          ))}
+   824→        </div>
+   825→      )}
+   826→    </div>
+   827→  )
+   828→}
+   829→
+   830→// ──────────────────────────────────────
+   831→// CONTESTS PANEL
+   832→// ──────────────────────────────────────
+   833→function ContestsPanel() {
+   834→  const { user } = useAppStore()
+   835→  const [contests, setContests] = useState<any[]>([])
+   836→  const [loading, setLoading] = useState(true)
+   837→  const [showForm, setShowForm] = useState(false)
+   838→  const [editingId, setEditingId] = useState<string | null>(null)
+   839→  const [title, setTitle] = useState('')
+   840→  const [description, setDescription] = useState('')
+   841→  const [professionalType, setProfessionalType] = useState<UserRole>('MEDICO')
+   842→  const [city, setCity] = useState('')
+   843→  const [state, setState] = useState('')
+   844→  const [deadline, setDeadline] = useState('')
+   845→  const [link, setLink] = useState('')
+   846→
+   847→  const loadContests = useCallback(async () => {
+   848→    setLoading(true)
+   849→    try {
+   850→      const res = await fetch('/api/contests')
+   851→      if (res.ok) setContests(await res.json())
+   852→    } catch { /* */ }
+   853→    finally { setLoading(false) }
+   854→  }, [])
+   855→
+   856→  useEffect(() => { loadContests() }, [loadContests])
+   857→
+   858→  const resetForm = () => {
+   859→    setTitle(''); setDescription(''); setProfessionalType('MEDICO')
+   860→    setCity(''); setState(''); setDeadline(''); setLink('')
+   861→    setEditingId(null); setShowForm(false)
+   862→  }
+   863→
+   864→  const handleEdit = (c: any) => {
+   865→    setTitle(c.title); setDescription(c.description || ''); setProfessionalType(c.professionalType)
+   866→    setCity(c.city); setState(c.state); setLink(c.link || '')
+   867→    setDeadline(c.deadline ? new Date(c.deadline).toISOString().split('T')[0] : '')
+   868→    setEditingId(c.id); setShowForm(true)
+   869→  }
+   870→
+   871→  const handleSubmit = async (e: React.FormEvent) => {
+   872→    e.preventDefault()
+   873→    if (!user) return
+   874→    try {
+   875→      const url = editingId ? `/api/contests/${editingId}` : '/api/contests'
+   876→      const method = editingId ? 'PUT' : 'POST'
+   877→      const body: any = {
+   878→        title, description, professionalType, city, state,
+   879→        deadline: deadline || null, link: link || null,
+   880→        userId: user.id,
+   881→      }
+   882→      if (editingId) body.id = editingId
+   883→
+   884→      const res = await fetch(url, {
+   885→        method,
+   886→        headers: { 'Content-Type': 'application/json' },
+   887→        body: JSON.stringify(body),
+   888→      })
+   889→      if (res.ok) {
+   890→        toast.success(editingId ? 'Concurso atualizado!' : 'Concurso criado!')
+   891→        resetForm()
+   892→        loadContests()
+   893→      } else {
+   894→        const data = await res.json()
+   895→        toast.error(data.error || 'Erro ao salvar concurso')
+   896→      }
+   897→    } catch {
+   898→      toast.error('Erro ao salvar concurso')
+   899→    }
+   900→  }
+   901→
+   902→  const handleDelete = async (id: string) => {
+   903→    if (!user || !confirm('Tem certeza que deseja excluir este concurso?')) return
+   904→    try {
+   905→      const res = await fetch(`/api/contests/${id}?userId=${user.id}`, { method: 'DELETE' })
+   906→      if (res.ok) {
+   907→        toast.success('Concurso excluído!')
+   908→        loadContests()
+   909→      } else {
+   910→        toast.error('Erro ao excluir concurso')
+   911→      }
+   912→    } catch {
+   913→      toast.error('Erro ao excluir concurso')
+   914→    }
+   915→  }
+   916→
+   917→  return (
+   918→    <div className="space-y-3">
+   919→      <div className="flex items-center justify-between">
+   920→        <p className="text-sm text-gray-500">{contests.length} concursos</p>
+   921→        <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs">
+   922→          <Plus className="w-3.5 h-3.5 mr-1" /> Novo
+   923→        </Button>
+   924→      </div>
+   925→
+   926→      {showForm && (
+   927→        <Card className="rounded-xl shadow-sm border-0">
+   928→          <CardContent className="p-4 space-y-3">
+   929→            <p className="text-sm font-medium text-gray-700">{editingId ? 'Editar Concurso' : 'Novo Concurso'}</p>
+   930→            <form onSubmit={handleSubmit} className="space-y-3">
+   931→              <Input placeholder="Título *" value={title} onChange={e => setTitle(e.target.value)} required className="rounded-lg text-sm" />
+   932→              <Textarea placeholder="Descrição" value={description} onChange={e => setDescription(e.target.value)} className="rounded-lg text-sm resize-none" rows={2} />
+   933→              <Select value={professionalType} onValueChange={(v) => setProfessionalType(v as UserRole)}>
+   934→                <SelectTrigger className="rounded-lg text-sm"><SelectValue /></SelectTrigger>
+   935→                <SelectContent>
+   936→                  <SelectItem value="MEDICO">Médico(a)</SelectItem>
+   937→                  <SelectItem value="ENFERMEIRO">Enfermeiro(a)</SelectItem>
+   938→                  <SelectItem value="TECNICO_ENFERMAGEM">Téc. Enfermagem</SelectItem>
+   939→                </SelectContent>
+   940→              </Select>
+   941→              <div className="grid grid-cols-2 gap-2">
+   942→                <Input placeholder="Cidade *" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg text-sm" />
+   943→                <Input placeholder="UF *" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg text-sm" maxLength={2} />
+   944→              </div>
+   945→              <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="rounded-lg text-sm" />
+   946→              <Input placeholder="Link" value={link} onChange={e => setLink(e.target.value)} className="rounded-lg text-sm" />
+   947→              <div className="flex gap-2">
+   948→                <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm">Salvar</Button>
+   949→                <Button type="button" variant="outline" onClick={resetForm} className="rounded-lg text-sm">Cancelar</Button>
+   950→              </div>
+   951→            </form>
+   952→          </CardContent>
+   953→        </Card>
+   954→      )}
+   955→
+   956→      {loading ? (
+   957→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+   958→      ) : contests.length === 0 ? (
+   959→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum concurso cadastrado</CardContent></Card>
+   960→      ) : (
+   961→        <div className="space-y-2 max-h-96 overflow-y-auto">
+   962→          {contests.map((c: any) => (
+   963→            <Card key={c.id} className="rounded-xl shadow-sm border-0">
+   964→              <CardContent className="p-3">
+   965→                <div className="flex items-start justify-between">
+   966→                  <div className="min-w-0 flex-1">
+   967→                    <p className="text-sm font-medium text-gray-800 truncate">{c.title}</p>
+   968→                    <p className="text-xs text-gray-500">{c.city}/{c.state}</p>
+   969→                    <div className="flex items-center gap-1 mt-1">
+   970→                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(c.professionalType))}>
+   971→                        {getRoleLabel(c.professionalType)}
+   972→                      </span>
+   973→                      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', getStatusColor(c.status))}>
+   974→                        {getStatusLabel(c.status)}
+   975→                      </span>
+   976→                    </div>
+   977→                  </div>
+   978→                  <div className="flex gap-1 shrink-0">
+   979→                    <button onClick={() => handleEdit(c)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center">
+   980→                      <Edit className="w-3.5 h-3.5 text-gray-600" />
+   981→                    </button>
+   982→                    <button onClick={() => handleDelete(c.id)} className="w-8 h-8 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center">
+   983→                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+   984→                    </button>
+   985→                  </div>
+   986→                </div>
+   987→              </CardContent>
+   988→            </Card>
+   989→          ))}
+   990→        </div>
+   991→      )}
+   992→    </div>
+   993→  )
+   994→}
+   995→
+   996→// ──────────────────────────────────────
+   997→// REVENUE REPORT CARD
+   998→// ──────────────────────────────────────
+   999→function RevenueReportCard() {
+  1000→  const { user } = useAppStore()
+  1001→  const [revenue, setRevenue] = useState<any>(null)
+  1002→  const [loading, setLoading] = useState(true)
+  1003→
+  1004→  useEffect(() => {
+  1005→    if (user) loadRevenue()
+  1006→  }, [user])
+  1007→
+  1008→  const loadRevenue = async () => {
+  1009→    if (!user) return
+  1010→    setLoading(true)
+  1011→    try {
+  1012→      const res = await fetch(`/api/admin/revenue?adminId=${user.id}`)
+  1013→      if (res.ok) setRevenue(await res.json())
+  1014→    } catch { /* */ }
+  1015→    finally { setLoading(false) }
+  1016→  }
+  1017→
+  1018→  if (loading) {
+  1019→    return <Skeleton className="h-40 rounded-xl" />
+  1020→  }
+  1021→
+  1022→  if (!revenue) return null
+  1023→
+  1024→  const trendUp = revenue.revenueTrend >= 0
+  1025→
+  1026→  return (
+  1027→    <Card className="rounded-xl border-0 shadow-sm overflow-hidden">
+  1028→      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4">
+  1029→        <div className="flex items-center gap-2 mb-2">
+  1030→          <Banknote className="w-5 h-5 text-white" />
+  1031→          <h3 className="text-sm font-semibold text-white">Relatório de Receita</h3>
+  1032→        </div>
+  1033→        <p className="text-2xl font-bold text-white">{formatCurrency(revenue.totalRevenue)}</p>
+  1034→        <p className="text-emerald-100 text-[10px]">Receita total (plantões vendidos)</p>
+  1035→      </div>
+  1036→      <CardContent className="p-4">
+  1037→        <div className="grid grid-cols-2 gap-3">
+  1038→          <div>
+  1039→            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Este Mês</p>
+  1040→            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.revenueThisMonth)}</p>
+  1041→          </div>
+  1042→          <div>
+  1043→            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Mês Passado</p>
+  1044→            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.revenueLastMonth)}</p>
+  1045→          </div>
+  1046→          <div>
+  1047→            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Média/Plantão</p>
+  1048→            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{formatCurrency(revenue.averageShiftValue)}</p>
+  1049→          </div>
+  1050→          <div>
+  1051→            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tendência</p>
+  1052→            <div className="flex items-center gap-1">
+  1053→              {trendUp ? (
+  1054→                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+  1055→              ) : (
+  1056→                <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
+  1057→              )}
+  1058→              <span className={cn('text-sm font-bold', trendUp ? 'text-emerald-600' : 'text-red-600')}>
+  1059→                {Math.abs(revenue.revenueTrend).toFixed(1)}%
+  1060→              </span>
+  1061→            </div>
+  1062→          </div>
+  1063→        </div>
+  1064→
+  1065→        {/* Top Cities */}
+  1066→        {revenue.topCities && revenue.topCities.length > 0 && (
+  1067→          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+  1068→            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Top Cidades</p>
+  1069→            <div className="space-y-1">
+  1070→              {revenue.topCities.slice(0, 3).map((c: any, i: number) => (
+  1071→                <div key={i} className="flex items-center justify-between text-xs">
+  1072→                  <span className="text-gray-700 dark:text-gray-300">{c.city}/{c.state}</span>
+  1073→                  <span className="font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(c.revenue)}</span>
+  1074→                </div>
+  1075→              ))}
+  1076→            </div>
+  1077→          </div>
+  1078→        )}
+  1079→      </CardContent>
+  1080→    </Card>
+  1081→  )
+  1082→}
+  1083→
+  1084→// ──────────────────────────────────────
+  1085→// SHIFTS PANEL
+  1086→// ──────────────────────────────────────
+  1087→function ShiftsPanel() {
+  1088→  const { user } = useAppStore()
+  1089→  const [shifts, setShifts] = useState<any[]>([])
+  1090→  const [loading, setLoading] = useState(true)
+  1091→  const [filterStatus, setFilterStatus] = useState('ALL')
+  1092→  const [sortBy, setSortBy] = useState('date')
+  1093→  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  1094→  const [selectedShift, setSelectedShift] = useState<any>(null)
+  1095→  const [showDetail, setShowDetail] = useState(false)
+  1096→  const [cancelReason, setCancelReason] = useState('')
+  1097→  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  1098→  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  1099→  const [searchQuery, setSearchQuery] = useState('')
+  1100→
+  1101→  const loadShifts = useCallback(async () => {
+  1102→    if (!user) return
+  1103→    setLoading(true)
+  1104→    try {
+  1105→      const params = new URLSearchParams()
+  1106→      params.set('adminId', user.id)
+  1107→      if (filterStatus !== 'ALL') params.set('status', filterStatus)
+  1108→      params.set('sortBy', sortBy)
+  1109→      params.set('sortOrder', sortOrder)
+  1110→      const res = await fetch(`/api/admin/shifts?${params.toString()}`)
+  1111→      if (res.ok) setShifts(await res.json())
+  1112→    } catch { /* */ }
+  1113→    finally { setLoading(false) }
+  1114→  }, [user, filterStatus, sortBy, sortOrder])
+  1115→
+  1116→  useEffect(() => { loadShifts() }, [loadShifts])
+  1117→
+  1118→  const handleViewDetail = (shift: any) => {
+  1119→    setSelectedShift(shift)
+  1120→    setShowDetail(true)
+  1121→  }
+  1122→
+  1123→  const handleCancelShift = async () => {
+  1124→    if (!user || !cancellingId) return
+  1125→    try {
+  1126→      const res = await fetch(`/api/admin/shifts/${cancellingId}/cancel`, {
+  1127→        method: 'PUT',
+  1128→        headers: { 'Content-Type': 'application/json' },
+  1129→        body: JSON.stringify({
+  1130→          adminId: user.id,
+  1131→          reason: cancelReason || undefined,
+  1132→        }),
+  1133→      })
+  1134→      if (res.ok) {
+  1135→        toast.success('Plantão cancelado com sucesso!')
+  1136→        setShowCancelDialog(false)
+  1137→        setCancellingId(null)
+  1138→        setCancelReason('')
+  1139→        loadShifts()
+  1140→      } else {
+  1141→        const data = await res.json()
+  1142→        toast.error(data.error || 'Erro ao cancelar plantão')
+  1143→      }
+  1144→    } catch {
+  1145→      toast.error('Erro ao cancelar plantão')
+  1146→    }
+  1147→  }
+  1148→
+  1149→  const openCancelDialog = (shiftId: string) => {
+  1150→    setCancellingId(shiftId)
+  1151→    setCancelReason('')
+  1152→    setShowCancelDialog(true)
+  1153→  }
+  1154→
+  1155→  const toggleSort = (field: string) => {
+  1156→    if (sortBy === field) {
+  1157→      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+  1158→    } else {
+  1159→      setSortBy(field)
+  1160→      setSortOrder('desc')
+  1161→    }
+  1162→  }
+  1163→
+  1164→  // Filter shifts by search query client-side
+  1165→  const filteredShifts = searchQuery
+  1166→    ? shifts.filter((s: any) =>
+  1167→        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1168→        s.seller?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1169→        s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  1170→        s.hospital?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  1171→      )
+  1172→    : shifts
+  1173→
+  1174→  return (
+  1175→    <div className="space-y-3">
+  1176→      {/* Filters & Search */}
+  1177→      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  1178→        <div className="flex items-center gap-2">
+  1179→          <Select value={filterStatus} onValueChange={setFilterStatus}>
+  1180→            <SelectTrigger className="w-36 rounded-lg h-9 text-sm">
+  1181→              <SelectValue />
+  1182→            </SelectTrigger>
+  1183→            <SelectContent>
+  1184→              <SelectItem value="ALL">Todos</SelectItem>
+  1185→              <SelectItem value="AVAILABLE">Disponível</SelectItem>
+  1186→              <SelectItem value="SOLD">Vendido</SelectItem>
+  1187→              <SelectItem value="CANCELLED">Cancelado</SelectItem>
+  1188→            </SelectContent>
+  1189→          </Select>
+  1190→          <p className="text-xs text-gray-500">{filteredShifts.length} plantões</p>
+  1191→        </div>
+  1192→        <div className="relative">
+  1193→          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+  1194→          <Input
+  1195→            placeholder="Buscar plantão..."
+  1196→            value={searchQuery}
+  1197→            onChange={(e) => setSearchQuery(e.target.value)}
+  1198→            className="pl-8 rounded-lg h-9 text-sm w-full sm:w-48"
+  1199→          />
+  1200→        </div>
+  1201→      </div>
+  1202→
+  1203→      {/* Sort buttons */}
+  1204→      <div className="flex items-center gap-1">
+  1205→        <span className="text-[10px] text-gray-400 mr-1">Ordenar:</span>
+  1206→        {[
+  1207→          { key: 'date', label: 'Data' },
+  1208→          { key: 'value', label: 'Valor' },
+  1209→          { key: 'status', label: 'Status' },
+  1210→        ].map((s) => (
+  1211→          <button
+  1212→            key={s.key}
+  1213→            onClick={() => toggleSort(s.key)}
+  1214→            className={cn(
+  1215→              'flex items-center gap-0.5 text-[10px] px-2 py-1 rounded-md transition-colors',
+  1216→              sortBy === s.key
+  1217→                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium'
+  1218→                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+  1219→            )}
+  1220→          >
+  1221→            {s.label}
+  1222→            <ArrowUpDown className="w-2.5 h-2.5" />
+  1223→          </button>
+  1224→        ))}
+  1225→      </div>
+  1226→
+  1227→      {/* Shifts List */}
+  1228→      {loading ? (
+  1229→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+  1230→      ) : filteredShifts.length === 0 ? (
+  1231→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhum plantão encontrado</CardContent></Card>
+  1232→      ) : (
+  1233→        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+  1234→          {filteredShifts.map((s: any) => (
+  1235→            <Card key={s.id} className={cn('rounded-xl shadow-sm border-0 hover:-translate-y-0.5 transition-transform', s.status === 'CANCELLED' && 'opacity-60')}>
+  1236→              <CardContent className="p-3">
+  1237→                <div className="flex items-start justify-between gap-2">
+  1238→                  <div className="min-w-0 flex-1">
+  1239→                    <div className="flex items-center gap-2 flex-wrap">
+  1240→                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{s.title}</p>
+  1241→                      <span className={cn('text-[9px] px-1.5 py-0.5 rounded-full font-medium shrink-0', getStatusColor(s.status))}>
+  1242→                        {getStatusLabel(s.status)}
+  1243→                      </span>
+  1244→                    </div>
+  1245→                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+  1246→                      <span className="text-xs text-gray-500 flex items-center gap-1">
+  1247→                        <Calendar className="w-3 h-3" />
+  1248→                        {formatDate(s.date)}
+  1249→                      </span>
+  1250→                      <span className="text-xs text-gray-500 flex items-center gap-1">
+  1251→                        <Clock className="w-3 h-3" />
+  1252→                        {s.startTime}-{s.endTime}
+  1253→                      </span>
+  1254→                      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(s.value)}</span>
+  1255→                    </div>
+  1256→                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+  1257→                      <span className="text-[10px] text-gray-400">{s.city}/{s.state}</span>
+  1258→                      {s.hospital && <span className="text-[10px] text-gray-400">• {s.hospital.name}</span>}
+  1259→                      <span className="text-[10px] text-gray-400">• Vendedor: {s.seller?.name}</span>
+  1260→                      {s.buyer && <span className="text-[10px] text-gray-400">• Comprador: {s.buyer.name}</span>}
+  1261→                    </div>
+  1262→                  </div>
+  1263→                  <div className="flex gap-1 shrink-0">
+  1264→                    <button
+  1265→                      onClick={() => handleViewDetail(s)}
+  1266→                      className="w-8 h-8 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 rounded-lg flex items-center justify-center transition-colors"
+  1267→                    >
+  1268→                      <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+  1269→                    </button>
+  1270→                    {s.status !== 'CANCELLED' && (
+  1271→                      <button
+  1272→                        onClick={() => openCancelDialog(s.id)}
+  1273→                        className="w-8 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 rounded-lg flex items-center justify-center transition-colors"
+  1274→                      >
+  1275→                        <X className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+  1276→                      </button>
+  1277→                    )}
+  1278→                  </div>
+  1279→                </div>
+  1280→              </CardContent>
+  1281→            </Card>
+  1282→          ))}
+  1283→        </div>
+  1284→      )}
+  1285→
+  1286→      {/* Shift Detail Dialog */}
+  1287→      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+  1288→        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+  1289→          <DialogHeader>
+  1290→            <DialogTitle className="flex items-center gap-2">
+  1291→              <Calendar className="w-5 h-5 text-emerald-600" />
+  1292→              Detalhes do Plantão
+  1293→            </DialogTitle>
+  1294→          </DialogHeader>
+  1295→          {selectedShift && (
+  1296→            <div className="space-y-4">
+  1297→              <div>
+  1298→                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{selectedShift.title}</h3>
+  1299→                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium inline-block mt-1', getStatusColor(selectedShift.status))}>
+  1300→                  {getStatusLabel(selectedShift.status)}
+  1301→                </span>
+  1302→              </div>
+  1303→
+  1304→              <div className="grid grid-cols-2 gap-3">
+  1305→                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+  1306→                  <p className="text-[10px] text-gray-400 uppercase">Data</p>
+  1307→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{formatDate(selectedShift.date)}</p>
+  1308→                </div>
+  1309→                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+  1310→                  <p className="text-[10px] text-gray-400 uppercase">Horário</p>
+  1311→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.startTime} - {selectedShift.endTime}</p>
+  1312→                </div>
+  1313→                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
+  1314→                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase">Valor</p>
+  1315→                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(selectedShift.value)}</p>
+  1316→                </div>
+  1317→                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+  1318→                  <p className="text-[10px] text-gray-400 uppercase">Tipo Profissional</p>
+  1319→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{getRoleLabel(selectedShift.professionalType)}</p>
+  1320→                </div>
+  1321→              </div>
+  1322→
+  1323→              <div className="space-y-2">
+  1324→                <div className="flex items-center gap-2">
+  1325→                  <MapPin className="w-4 h-4 text-gray-400" />
+  1326→                  <span className="text-sm text-gray-700 dark:text-gray-300">{selectedShift.city}/{selectedShift.state}</span>
+  1327→                  {selectedShift.location && <span className="text-xs text-gray-400">• {selectedShift.location}</span>}
+  1328→                </div>
+  1329→                {selectedShift.hospital && (
+  1330→                  <div className="flex items-center gap-2">
+  1331→                    <Building2 className="w-4 h-4 text-gray-400" />
+  1332→                    <span className="text-sm text-gray-700 dark:text-gray-300">{selectedShift.hospital.name}</span>
+  1333→                  </div>
+  1334→                )}
+  1335→              </div>
+  1336→
+  1337→              {selectedShift.description && (
+  1338→                <div>
+  1339→                  <p className="text-[10px] text-gray-400 uppercase mb-1">Descrição</p>
+  1340→                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedShift.description}</p>
+  1341→                </div>
+  1342→              )}
+  1343→
+  1344→              <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
+  1345→                <p className="text-[10px] text-gray-400 uppercase">Vendedor</p>
+  1346→                <div className="flex items-center gap-2">
+  1347→                  <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+  1348→                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+  1349→                      {selectedShift.seller?.name?.charAt(0) || '?'}
+  1350→                    </span>
+  1351→                  </div>
+  1352→                  <div>
+  1353→                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.seller?.name}</p>
+  1354→                    <p className="text-[10px] text-gray-400">{selectedShift.seller?.email}</p>
+  1355→                  </div>
+  1356→                </div>
+  1357→
+  1358→                {selectedShift.buyer && (
+  1359→                  <>
+  1360→                    <p className="text-[10px] text-gray-400 uppercase mt-2">Comprador</p>
+  1361→                    <div className="flex items-center gap-2">
+  1362→                      <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+  1363→                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+  1364→                          {selectedShift.buyer.name?.charAt(0) || '?'}
+  1365→                        </span>
+  1366→                      </div>
+  1367→                      <div>
+  1368→                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{selectedShift.buyer.name}</p>
+  1369→                        <p className="text-[10px] text-gray-400">{selectedShift.buyer.email}</p>
+  1370→                      </div>
+  1371→                    </div>
+  1372→                  </>
+  1373→                )}
+  1374→              </div>
+  1375→
+  1376→              {selectedShift.status !== 'CANCELLED' && (
+  1377→                <Button
+  1378→                  onClick={() => {
+  1379→                    setShowDetail(false)
+  1380→                    openCancelDialog(selectedShift.id)
+  1381→                  }}
+  1382→                  variant="outline"
+  1383→                  className="w-full border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg gap-2"
+  1384→                >
+  1385→                  <X className="w-4 h-4" />
+  1386→                  Cancelar Plantão
+  1387→                </Button>
+  1388→              )}
+  1389→            </div>
+  1390→          )}
+  1391→        </DialogContent>
+  1392→      </Dialog>
+  1393→
+  1394→      {/* Cancel Shift Dialog */}
+  1395→      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+  1396→        <DialogContent className="max-w-sm" aria-describedby={undefined}>
+  1397→          <DialogHeader>
+  1398→            <DialogTitle className="flex items-center gap-2 text-red-600">
+  1399→              <X className="w-5 h-5" />
+  1400→              Cancelar Plantão
+  1401→            </DialogTitle>
+  1402→          </DialogHeader>
+  1403→          <div className="space-y-3">
+  1404→            <p className="text-sm text-gray-600 dark:text-gray-400">
+  1405→              Tem certeza que deseja cancelar este plantão? O vendedor será notificado.
+  1406→            </p>
+  1407→            <Textarea
+  1408→              placeholder="Motivo do cancelamento (opcional)"
+  1409→              value={cancelReason}
+  1410→              onChange={(e) => setCancelReason(e.target.value)}
+  1411→              className="rounded-lg text-sm resize-none"
+  1412→              rows={3}
+  1413→            />
+  1414→            <div className="flex gap-2">
+  1415→              <Button
+  1416→                onClick={handleCancelShift}
+  1417→                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg gap-2"
+  1418→              >
+  1419→                <X className="w-4 h-4" />
+  1420→                Confirmar Cancelamento
+  1421→              </Button>
+  1422→              <Button
+  1423→                variant="outline"
+  1424→                onClick={() => setShowCancelDialog(false)}
+  1425→                className="rounded-lg"
+  1426→              >
+  1427→                Voltar
+  1428→              </Button>
+  1429→            </div>
+  1430→          </div>
+  1431→        </DialogContent>
+  1432→      </Dialog>
+  1433→    </div>
+  1434→  )
+  1435→}
+  1436→
+  1437→// ──────────────────────────────────────
+  1438→// LOCATIONS PANEL
+  1439→// ──────────────────────────────────────
+  1440→function LocationsPanel() {
+  1441→  const { user } = useAppStore()
+  1442→  const [locations, setLocations] = useState<any[]>([])
+  1443→  const [loading, setLoading] = useState(true)
+  1444→  const [city, setCity] = useState('')
+  1445→  const [state, setState] = useState('')
+  1446→
+  1447→  const loadLocations = useCallback(async () => {
+  1448→    setLoading(true)
+  1449→    try {
+  1450→      const res = await fetch('/api/admin/locations')
+  1451→      if (res.ok) setLocations(await res.json())
+  1452→    } catch { /* */ }
+  1453→    finally { setLoading(false) }
+  1454→  }, [])
+  1455→
+  1456→  useEffect(() => { loadLocations() }, [loadLocations])
+  1457→
+  1458→  const handleAdd = async (e: React.FormEvent) => {
+  1459→    e.preventDefault()
+  1460→    if (!user) return
+  1461→    try {
+  1462→      const res = await fetch('/api/admin/locations', {
+  1463→        method: 'POST',
+  1464→        headers: { 'Content-Type': 'application/json' },
+  1465→        body: JSON.stringify({ city, state, adminId: user.id }),
+  1466→      })
+  1467→      if (res.ok) {
+  1468→        toast.success('Localização adicionada!')
+  1469→        setCity(''); setState('')
+  1470→        loadLocations()
+  1471→      } else {
+  1472→        const data = await res.json()
+  1473→        toast.error(data.error || 'Erro ao adicionar localização')
+  1474→      }
+  1475→    } catch {
+  1476→      toast.error('Erro ao adicionar localização')
+  1477→    }
+  1478→  }
+  1479→
+  1480→  return (
+  1481→    <div className="space-y-3">
+  1482→      <Card className="rounded-xl shadow-sm border-0">
+  1483→        <CardContent className="p-4">
+  1484→          <p className="text-sm font-medium text-gray-700 mb-3">Adicionar Localização</p>
+  1485→          <form onSubmit={handleAdd} className="flex items-end gap-2">
+  1486→            <div className="flex-1">
+  1487→              <Input placeholder="Cidade *" value={city} onChange={e => setCity(e.target.value)} required className="rounded-lg text-sm" />
+  1488→            </div>
+  1489→            <div className="w-20">
+  1490→              <Input placeholder="UF *" value={state} onChange={e => setState(e.target.value)} required className="rounded-lg text-sm" maxLength={2} />
+  1491→            </div>
+  1492→            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shrink-0">
+  1493→              <Plus className="w-4 h-4" />
+  1494→            </Button>
+  1495→          </form>
+  1496→        </CardContent>
+  1497→      </Card>
+  1498→
+  1499→      {loading ? (
+  1500→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-12 rounded-xl" />)}</div>
+  1501→      ) : locations.length === 0 ? (
+  1502→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhuma localização cadastrada</CardContent></Card>
+  1503→      ) : (
+  1504→        <div className="space-y-2 max-h-96 overflow-y-auto">
+  1505→          {locations.map((loc: any) => (
+  1506→            <Card key={loc.id} className="rounded-xl shadow-sm border-0">
+  1507→              <CardContent className="p-3 flex items-center justify-between">
+  1508→                <div className="flex items-center gap-2">
+  1509→                  <MapPin className="w-4 h-4 text-emerald-600" />
+  1510→                  <span className="text-sm text-gray-800">{loc.city}/{loc.state}</span>
+  1511→                </div>
+  1512→                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', loc.active ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800')}>
+  1513→                  {loc.active ? 'Ativo' : 'Inativo'}
+  1514→                </span>
+  1515→              </CardContent>
+  1516→            </Card>
+  1517→          ))}
+  1518→        </div>
+  1519→      )}
+  1520→    </div>
+  1521→  )
+  1522→}
+  1523→
+  1524→// ──────────────────────────────────────
+  1525→// FEES PANEL
+  1526→// ──────────────────────────────────────
+  1527→function FeesPanel() {
+  1528→  const { user } = useAppStore()
+  1529→  const [fees, setFees] = useState<any[]>([])
+  1530→  const [loading, setLoading] = useState(true)
+  1531→  const [editingId, setEditingId] = useState<string | null>(null)
+  1532→  const [editValue, setEditValue] = useState('')
+  1533→
+  1534→  const loadFees = useCallback(async () => {
+  1535→    setLoading(true)
+  1536→    try {
+  1537→      const res = await fetch('/api/admin/fees')
+  1538→      if (res.ok) setFees(await res.json())
+  1539→    } catch { /* */ }
+  1540→    finally { setLoading(false) }
+  1541→  }, [])
+  1542→
+  1543→  useEffect(() => { loadFees() }, [loadFees])
+  1544→
+  1545→  const handleEdit = (fee: any) => {
+  1546→    setEditingId(fee.id)
+  1547→    setEditValue(String(fee.value))
+  1548→  }
+  1549→
+  1550→  const handleSave = async (id: string) => {
+  1551→    if (!user) return
+  1552→    try {
+  1553→      const res = await fetch('/api/admin/fees', {
+  1554→        method: 'PUT',
+  1555→        headers: { 'Content-Type': 'application/json' },
+  1556→        body: JSON.stringify({ id, value: parseFloat(editValue), adminId: user.id }),
+  1557→      })
+  1558→      if (res.ok) {
+  1559→        toast.success('Taxa atualizada!')
+  1560→        setEditingId(null)
+  1561→        loadFees()
+  1562→      } else {
+  1563→        const data = await res.json()
+  1564→        toast.error(data.error || 'Erro ao atualizar taxa')
+  1565→      }
+  1566→    } catch {
+  1567→      toast.error('Erro ao atualizar taxa')
+  1568→    }
+  1569→  }
+  1570→
+  1571→  return (
+  1572→    <div className="space-y-3">
+  1573→      {loading ? (
+  1574→        <div className="space-y-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+  1575→      ) : fees.length === 0 ? (
+  1576→        <Card className="rounded-xl"><CardContent className="p-6 text-center text-gray-500 text-sm">Nenhuma taxa cadastrada</CardContent></Card>
+  1577→      ) : (
+  1578→        <div className="space-y-2">
+  1579→          {fees.map((fee: any) => (
+  1580→            <Card key={fee.id} className="rounded-xl shadow-sm border-0">
+  1581→              <CardContent className="p-4">
+  1582→                <div className="flex items-center justify-between">
+  1583→                  <div>
+  1584→                    <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', getProfessionalTypeColor(fee.professionalType))}>
+  1585→                      {getRoleLabel(fee.professionalType)}
+  1586→                    </span>
+  1587→                    {fee.description && <p className="text-xs text-gray-500 mt-1">{fee.description}</p>}
+  1588→                  </div>
+  1589→                  {editingId === fee.id ? (
+  1590→                    <div className="flex items-center gap-2">
+  1591→                      <Input
+  1592→                        type="number"
+  1593→                        step="0.01"
+  1594→                        value={editValue}
+  1595→                        onChange={e => setEditValue(e.target.value)}
+  1596→                        className="w-24 rounded-lg text-sm h-8"
+  1597→                      />
+  1598→                      <Button size="sm" onClick={() => handleSave(fee.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs">
+  1599→                        Salvar
+  1600→                      </Button>
+  1601→                      <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="rounded-lg text-xs">
+  1602→                        X
+  1603→                      </Button>
+  1604→                    </div>
+  1605→                  ) : (
+  1606→                    <div className="flex items-center gap-2">
+  1607→                      <span className="text-sm font-bold text-emerald-700">{formatCurrency(fee.value)}</span>
+  1608→                      <button
+  1609→                        onClick={() => handleEdit(fee)}
+  1610→                        className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center"
+  1611→                      >
+  1612→                        <Edit className="w-3.5 h-3.5 text-gray-600" />
+  1613→                      </button>
+  1614→                    </div>
+  1615→                  )}
+  1616→                </div>
+  1617→              </CardContent>
+  1618→            </Card>
+  1619→          ))}
+  1620→        </div>
+  1621→      )}
+  1622→    </div>
+  1623→  )
+  1624→}
+  1625→
+  1626→

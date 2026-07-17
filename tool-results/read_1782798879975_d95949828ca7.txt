@@ -1,0 +1,1356 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback, useMemo } from 'react'
+     4→import { useAppStore } from '@/lib/store'
+     5→import { formatCurrency, formatDate, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Button } from '@/components/ui/button'
+     8→import { Card, CardContent } from '@/components/ui/card'
+     9→import { Badge } from '@/components/ui/badge'
+    10→import { Skeleton } from '@/components/ui/skeleton'
+    11→import { Label } from '@/components/ui/label'
+    12→import { Textarea } from '@/components/ui/textarea'
+    13→import { Checkbox } from '@/components/ui/checkbox'
+    14→import {
+    15→  Dialog,
+    16→  DialogContent,
+    17→  DialogHeader,
+    18→  DialogTitle,
+    19→  DialogDescription,
+    20→} from '@/components/ui/dialog'
+    21→import {
+    22→  Select,
+    23→  SelectContent,
+    24→  SelectItem,
+    25→  SelectTrigger,
+    26→  SelectValue,
+    27→} from '@/components/ui/select'
+    28→import { Search, MapPin, Clock, Plus, SlidersHorizontal, X, Star, ArrowUpDown, GitCompare, Check, Sparkles, Heart, Eye, Calendar, DollarSign, Timer, BarChart3, Building2, ChevronDown } from 'lucide-react'
+    29→import { toast } from 'sonner'
+    30→
+    31→interface ShiftItem {
+    32→  id: string
+    33→  title: string
+    34→  description: string | null
+    35→  date: string
+    36→  startTime: string
+    37→  endTime: string
+    38→  value: number
+    39→  location: string
+    40→  city: string
+    41→  state: string
+    42→  status: string
+    43→  professionalType: string
+    44→  sellerId: string
+    45→  seller: {
+    46→    id: string
+    47→    name: string
+    48→    role: string
+    49→    professionalDoc: string | null
+    50→    avgRating: number
+    51→    totalRatings: number
+    52→  }
+    53→  hospital: { id: string; name: string } | null
+    54→}
+    55→
+    56→// Title auto-suggest helper
+    57→function generateTitleSuggestion(professionalType: string, hospitalName: string | null): string {
+    58→  const typeLabels: Record<string, string> = {
+    59→    MEDICO: 'Plantão Médico',
+    60→    ENFERMEIRO: 'Plantão Enfermagem',
+    61→    TECNICO_ENFERMAGEM: 'Plantão Téc. Enfermagem',
+    62→  }
+    63→  const base = typeLabels[professionalType] || 'Plantão'
+    64→  if (hospitalName) {
+    65→    return `${base} - ${hospitalName}`
+    66→  }
+    67→  return base
+    68→}
+    69→
+    70→export function PlantoesTab() {
+    71→  const { user, setSelectedShiftId, setShowAuthModal, setAuthMode, toggleFavorite } = useAppStore()
+    72→  const [shifts, setShifts] = useState<ShiftItem[]>([])
+    73→  const [loading, setLoading] = useState(true)
+    74→  const [search, setSearch] = useState('')
+    75→  const [city, setCity] = useState(user?.city || '')
+    76→  const [state, setState] = useState(user?.state || '')
+    77→  const [professionalType, setProfessionalType] = useState('')
+    78→  const [minValue, setMinValue] = useState('')
+    79→  const [maxValue, setMaxValue] = useState('')
+    80→  const [sortBy, setSortBy] = useState('recent')
+    81→  const [showFilters, setShowFilters] = useState(false)
+    82→  const [showCreateShift, setShowCreateShift] = useState(false)
+    83→  const [comparisonIds, setComparisonIds] = useState<string[]>([])
+    84→  const [showComparisonDialog, setShowComparisonDialog] = useState(false)
+    85→  const [favoriteIds, setFavoriteIdsLocal] = useState<string[]>([])
+    86→
+    87→  const loadShifts = useCallback(async () => {
+    88→    setLoading(true)
+    89→    try {
+    90→      const params = new URLSearchParams()
+    91→      params.set('status', 'AVAILABLE')
+    92→      if (search) params.set('search', search)
+    93→      if (city) params.set('city', city)
+    94→      if (state) params.set('state', state)
+    95→      if (professionalType) params.set('professionalType', professionalType)
+    96→      if (minValue) params.set('minValue', minValue)
+    97→      if (maxValue) params.set('maxValue', maxValue)
+    98→      if (sortBy && sortBy !== 'recent') params.set('sortBy', sortBy)
+    99→
+   100→      const res = await fetch(`/api/shifts?${params.toString()}`)
+   101→      if (res.ok) {
+   102→        const data = await res.json()
+   103→        setShifts(data)
+   104→      }
+   105→    } catch {
+   106→      // silently fail
+   107→    } finally {
+   108→      setLoading(false)
+   109→    }
+   110→  }, [search, city, state, professionalType, minValue, maxValue, sortBy])
+   111→
+   112→  // Load user favorites
+   113→  useEffect(() => {
+   114→    if (!user) return
+   115→    const loadFavorites = async () => {
+   116→      try {
+   117→        const res = await fetch(`/api/favorites?userId=${user.id}`)
+   118→        if (res.ok) {
+   119→          const data = await res.json()
+   120→          const ids = data.map((f: { shiftId: string }) => f.shiftId)
+   121→          setFavoriteIdsLocal(ids)
+   122→        }
+   123→      } catch { /* */ }
+   124→    }
+   125→    loadFavorites()
+   126→  }, [user])
+   127→
+   128→  useEffect(() => {
+   129→    loadShifts()
+   130→  }, [loadShifts])
+   131→
+   132→  const handleShiftClick = (shiftId: string) => {
+   133→    setSelectedShiftId(shiftId)
+   134→  }
+   135→
+   136→  const handleToggleFavorite = async (shiftId: string, e?: React.MouseEvent) => {
+   137→    e?.stopPropagation()
+   138→    if (!user) {
+   139→      setAuthMode('login')
+   140→      setShowAuthModal(true)
+   141→      return
+   142→    }
+   143→    try {
+   144→      const isFav = favoriteIds.includes(shiftId)
+   145→      if (isFav) {
+   146→        await fetch(`/api/favorites/${shiftId}?userId=${user.id}`, { method: 'DELETE' })
+   147→      } else {
+   148→        await fetch('/api/favorites', {
+   149→          method: 'POST',
+   150→          headers: { 'Content-Type': 'application/json' },
+   151→          body: JSON.stringify({ userId: user.id, shiftId }),
+   152→        })
+   153→      }
+   154→      setFavoriteIdsLocal(prev =>
+   155→        prev.includes(shiftId) ? prev.filter(id => id !== shiftId) : [...prev, shiftId]
+   156→      )
+   157→      toggleFavorite(shiftId)
+   158→      toast.success(isFav ? 'Removido dos favoritos' : 'Adicionado aos favoritos')
+   159→    } catch {
+   160→      toast.error('Erro ao atualizar favoritos')
+   161→    }
+   162→  }
+   163→
+   164→  const handleCreateShift = () => {
+   165→    if (!user) {
+   166→      setAuthMode('login')
+   167→      setShowAuthModal(true)
+   168→      return
+   169→    }
+   170→    setShowCreateShift(true)
+   171→  }
+   172→
+   173→  const clearFilters = () => {
+   174→    setCity('')
+   175→    setState('')
+   176→    setProfessionalType('')
+   177→    setSearch('')
+   178→    setMinValue('')
+   179→    setMaxValue('')
+   180→    setSortBy('recent')
+   181→  }
+   182→
+   183→  const toggleComparison = (shiftId: string, e?: React.MouseEvent) => {
+   184→    e?.stopPropagation()
+   185→    setComparisonIds(prev => {
+   186→      if (prev.includes(shiftId)) {
+   187→        return prev.filter(id => id !== shiftId)
+   188→      }
+   189→      if (prev.length >= 3) {
+   190→        toast.warning('Máximo de 3 plantões para comparação')
+   191→        return prev
+   192→      }
+   193→      return [...prev, shiftId]
+   194→    })
+   195→  }
+   196→
+   197→  const clearComparison = () => {
+   198→    setComparisonIds([])
+   199→  }
+   200→
+   201→  const comparisonShifts = shifts.filter(s => comparisonIds.includes(s.id))
+   202→  const activeFilterCount = [city, state, professionalType, minValue, maxValue].filter(Boolean).length
+   203→  const hasActiveFilters = activeFilterCount > 0
+   204→
+   205→  return (
+   206→    <div className="space-y-4">
+   207→      {/* Search Bar */}
+   208→      <div className="flex items-center gap-2">
+   209→        <div className="relative flex-1 search-gradient rounded-xl p-[2px]">
+   210→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+   211→          <Input
+   212→            placeholder="Buscar plantões..."
+   213→            value={search}
+   214→            onChange={(e) => setSearch(e.target.value)}
+   215→            className="pl-9 rounded-[10px] bg-white dark:bg-gray-800 border-0 focus-visible:ring-2 focus-visible:ring-emerald-400/50 transition-all duration-200"
+   216→          />
+   217→        </div>
+   218→        <div className="relative">
+   219→          <Button
+   220→            variant="outline"
+   221→            size="icon"
+   222→            className={cn(
+   223→              'rounded-xl h-10 w-10 shrink-0',
+   224→              showFilters ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white'
+   225→            )}
+   226→            onClick={() => setShowFilters(!showFilters)}
+   227→          >
+   228→            <SlidersHorizontal className="w-4 h-4" />
+   229→          </Button>
+   230→          {activeFilterCount > 0 && (
+   231→            <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+   232→              {activeFilterCount}
+   233→            </span>
+   234→          )}
+   235→        </div>
+   236→      </div>
+   237→
+   238→      {/* Sort Select */}
+   239→      <div className="flex items-center gap-2">
+   240→        <ArrowUpDown className="w-4 h-4 text-gray-400 shrink-0" />
+   241→        <Select value={sortBy} onValueChange={setSortBy}>
+   242→          <SelectTrigger className="rounded-lg h-9 text-sm w-full">
+   243→            <SelectValue />
+   244→          </SelectTrigger>
+   245→          <SelectContent>
+   246→            <SelectItem value="recent">Mais recentes</SelectItem>
+   247→            <SelectItem value="price_asc">Menor preço</SelectItem>
+   248→            <SelectItem value="price_desc">Maior preço</SelectItem>
+   249→            <SelectItem value="rating">Melhor avaliação</SelectItem>
+   250→          </SelectContent>
+   251→        </Select>
+   252→      </div>
+   253→
+   254→      {/* Filters - smooth toggle with max-height transition */}
+   255→      <div className={`filter-panel ${showFilters ? 'expanded' : 'collapsed'}`}>
+   256→        <Card className="rounded-xl shadow-sm border-0">
+   257→          <CardContent className="p-4 space-y-3">
+   258→            <div className="flex items-center justify-between">
+   259→              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros</p>
+   260→              {hasActiveFilters && (
+   261→                <button
+   262→                  onClick={clearFilters}
+   263→                  className="text-xs text-emerald-600 hover:underline flex items-center gap-1"
+   264→                >
+   265→                  <X className="w-3 h-3" /> Limpar
+   266→                </button>
+   267→              )}
+   268→            </div>
+   269→            <div className="grid grid-cols-2 gap-3">
+   270→              <div className="space-y-1">
+   271→                <label className="text-xs text-gray-500 dark:text-gray-400">Cidade</label>
+   272→                <Input
+   273→                  placeholder="Cidade"
+   274→                  value={city}
+   275→                  onChange={(e) => setCity(e.target.value)}
+   276→                  className="rounded-lg text-sm h-9"
+   277→                />
+   278→              </div>
+   279→              <div className="space-y-1">
+   280→                <label className="text-xs text-gray-500 dark:text-gray-400">Estado</label>
+   281→                <Input
+   282→                  placeholder="UF"
+   283→                  value={state}
+   284→                  onChange={(e) => setState(e.target.value)}
+   285→                  className="rounded-lg text-sm h-9"
+   286→                  maxLength={2}
+   287→                />
+   288→              </div>
+   289→            </div>
+   290→            <div className="space-y-1">
+   291→              <label className="text-xs text-gray-500 dark:text-gray-400">Tipo de Profissional</label>
+   292→              <Select value={professionalType} onValueChange={setProfessionalType}>
+   293→                <SelectTrigger className="rounded-lg h-9 text-sm">
+   294→                  <SelectValue placeholder="Todos os tipos" />
+   295→                </SelectTrigger>
+   296→                <SelectContent>
+   297→                  <SelectItem value="all">Todos os tipos</SelectItem>
+   298→                  <SelectItem value="MEDICO">Médico(a)</SelectItem>
+   299→                  <SelectItem value="ENFERMEIRO">Enfermeiro(a)</SelectItem>
+   300→                  <SelectItem value="TECNICO_ENFERMAGEM">Téc. Enfermagem</SelectItem>
+   301→                </SelectContent>
+   302→              </Select>
+   303→            </div>
+   304→            <div className="grid grid-cols-2 gap-3">
+   305→              <div className="space-y-1">
+   306→                <label className="text-xs text-gray-500 dark:text-gray-400">Valor mín. (R$)</label>
+   307→                <Input
+   308→                  type="number"
+   309→                  placeholder="0"
+   310→                  value={minValue}
+   311→                  onChange={(e) => setMinValue(e.target.value)}
+   312→                  className="rounded-lg text-sm h-9"
+   313→                />
+   314→              </div>
+   315→              <div className="space-y-1">
+   316→                <label className="text-xs text-gray-500 dark:text-gray-400">Valor máx. (R$)</label>
+   317→                <Input
+   318→                  type="number"
+   319→                  placeholder="9999"
+   320→                  value={maxValue}
+   321→                  onChange={(e) => setMaxValue(e.target.value)}
+   322→                  className="rounded-lg text-sm h-9"
+   323→                />
+   324→              </div>
+   325→            </div>
+   326→          </CardContent>
+   327→        </Card>
+   328→      </div>
+   329→
+   330→      {/* Results count */}
+   331→      <div className="flex items-center justify-between">
+   332→        <p className="text-sm text-gray-500">
+   333→          {loading ? 'Buscando...' : `${shifts.length} plant${shifts.length !== 1 ? 'ões' : 'ão'} encontrado${shifts.length !== 1 ? 's' : ''}`}
+   334→        </p>
+   335→        {comparisonIds.length > 0 && (
+   336→          <button
+   337→            onClick={clearComparison}
+   338→            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1"
+   339→          >
+   340→            <X className="w-3 h-3" />
+   341→            Limpar seleção ({comparisonIds.length})
+   342→          </button>
+   343→        )}
+   344→      </div>
+   345→
+   346→      {/* Shift List */}
+   347→      {loading ? (
+   348→        <div className="space-y-3">
+   349→          {[1, 2, 3, 4].map((i, idx) => (
+   350→            <div key={i} className="shimmer-skeleton-card h-28 rounded-xl staggered-card" style={{ animationDelay: `${idx * 100}ms` }} />
+   351→          ))}
+   352→        </div>
+   353→      ) : shifts.length === 0 ? (
+   354→        <Card className="rounded-2xl bg-gray-50 border-0">
+   355→          <CardContent className="p-8 text-center">
+   356→            <Search className="w-12 h-12 mx-auto text-gray-300 mb-3 animate-pulse" />
+   357→            <p className="text-gray-600 font-medium">Nenhum plantão encontrado</p>
+   358→            <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros de busca</p>
+   359→            <Button
+   360→              variant="outline"
+   361→              className="mt-3 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+   362→              onClick={clearFilters}
+   363→            >
+   364→              Limpar filtros
+   365→            </Button>
+   366→          </CardContent>
+   367→        </Card>
+   368→      ) : (
+   369→        <div className="space-y-3 relative">
+   370→          {/* Gradient overlay at bottom when scrollable */}
+   371→          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent z-10" />
+   372→          {shifts.map((shift, index) => {
+   373→            const isNew = new Date().getTime() - new Date(shift.date).getTime() < 2 * 24 * 60 * 60 * 1000
+   374→            const isSelected = comparisonIds.includes(shift.id)
+   375→            const isFav = favoriteIds.includes(shift.id)
+   376→            return (
+   377→            <Card
+   378→              key={shift.id}
+   379→              className={cn(
+   380→                "rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 relative staggered-card quick-action-card",
+   381→                isSelected && 'ring-2 ring-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10'
+   382→              )}
+   383→              style={{ animationDelay: `${index * 50}ms` }}
+   384→              onClick={() => handleShiftClick(shift.id)}
+   385→            >
+   386→              <CardContent className="p-4">
+   387→                {/* Comparison checkbox - top right */}
+   388→                <div
+   389→                  className="absolute top-3 right-3 z-10"
+   390→                  onClick={(e) => toggleComparison(shift.id, e)}
+   391→                >
+   392→                  <button
+   393→                    className={cn(
+   394→                      'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 border-2',
+   395→                      isSelected
+   396→                        ? 'bg-emerald-500 border-emerald-500 text-white scale-110'
+   397→                        : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:scale-105'
+   398→                    )}
+   399→                    aria-label={isSelected ? 'Remover da comparação' : 'Adicionar à comparação'}
+   400→                  >
+   401→                    {isSelected ? (
+   402→                      <Check className="w-3.5 h-3.5" />
+   403→                    ) : (
+   404→                      <GitCompare className="w-3 h-3 text-gray-400" />
+   405→                    )}
+   406→                  </button>
+   407→                </div>
+   408→                <div className="flex items-start justify-between gap-3">
+   409→                  <div className="flex-1 min-w-0 pr-8">
+   410→                    <div className="flex items-center gap-2">
+   411→                      <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
+   412→                      {isNew && (
+   413→                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500 text-white rounded-full font-bold shrink-0">Novo</span>
+   414→                      )}
+   415→                    </div>
+   416→                    {shift.hospital && (
+   417→                      <p className="text-xs text-gray-400 mt-0.5 truncate">{shift.hospital.name}</p>
+   418→                    )}
+   419→                    <div className="flex items-center gap-2 mt-1.5">
+   420→                      <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+   421→                      <span className="text-xs text-gray-500 dark:text-gray-400">{shift.city}/{shift.state}</span>
+   422→                    </div>
+   423→                    <div className="flex items-center gap-2 mt-1">
+   424→                      <Clock className="w-3 h-3 text-gray-400 shrink-0" />
+   425→                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+   426→                    </div>
+   427→                    <div className="flex items-center gap-1.5 mt-1.5">
+   428→                      <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+   429→                        <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
+   430→                          {shift.seller.name.charAt(0)}
+   431→                        </span>
+   432→                      </div>
+   433→                      <span className="text-xs text-gray-600 dark:text-gray-400 truncate">{shift.seller.name}</span>
+   434→                      {shift.seller.avgRating > 0 && (
+   435→                        <span className="text-xs text-amber-500 shrink-0">
+   436→                          <Star className="w-3 h-3 inline fill-amber-400 text-amber-400" />
+   437→                          {shift.seller.avgRating.toFixed(1)}
+   438→                        </span>
+   439→                      )}
+   440→                    </div>
+   441→                  </div>
+   442→                  <div className="text-right shrink-0">
+   443→                    <p className="text-emerald-700 dark:text-emerald-400 font-bold">{formatCurrency(shift.value)}</p>
+   444→                    <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
+   445→                      {getRoleLabel(shift.professionalType)}
+   446→                    </span>
+   447→                    <div className="mt-1">
+   448→                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+   449→                        {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+   450→                      </span>
+   451→                    </div>
+   452→                  </div>
+   453→                </div>
+   454→                {/* Quick actions: Favorite + Quick View */}
+   455→                <div className="quick-action-overlay absolute top-3 left-3 flex gap-1.5 z-10">
+   456→                  <button
+   457→                    onClick={(e) => handleToggleFavorite(shift.id, e)}
+   458→                    className={cn(
+   459→                      'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm',
+   460→                      isFav
+   461→                        ? 'bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30'
+   462→                        : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700'
+   463→                    )}
+   464→                    aria-label={isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+   465→                  >
+   466→                    <Heart className={cn('w-3.5 h-3.5 transition-all', isFav && 'fill-red-500')} />
+   467→                  </button>
+   468→                </div>
+   469→                <div className="quick-action-overlay absolute bottom-3 right-3 z-10">
+   470→                  <button
+   471→                    onClick={(e) => { e.stopPropagation(); handleShiftClick(shift.id) }}
+   472→                    className="w-7 h-7 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all duration-200 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+   473→                    aria-label="Ver detalhes"
+   474→                  >
+   475→                    <Eye className="w-3.5 h-3.5" />
+   476→                  </button>
+   477→                </div>
+   478→              </CardContent>
+   479→            </Card>
+   480→            )
+   481→          })}
+   482→        </div>
+   483→      )}
+   484→
+   485→      {/* Floating Comparison Bar */}
+   486→      {comparisonIds.length >= 2 && (
+   487→        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 animate-slideUp w-[calc(100%-2rem)] max-w-md">
+   488→          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-800 p-3 flex items-center gap-3">
+   489→            <div className="flex -space-x-2 shrink-0">
+   490→              {comparisonShifts.slice(0, 3).map(shift => (
+   491→                <div
+   492→                  key={shift.id}
+   493→                  className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border-2 border-white dark:border-gray-900 flex items-center justify-center"
+   494→                >
+   495→                  <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400">{shift.title.charAt(0)}</span>
+   496→                </div>
+   497→              ))}
+   498→            </div>
+   499→            <div className="flex-1 min-w-0">
+   500→              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
+   501→                {comparisonIds.length} plant{comparisonIds.length !== 1 ? 'ões' : 'ão'} selecionado{comparisonIds.length !== 1 ? 's' : ''}
+   502→              </p>
+   503→              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+   504→                {comparisonShifts.map(s => s.title).join(' • ')}
+   505→              </p>
+   506→            </div>
+   507→            <div className="flex items-center gap-2 shrink-0">
+   508→              <Button
+   509→                size="sm"
+   510→                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg h-9 gap-1.5 shadow-sm"
+   511→                onClick={() => setShowComparisonDialog(true)}
+   512→              >
+   513→                <GitCompare className="w-3.5 h-3.5" />
+   514→                Comparar
+   515→              </Button>
+   516→              <button
+   517→                onClick={clearComparison}
+   518→                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+   519→              >
+   520→                <X className="w-4 h-4 text-gray-500" />
+   521→              </button>
+   522→            </div>
+   523→          </div>
+   524→        </div>
+   525→      )}
+   526→
+   527→      {/* Enhanced Comparison Dialog */}
+   528→      <Dialog open={showComparisonDialog} onOpenChange={setShowComparisonDialog}>
+   529→        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+   530→          <DialogHeader>
+   531→            <DialogTitle className="flex items-center gap-2">
+   532→              <GitCompare className="w-5 h-5 text-emerald-600" />
+   533→              Comparação de Plantões
+   534→            </DialogTitle>
+   535→            <DialogDescription>
+   536→              Compare até 3 plantões lado a lado. Os melhores valores estão destacados em verde.
+   537→            </DialogDescription>
+   538→          </DialogHeader>
+   539→
+   540→          {comparisonShifts.length >= 2 && (
+   541→            <ShiftVisualComparison shifts={comparisonShifts} />
+   542→          )}
+   543→
+   544→          <div className="flex items-center justify-between pt-2 border-t">
+   545→            <Button
+   546→              variant="ghost"
+   547→              size="sm"
+   548→              className="text-gray-500 hover:text-red-500"
+   549→              onClick={() => {
+   550→                clearComparison()
+   551→                setShowComparisonDialog(false)
+   552→              }}
+   553→            >
+   554→              <X className="w-4 h-4 mr-1" />
+   555→              Limpar seleção
+   556→            </Button>
+   557→            <Button
+   558→              variant="outline"
+   559→              size="sm"
+   560→              className="border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+   561→              onClick={() => setShowComparisonDialog(false)}
+   562→            >
+   563→              Fechar
+   564→            </Button>
+   565→          </div>
+   566→        </DialogContent>
+   567→      </Dialog>
+   568→
+   569→      {/* Floating Action Button */}
+   570→      {user?.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
+   571→        <button
+   572→          onClick={handleCreateShift}
+   573→          className={cn(
+   574→            "fixed right-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 animate-float ring-4 ring-emerald-400/20 hover:ring-emerald-400/40 ring-offset-2 ring-offset-white dark:ring-offset-gray-950 z-40",
+   575→            comparisonIds.length >= 2 ? "bottom-36 w-12 h-12" : "bottom-20 w-14 h-14"
+   576→          )}
+   577→        >
+   578→          <Plus className={comparisonIds.length >= 2 ? "w-5 h-5" : "w-6 h-6"} />
+   579→        </button>
+   580→      )}
+   581→
+   582→      {/* Create Shift Modal - enhanced bottom sheet dialog */}
+   583→      {showCreateShift && (
+   584→        <CreateShiftDialog
+   585→          onClose={() => setShowCreateShift(false)}
+   586→          onCreated={loadShifts}
+   587→        />
+   588→      )}
+   589→    </div>
+   590→  )
+   591→}
+   592→
+   593→// ─── Visual Shift Comparison Component ───
+   594→function ShiftVisualComparison({ shifts }: { shifts: ShiftItem[] }) {
+   595→  const bestValue = Math.min(...shifts.map(s => s.value))
+   596→  const bestRating = Math.max(...shifts.map(s => s.seller.avgRating))
+   597→  const maxValue = Math.max(...shifts.map(s => s.value))
+   598→
+   599→  // Duration calculation helper
+   600→  const getDurationMinutes = (startTime: string, endTime: string): number => {
+   601→    const [sh, sm] = startTime.split(':').map(Number)
+   602→    const [eh, em] = endTime.split(':').map(Number)
+   603→    let startMins = sh * 60 + sm
+   604→    let endMins = eh * 60 + em
+   605→    if (endMins <= startMins) endMins += 24 * 60 // crosses midnight
+   606→    return endMins - startMins
+   607→  }
+   608→
+   609→  const formatDuration = (mins: number): string => {
+   610→    const h = Math.floor(mins / 60)
+   611→    const m = mins % 60
+   612→    return m > 0 ? `${h}h${m}min` : `${h}h`
+   613→  }
+   614→
+   615→  const maxDuration = Math.max(...shifts.map(s => getDurationMinutes(s.startTime, s.endTime)))
+   616→
+   617→  // Color mapping for chart bars
+   618→  const barColors = [
+   619→    'bg-emerald-500',
+   620→    'bg-teal-500',
+   621→    'bg-cyan-500',
+   622→  ]
+   623→
+   624→  return (
+   625→    <div className="space-y-6">
+   626→      {/* ── Price Comparison Bar Chart ── */}
+   627→      <div className="space-y-3">
+   628→        <div className="flex items-center gap-2">
+   629→          <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-md flex items-center justify-center">
+   630→            <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+   631→          </div>
+   632→          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Preço</h4>
+   633→        </div>
+   634→        <div className="space-y-3">
+   635→          {shifts.map((shift, idx) => {
+   636→            const isBest = shift.value === bestValue && shifts.length > 1
+   637→            const barWidth = maxValue > 0 ? (shift.value / maxValue) * 100 : 0
+   638→            return (
+   639→              <div key={shift.id} className="space-y-1">
+   640→                <div className="flex items-center justify-between">
+   641→                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate max-w-[50%]">{shift.title}</span>
+   642→                  <div className="flex items-center gap-1.5">
+   643→                    <span className={cn(
+   644→                      'text-sm font-bold',
+   645→                      isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+   646→                    )}>
+   647→                      {formatCurrency(shift.value)}
+   648→                    </span>
+   649→                    {isBest && (
+   650→                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full font-medium">Melhor</span>
+   651→                    )}
+   652→                  </div>
+   653→                </div>
+   654→                <div className="h-6 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative">
+   655→                  <div
+   656→                    className={cn('h-full rounded-lg transition-all duration-500', barColors[idx])}
+   657→                    style={{ width: `${barWidth}%` }}
+   658→                  />
+   659→                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+   660→                    {Math.round(barWidth)}%
+   661→                  </span>
+   662→                </div>
+   663→              </div>
+   664→            )
+   665→          })}
+   666→        </div>
+   667→      </div>
+   668→
+   669→      {/* ── Duration Comparison ── */}
+   670→      <div className="space-y-3">
+   671→        <div className="flex items-center gap-2">
+   672→          <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-md flex items-center justify-center">
+   673→            <Timer className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+   674→          </div>
+   675→          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Duração</h4>
+   676→        </div>
+   677→        <div className="space-y-3">
+   678→          {shifts.map((shift, idx) => {
+   679→            const duration = getDurationMinutes(shift.startTime, shift.endTime)
+   680→            const barWidth = maxDuration > 0 ? (duration / maxDuration) * 100 : 0
+   681→            const isLongest = duration === maxDuration && shifts.length > 1
+   682→            return (
+   683→              <div key={shift.id} className="space-y-1">
+   684→                <div className="flex items-center justify-between">
+   685→                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate max-w-[50%]">{shift.title}</span>
+   686→                  <div className="flex items-center gap-1.5">
+   687→                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{formatDuration(duration)}</span>
+   688→                    <span className="text-[10px] text-gray-400">{shift.startTime}-{shift.endTime}</span>
+   689→                    {isLongest && (
+   690→                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-medium">Mais longo</span>
+   691→                    )}
+   692→                  </div>
+   693→                </div>
+   694→                <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+   695→                  <div
+   696→                    className={cn('h-full rounded-lg transition-all duration-500 opacity-80', barColors[idx])}
+   697→                    style={{ width: `${barWidth}%` }}
+   698→                  />
+   699→                </div>
+   700→              </div>
+   701→            )
+   702→          })}
+   703→        </div>
+   704→      </div>
+   705→
+   706→      {/* ── Location Comparison ── */}
+   707→      <div className="space-y-3">
+   708→        <div className="flex items-center gap-2">
+   709→          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-md flex items-center justify-center">
+   710→            <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+   711→          </div>
+   712→          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Comparação de Localização</h4>
+   713→        </div>
+   714→        <div className="grid gap-2">
+   715→          {shifts.map((shift) => {
+   716→            const sameLocation = shifts.filter(s => s.city === shift.city && s.state === shift.state).length > 1
+   717→            return (
+   718→              <div key={shift.id} className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+   719→                <div className="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
+   720→                  <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+   721→                </div>
+   722→                <div className="flex-1 min-w-0">
+   723→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{shift.title}</p>
+   724→                  <p className="text-xs text-gray-500 dark:text-gray-400">
+   725→                    {shift.city}/{shift.state}
+   726→                    {shift.hospital && <span className="ml-1.5">• {shift.hospital.name}</span>}
+   727→                  </p>
+   728→                </div>
+   729→                {sameLocation && (
+   730→                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-medium shrink-0">Mesma cidade</span>
+   731→                )}
+   732→              </div>
+   733→            )
+   734→          })}
+   735→        </div>
+   736→      </div>
+   737→
+   738→      {/* ── Seller Rating Comparison ── */}
+   739→      <div className="space-y-3">
+   740→        <div className="flex items-center gap-2">
+   741→          <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-md flex items-center justify-center">
+   742→            <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+   743→          </div>
+   744→          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Avaliação dos Vendedores</h4>
+   745→        </div>
+   746→        <div className="space-y-3">
+   747→          {shifts.map((shift, idx) => {
+   748→            const isBest = shift.seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+   749→            const barWidth = bestRating > 0 ? (shift.seller.avgRating / 5) * 100 : 0
+   750→            return (
+   751→              <div key={shift.id} className="space-y-1">
+   752→                <div className="flex items-center justify-between">
+   753→                  <div className="flex items-center gap-1.5">
+   754→                    <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+   755→                      <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{shift.seller.name.charAt(0)}</span>
+   756→                    </div>
+   757→                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate">{shift.seller.name}</span>
+   758→                  </div>
+   759→                  <div className="flex items-center gap-1.5">
+   760→                    {shift.seller.avgRating > 0 ? (
+   761→                      <>
+   762→                        <span className="text-amber-500 text-xs">{renderStars(shift.seller.avgRating)}</span>
+   763→                        <span className={cn(
+   764→                          'text-sm font-bold',
+   765→                          isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+   766→                        )}>
+   767→                          {shift.seller.avgRating.toFixed(1)}
+   768→                        </span>
+   769→                      </>
+   770→                    ) : (
+   771→                      <span className="text-xs text-gray-400">Sem avaliações</span>
+   772→                    )}
+   773→                    {isBest && (
+   774→                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-medium">Melhor</span>
+   775→                    )}
+   776→                  </div>
+   777→                </div>
+   778→                {shift.seller.avgRating > 0 && (
+   779→                  <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+   780→                    <div
+   781→                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500"
+   782→                      style={{ width: `${barWidth}%` }}
+   783→                    />
+   784→                  </div>
+   785→                )}
+   786→              </div>
+   787→            )
+   788→          })}
+   789→        </div>
+   790→      </div>
+   791→
+   792→      {/* ── Detailed Table Comparison ── */}
+   793→      <div className="space-y-3">
+   794→        <div className="flex items-center gap-2">
+   795→          <div className="w-6 h-6 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center">
+   796→            <BarChart3 className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+   797→          </div>
+   798→          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tabela Detalhada</h4>
+   799→        </div>
+   800→        <ShiftComparisonTable shifts={shifts} />
+   801→      </div>
+   802→    </div>
+   803→  )
+   804→}
+   805→
+   806→// Comparison Table Component
+   807→function ShiftComparisonTable({ shifts }: { shifts: ShiftItem[] }) {
+   808→  const bestValue = Math.min(...shifts.map(s => s.value))
+   809→  const bestRating = Math.max(...shifts.map(s => s.seller.avgRating))
+   810→
+   811→  const rows: { label: string; icon: React.ReactNode; values: React.ReactNode[] }[] = [
+   812→    {
+   813→      label: 'Título',
+   814→      icon: <Sparkles className="w-3.5 h-3.5" />,
+   815→      values: shifts.map(s => (
+   816→        <span key={s.id} className="font-medium text-sm text-gray-800 dark:text-gray-200">{s.title}</span>
+   817→      )),
+   818→    },
+   819→    {
+   820→      label: 'Data',
+   821→      icon: <Calendar className="w-3.5 h-3.5" />,
+   822→      values: shifts.map(s => (
+   823→        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{formatDate(s.date)}</span>
+   824→      )),
+   825→    },
+   826→    {
+   827→      label: 'Horário',
+   828→      icon: <Clock className="w-3.5 h-3.5" />,
+   829→      values: shifts.map(s => (
+   830→        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.startTime} - {s.endTime}</span>
+   831→      )),
+   832→    },
+   833→    {
+   834→      label: 'Valor',
+   835→      icon: <span className="text-xs">💰</span>,
+   836→      values: shifts.map(s => {
+   837→        const isBest = s.value === bestValue && shifts.length > 1
+   838→        return (
+   839→          <span key={s.id} className={cn(
+   840→            'text-sm font-bold',
+   841→            isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+   842→          )}>
+   843→            {formatCurrency(s.value)}
+   844→            {isBest && <span className="ml-1 text-[10px] font-normal">✓ Melhor</span>}
+   845→          </span>
+   846→        )
+   847→      }),
+   848→    },
+   849→    {
+   850→      label: 'Cidade/Estado',
+   851→      icon: <MapPin className="w-3.5 h-3.5" />,
+   852→      values: shifts.map(s => (
+   853→        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.city}/{s.state}</span>
+   854→      )),
+   855→    },
+   856→    {
+   857→      label: 'Hospital',
+   858→      icon: <Building2 className="w-3.5 h-3.5" />,
+   859→      values: shifts.map(s => (
+   860→        <span key={s.id} className="text-sm text-gray-700 dark:text-gray-300">{s.hospital?.name || '—'}</span>
+   861→      )),
+   862→    },
+   863→    {
+   864→      label: 'Tipo Profissional',
+   865→      icon: <span className="text-xs">🩺</span>,
+   866→      values: shifts.map(s => (
+   867→        <Badge key={s.id} variant="secondary" className={cn('text-[11px] px-2 py-0 h-5 font-medium', getProfessionalTypeColor(s.professionalType))}>
+   868→          {getRoleLabel(s.professionalType)}
+   869→        </Badge>
+   870→      )),
+   871→    },
+   872→    {
+   873→      label: 'Tipo Turno',
+   874→      icon: <span className="text-xs">⏰</span>,
+   875→      values: shifts.map(s => {
+   876→        const shiftType = getShiftType(s.startTime, s.endTime)
+   877→        return (
+   878→          <Badge key={s.id} variant="secondary" className={cn('text-[11px] px-2 py-0 h-5 font-medium', getShiftTypeColor(shiftType))}>
+   879→            {getShiftTypeIcon(shiftType)} {shiftType}
+   880→          </Badge>
+   881→        )
+   882→      }),
+   883→    },
+   884→    {
+   885→      label: 'Vendedor',
+   886→      icon: <span className="text-xs">👤</span>,
+   887→      values: shifts.map(s => (
+   888→        <div key={s.id} className="flex items-center gap-1.5">
+   889→          <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+   890→            <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{s.seller.name.charAt(0)}</span>
+   891→          </div>
+   892→          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{s.seller.name}</span>
+   893→        </div>
+   894→      )),
+   895→    },
+   896→    {
+   897→      label: 'Avaliação Vendedor',
+   898→      icon: <Star className="w-3.5 h-3.5" />,
+   899→      values: shifts.map(s => {
+   900→        const isBest = s.seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+   901→        return (
+   902→          <span key={s.id} className={cn(
+   903→            'text-sm font-medium',
+   904→            isBest ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+   905→          )}>
+   906→            {s.seller.avgRating > 0 ? (
+   907→              <>
+   908→                <Star className="w-3 h-3 inline fill-amber-400 text-amber-400 mr-0.5" />
+   909→                {s.seller.avgRating.toFixed(1)}
+   910→                {isBest && <span className="ml-1 text-[10px] font-normal">✓ Melhor</span>}
+   911→              </>
+   912→            ) : '—'}
+   913→          </span>
+   914→        )
+   915→      }),
+   916→    },
+   917→  ]
+   918→
+   919→  return (
+   920→    <div className="overflow-x-auto -mx-2">
+   921→      <table className="w-full text-sm">
+   922→        <thead>
+   923→          <tr className="border-b border-gray-200 dark:border-gray-700">
+   924→            <th className="text-left py-2 px-2 text-xs font-medium text-gray-500 dark:text-gray-400 w-28 shrink-0">
+   925→              Critério
+   926→            </th>
+   927→            {shifts.map((shift) => (
+   928→              <th key={shift.id} className="text-left py-2 px-2 text-xs font-semibold text-gray-800 dark:text-gray-200 min-w-[140px]">
+   929→                <div className="flex items-center gap-1.5">
+   930→                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+   931→                    <span className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400">{shift.title.charAt(0)}</span>
+   932→                  </div>
+   933→                  <span className="truncate">{shift.title}</span>
+   934→                </div>
+   935→              </th>
+   936→            ))}
+   937→          </tr>
+   938→        </thead>
+   939→        <tbody>
+   940→          {rows.map((row, idx) => {
+   941→            const isValueRow = row.label === 'Valor'
+   942→            const isRatingRow = row.label === 'Avaliação Vendedor'
+   943→
+   944→            return (
+   945→              <tr
+   946→                key={row.label}
+   947→                className={cn(
+   948→                  idx % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/30' : '',
+   949→                  'border-b border-gray-100 dark:border-gray-800'
+   950→                )}
+   951→              >
+   952→                <td className="py-2.5 px-2">
+   953→                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+   954→                    {row.icon}
+   955→                    <span className="text-xs font-medium">{row.label}</span>
+   956→                  </div>
+   957→                </td>
+   958→                {row.values.map((val, valIdx) => {
+   959→                  const isBest = isValueRow
+   960→                    ? shifts[valIdx].value === bestValue && shifts.length > 1
+   961→                    : isRatingRow
+   962→                      ? shifts[valIdx].seller.avgRating === bestRating && bestRating > 0 && shifts.length > 1
+   963→                      : false
+   964→
+   965→                  return (
+   966→                    <td
+   967→                      key={valIdx}
+   968→                      className={cn(
+   969→                        'py-2.5 px-2',
+   970→                        isBest && 'bg-emerald-50 dark:bg-emerald-900/20 rounded-md'
+   971→                      )}
+   972→                    >
+   973→                      {val}
+   974→                    </td>
+   975→                  )
+   976→                })}
+   977→              </tr>
+   978→            )
+   979→          })}
+   980→        </tbody>
+   981→      </table>
+   982→    </div>
+   983→  )
+   984→}
+   985→
+   986→function getShiftStatusColor(status: string): string {
+   987→  const colors: Record<string, string> = {
+   988→    AVAILABLE: 'bg-emerald-100 text-emerald-800',
+   989→    SOLD: 'bg-amber-100 text-amber-800',
+   990→    CANCELLED: 'bg-red-100 text-red-800',
+   991→  }
+   992→  return colors[status] || 'bg-gray-100 text-gray-800'
+   993→}
+   994→
+   995→function getShiftStatusLabel(status: string): string {
+   996→  const labels: Record<string, string> = {
+   997→    AVAILABLE: 'Disponível',
+   998→    SOLD: 'Vendido',
+   999→    CANCELLED: 'Cancelado',
+  1000→  }
+  1001→  return labels[status] || status
+  1002→}
+  1003→
+  1004→// ─── Enhanced Create Shift Dialog (Bottom Sheet style) ───
+  1005→function CreateShiftDialog({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  1006→  const { user } = useAppStore()
+  1007→  const [loading, setLoading] = useState(false)
+  1008→  const [hospitals, setHospitals] = useState<{ id: string; name: string; city: string; state: string }[]>([])
+  1009→  const [title, setTitle] = useState('')
+  1010→  const [description, setDescription] = useState('')
+  1011→  const [date, setDate] = useState('')
+  1012→  const [startTime, setStartTime] = useState('')
+  1013→  const [endTime, setEndTime] = useState('')
+  1014→  const [value, setValue] = useState('')
+  1015→  const [location, setLocation] = useState('')
+  1016→  const [city, setCity] = useState(user?.city || '')
+  1017→  const [state, setState] = useState(user?.state || '')
+  1018→  const [professionalType, setProfessionalType] = useState(user?.role === 'EMPRESA' ? 'MEDICO' : (user?.role || 'MEDICO'))
+  1019→  const [hospitalId, setHospitalId] = useState('')
+  1020→
+  1021→  // Auto-suggest title based on professional type + selected hospital
+  1022→  const selectedHospital = hospitals.find(h => h.id === hospitalId)
+  1023→  const suggestedTitle = useMemo(() => {
+  1024→    return generateTitleSuggestion(professionalType, selectedHospital?.name || null)
+  1025→  }, [professionalType, selectedHospital])
+  1026→
+  1027→  useEffect(() => {
+  1028→    const loadHospitals = async () => {
+  1029→      try {
+  1030→        const params = new URLSearchParams()
+  1031→        if (user?.city) params.set('city', user.city)
+  1032→        if (user?.state) params.set('state', user.state)
+  1033→        const res = await fetch(`/api/hospitals?${params.toString()}`)
+  1034→        if (res.ok) setHospitals(await res.json())
+  1035→      } catch { /* */ }
+  1036→    }
+  1037→    loadHospitals()
+  1038→  }, [user])
+  1039→
+  1040→  // Auto-fill city/state when hospital changes
+  1041→  useEffect(() => {
+  1042→    if (selectedHospital && !city) {
+  1043→      setCity(selectedHospital.city)
+  1044→      setState(selectedHospital.state)
+  1045→    }
+  1046→  }, [selectedHospital, city])
+  1047→
+  1048→  // Format currency input
+  1049→  const handleValueChange = (raw: string) => {
+  1050→    const digits = raw.replace(/\D/g, '')
+  1051→    if (digits === '') {
+  1052→      setValue('')
+  1053→      return
+  1054→    }
+  1055→    const num = parseInt(digits, 10) / 100
+  1056→    setValue(num.toFixed(2))
+  1057→  }
+  1058→
+  1059→  const displayValue = useMemo(() => {
+  1060→    if (!value) return ''
+  1061→    return `R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  1062→  }, [value])
+  1063→
+  1064→  const handleSubmit = async (e: React.FormEvent) => {
+  1065→    e.preventDefault()
+  1066→    if (!user) return
+  1067→    setLoading(true)
+  1068→    try {
+  1069→      const res = await fetch('/api/shifts', {
+  1070→        method: 'POST',
+  1071→        headers: { 'Content-Type': 'application/json' },
+  1072→        body: JSON.stringify({
+  1073→          title: title || suggestedTitle,
+  1074→          description,
+  1075→          date,
+  1076→          startTime,
+  1077→          endTime,
+  1078→          value: parseFloat(value),
+  1079→          location: location || (selectedHospital ? selectedHospital.name : ''),
+  1080→          city,
+  1081→          state,
+  1082→          professionalType,
+  1083→          hospitalId: hospitalId || undefined,
+  1084→          sellerId: user.id,
+  1085→        }),
+  1086→      })
+  1087→      if (res.ok) {
+  1088→        onCreated()
+  1089→        onClose()
+  1090→        toast.success('Plantão publicado com sucesso!')
+  1091→      } else {
+  1092→        const data = await res.json()
+  1093→        toast.error(data.error || 'Erro ao publicar plantão')
+  1094→      }
+  1095→    } catch {
+  1096→      toast.error('Erro ao publicar plantão')
+  1097→    } finally {
+  1098→      setLoading(false)
+  1099→    }
+  1100→  }
+  1101→
+  1102→  return (
+  1103→    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
+  1104→      <div
+  1105→        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slideUp"
+  1106→        onClick={(e) => e.stopPropagation()}
+  1107→      >
+  1108→        {/* Drag handle (mobile) */}
+  1109→        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+  1110→          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+  1111→        </div>
+  1112→
+  1113→        <div className="p-5">
+  1114→          {/* Header */}
+  1115→          <div className="flex items-center justify-between mb-5">
+  1116→            <div className="flex items-center gap-3">
+  1117→              <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+  1118→                <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+  1119→              </div>
+  1120→              <div>
+  1121→                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Publicar Plantão</h3>
+  1122→                <p className="text-xs text-gray-500 dark:text-gray-400">Preencha os dados do plantão</p>
+  1123→              </div>
+  1124→            </div>
+  1125→            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+  1126→              <X className="w-4 h-4 text-gray-500" />
+  1127→            </button>
+  1128→          </div>
+  1129→
+  1130→          <form onSubmit={handleSubmit} className="space-y-4">
+  1131→            {/* Title with auto-suggest */}
+  1132→            <div className="space-y-1.5">
+  1133→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1134→                <Sparkles className="w-3 h-3" />
+  1135→                Título *
+  1136→              </Label>
+  1137→              <Input
+  1138→                placeholder={suggestedTitle}
+  1139→                value={title}
+  1140→                onChange={e => setTitle(e.target.value)}
+  1141→                className="rounded-lg"
+  1142→              />
+  1143→              {!title && suggestedTitle && (
+  1144→                <button
+  1145→                  type="button"
+  1146→                  onClick={() => setTitle(suggestedTitle)}
+  1147→                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+  1148→                >
+  1149→                  <Sparkles className="w-3 h-3" />
+  1150→                  Usar sugestão: &quot;{suggestedTitle}&quot;
+  1151→                </button>
+  1152→              )}
+  1153→            </div>
+  1154→
+  1155→            {/* Description */}
+  1156→            <div className="space-y-1.5">
+  1157→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Descrição</Label>
+  1158→              <Textarea
+  1159→                placeholder="Detalhes do plantão, requisitos, informações adicionais..."
+  1160→                value={description}
+  1161→                onChange={e => setDescription(e.target.value)}
+  1162→                className="rounded-lg resize-none min-h-[60px]"
+  1163→                rows={2}
+  1164→              />
+  1165→            </div>
+  1166→
+  1167→            {/* Date */}
+  1168→            <div className="space-y-1.5">
+  1169→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1170→                <Calendar className="w-3 h-3" />
+  1171→                Data *
+  1172→              </Label>
+  1173→              <Input
+  1174→                type="date"
+  1175→                value={date}
+  1176→                onChange={e => setDate(e.target.value)}
+  1177→                required
+  1178→                className="rounded-lg"
+  1179→                min={new Date().toISOString().split('T')[0]}
+  1180→              />
+  1181→            </div>
+  1182→
+  1183→            {/* Start/End Time */}
+  1184→            <div className="grid grid-cols-2 gap-3">
+  1185→              <div className="space-y-1.5">
+  1186→                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1187→                  <Clock className="w-3 h-3" />
+  1188→                  Início *
+  1189→                </Label>
+  1190→                <Input
+  1191→                  type="time"
+  1192→                  value={startTime}
+  1193→                  onChange={e => setStartTime(e.target.value)}
+  1194→                  required
+  1195→                  className="rounded-lg"
+  1196→                />
+  1197→              </div>
+  1198→              <div className="space-y-1.5">
+  1199→                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1200→                  <Clock className="w-3 h-3" />
+  1201→                  Fim *
+  1202→                </Label>
+  1203→                <Input
+  1204→                  type="time"
+  1205→                  value={endTime}
+  1206→                  onChange={e => setEndTime(e.target.value)}
+  1207→                  required
+  1208→                  className="rounded-lg"
+  1209→                />
+  1210→              </div>
+  1211→            </div>
+  1212→
+  1213→            {/* Shift type badge preview */}
+  1214→            {startTime && endTime && (
+  1215→              <div className="flex items-center gap-2">
+  1216→                <span className={cn(
+  1217→                  'text-[11px] px-2.5 py-1 rounded-full font-medium border border-current/20',
+  1218→                  getShiftTypeColor(getShiftType(startTime, endTime))
+  1219→                )}>
+  1220→                  {getShiftTypeIcon(getShiftType(startTime, endTime))} {getShiftType(startTime, endTime)}
+  1221→                </span>
+  1222→              </div>
+  1223→            )}
+  1224→
+  1225→            {/* Value - Currency input */}
+  1226→            <div className="space-y-1.5">
+  1227→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1228→                <DollarSign className="w-3 h-3" />
+  1229→                Valor (R$) *
+  1230→              </Label>
+  1231→              <div className="relative">
+  1232→                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">R$</span>
+  1233→                <Input
+  1234→                  type="text"
+  1235→                  inputMode="decimal"
+  1236→                  placeholder="0,00"
+  1237→                  value={displayValue || value}
+  1238→                  onChange={(e) => {
+  1239→                    const raw = e.target.value.replace(/^R\$\s*/, '')
+  1240→                    const cleaned = raw.replace(/[^\d.,]/g, '').replace(',', '.')
+  1241→                    setValue(cleaned)
+  1242→                  }}
+  1243→                  onBlur={() => {
+  1244→                    if (value) {
+  1245→                      const num = parseFloat(value)
+  1246→                      if (!isNaN(num)) {
+  1247→                        setValue(num.toFixed(2))
+  1248→                      }
+  1249→                    }
+  1250→                  }}
+  1251→                  required
+  1252→                  className="rounded-lg pl-10"
+  1253→                />
+  1254→              </div>
+  1255→            </div>
+  1256→
+  1257→            {/* Hospital dropdown */}
+  1258→            <div className="space-y-1.5">
+  1259→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1260→                <Building2 className="w-3 h-3" />
+  1261→                Hospital
+  1262→              </Label>
+  1263→              <Select value={hospitalId} onValueChange={setHospitalId}>
+  1264→                <SelectTrigger className="rounded-lg">
+  1265→                  <SelectValue placeholder="Selecione (opcional)" />
+  1266→                </SelectTrigger>
+  1267→                <SelectContent>
+  1268→                  <SelectItem value="none">Nenhum</SelectItem>
+  1269→                  {hospitals.map(h => (
+  1270→                    <SelectItem key={h.id} value={h.id}>{h.name} - {h.city}/{h.state}</SelectItem>
+  1271→                  ))}
+  1272→                </SelectContent>
+  1273→              </Select>
+  1274→            </div>
+  1275→
+  1276→            {/* Location */}
+  1277→            <div className="space-y-1.5">
+  1278→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1279→                <MapPin className="w-3 h-3" />
+  1280→                Local *
+  1281→              </Label>
+  1282→              <Input
+  1283→                placeholder={selectedHospital ? selectedHospital.name : "Hospital XYZ - Ala A"}
+  1284→                value={location}
+  1285→                onChange={e => setLocation(e.target.value)}
+  1286→                required={!selectedHospital}
+  1287→                className="rounded-lg"
+  1288→              />
+  1289→            </div>
+  1290→
+  1291→            {/* City / State */}
+  1292→            <div className="grid grid-cols-2 gap-3">
+  1293→              <div className="space-y-1.5">
+  1294→                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Cidade *</Label>
+  1295→                <Input
+  1296→                  placeholder="São Paulo"
+  1297→                  value={city}
+  1298→                  onChange={e => setCity(e.target.value)}
+  1299→                  required
+  1300→                  className="rounded-lg"
+  1301→                />
+  1302→              </div>
+  1303→              <div className="space-y-1.5">
+  1304→                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">Estado *</Label>
+  1305→                <Input
+  1306→                  placeholder="SP"
+  1307→                  value={state}
+  1308→                  onChange={e => setState(e.target.value)}
+  1309→                  required
+  1310→                  className="rounded-lg"
+  1311→                  maxLength={2}
+  1312→                />
+  1313→              </div>
+  1314→            </div>
+  1315→
+  1316→            {/* Professional Type - auto-filled */}
+  1317→            <div className="space-y-1.5">
+  1318→              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+  1319→                🩺 Tipo de Profissional *
+  1320→                {user?.role && user.role !== 'EMPRESA' && user.role !== 'ADMIN' && (
+  1321→                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">(preenchido automaticamente)</span>
+  1322→                )}
+  1323→              </Label>
+  1324→              <Select value={professionalType} onValueChange={setProfessionalType}>
+  1325→                <SelectTrigger className="rounded-lg">
+  1326→                  <SelectValue />
+  1327→                </SelectTrigger>
+  1328→                <SelectContent>
+  1329→                  <SelectItem value="MEDICO">Médico(a)</SelectItem>
+  1330→                  <SelectItem value="ENFERMEIRO">Enfermeiro(a)</SelectItem>
+  1331→                  <SelectItem value="TECNICO_ENFERMAGEM">Téc. Enfermagem</SelectItem>
+  1332→                </SelectContent>
+  1333→              </Select>
+  1334→            </div>
+  1335→
+  1336→            {/* Submit */}
+  1337→            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg h-11 text-sm font-semibold gap-2" disabled={loading}>
+  1338→              {loading ? (
+  1339→                <>
+  1340→                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+  1341→                  Publicando...
+  1342→                </>
+  1343→              ) : (
+  1344→                <>
+  1345→                  <Plus className="w-4 h-4" />
+  1346→                  Publicar Plantão
+  1347→                </>
+  1348→              )}
+  1349→            </Button>
+  1350→          </form>
+  1351→        </div>
+  1352→      </div>
+  1353→    </div>
+  1354→  )
+  1355→}
+  1356→

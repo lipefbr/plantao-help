@@ -1,0 +1,1763 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useAppStore, AuthUser } from '@/lib/store'
+     5→import { formatCurrency, formatDate, getRoleLabel, getStatusColor, getStatusLabel, renderStars, cn } from '@/lib/utils'
+     6→import { Button } from '@/components/ui/button'
+     7→import { Card, CardContent } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+    10→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    11→import {
+    12→  Dialog,
+    13→  DialogContent,
+    14→  DialogHeader,
+    15→  DialogTitle,
+    16→} from '@/components/ui/dialog'
+    17→import { Switch } from '@/components/ui/switch'
+    18→import { Skeleton } from '@/components/ui/skeleton'
+    19→import { Input } from '@/components/ui/input'
+    20→import { Label } from '@/components/ui/label'
+    21→import { Textarea } from '@/components/ui/textarea'
+    22→import {
+    23→  User, Mail, Phone, MapPin, FileText, Shield, LogOut,
+    24→  Star, MessageSquare, Settings, LogIn, ChevronRight,
+    25→  Heart, Moon, Clock, MapPinIcon, Pencil, X, Save, Lock, Eye, EyeOff, Loader2,
+    26→  ScrollText, TrendingUp, ShoppingCart, DollarSign, CalendarDays, Award, BarChart3, Timer,
+    27→  Bell, Plus, Trash2, Sun, MoonStar, Sunrise, AlertCircle, CheckCircle2, ArrowRight
+    28→} from 'lucide-react'
+    29→import { toast } from 'sonner'
+    30→
+    31→interface RatingItem {
+    32→  id: string
+    33→  stars: number
+    34→  comment: string | null
+    35→  createdAt: string
+    36→  rater: { id: string; name: string; avatar: string | null }
+    37→  shift: { id: string; title: string }
+    38→}
+    39→
+    40→interface FavoriteShift {
+    41→  id: string
+    42→  title: string
+    43→  date: string
+    44→  startTime: string
+    45→  endTime: string
+    46→  value: number
+    47→  city: string
+    48→  state: string
+    49→  status: string
+    50→  professionalType: string
+    51→  seller: { id: string; name: string; avgRating: number }
+    52→  hospital: { id: string; name: string } | null
+    53→}
+    54→
+    55→interface UserStats {
+    56→  totalPublished: number
+    57→  totalSold: number
+    58→  totalCancelled: number
+    59→  totalBought: number
+    60→  totalEarned: number
+    61→  totalSpent: number
+    62→  avgRating: number
+    63→  mostCommonCity: string | null
+    64→  mostCommonState: string | null
+    65→  mostCommonShiftType: string | null
+    66→  accountAgeDays: number
+    67→  profileCompletion: number
+    68→  activityScore: number
+    69→  completionRate: number
+    70→  totalRatingsReceived: number
+    71→}
+    72→
+    73→interface ShiftAlertItem {
+    74→  id: string
+    75→  userId: string
+    76→  professionalType: string | null
+    77→  city: string | null
+    78→  state: string | null
+    79→  minValue: number | null
+    80→  maxValue: number | null
+    81→  shiftType: string | null
+    82→  active: boolean
+    83→  createdAt: string
+    84→}
+    85→
+    86→const BRAZILIAN_STATES = [
+    87→  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+    88→  'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN',
+    89→  'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'
+    90→]
+    91→
+    92→export function PerfilTab() {
+    93→  const { user, setUser, setShowAuthModal, setAuthMode, setActiveTab, setSelectedShiftId, darkMode, toggleDarkMode, favoriteIds, setFavoriteIds } = useAppStore()
+    94→  const [ratings, setRatings] = useState<RatingItem[]>([])
+    95→  const [avgRating, setAvgRating] = useState(0)
+    96→  const [totalRatings, setTotalRatings] = useState(0)
+    97→  const [loadingRatings, setLoadingRatings] = useState(false)
+    98→  const [favoriteShifts, setFavoriteShifts] = useState<FavoriteShift[]>([])
+    99→  const [loadingFavorites, setLoadingFavorites] = useState(false)
+   100→
+   101→  // Profile edit state
+   102→  const [isEditing, setIsEditing] = useState(false)
+   103→  const [editName, setEditName] = useState('')
+   104→  const [editPhone, setEditPhone] = useState('')
+   105→  const [editCity, setEditCity] = useState('')
+   106→  const [editState, setEditState] = useState('')
+   107→  const [editBio, setEditBio] = useState('')
+   108→  const [editDoc, setEditDoc] = useState('')
+   109→  const [savingProfile, setSavingProfile] = useState(false)
+   110→
+   111→  // Legal dialog states
+   112→  const [showTerms, setShowTerms] = useState(false)
+   113→  const [showPrivacy, setShowPrivacy] = useState(false)
+   114→
+   115→  // Password change state
+   116→  const [currentPassword, setCurrentPassword] = useState('')
+   117→  const [newPassword, setNewPassword] = useState('')
+   118→  const [confirmPassword, setConfirmPassword] = useState('')
+   119→  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+   120→  const [showNewPassword, setShowNewPassword] = useState(false)
+   121→  const [savingPassword, setSavingPassword] = useState(false)
+   122→
+   123→  // User stats state
+   124→  const [userStats, setUserStats] = useState<UserStats | null>(null)
+   125→  const [loadingStats, setLoadingStats] = useState(false)
+   126→
+   127→  // Alerts state
+   128→  const [alerts, setAlerts] = useState<ShiftAlertItem[]>([])
+   129→  const [loadingAlerts, setLoadingAlerts] = useState(false)
+   130→  const [showAlertForm, setShowAlertForm] = useState(false)
+   131→  const [alertForm, setAlertForm] = useState({
+   132→    professionalType: '',
+   133→    city: '',
+   134→    state: '',
+   135→    minValue: '',
+   136→    maxValue: '',
+   137→    shiftType: '',
+   138→  })
+   139→  const [savingAlert, setSavingAlert] = useState(false)
+   140→
+   141→  useEffect(() => {
+   142→    if (user) {
+   143→      loadRatings()
+   144→      loadFavorites()
+   145→      loadUserStats()
+   146→      loadAlerts()
+   147→    }
+   148→  }, [user])
+   149→
+   150→  // Sync edit form when user changes or edit mode activates
+   151→  useEffect(() => {
+   152→    if (user && isEditing) {
+   153→      setEditName(user.name || '')
+   154→      setEditPhone(user.phone || '')
+   155→      setEditCity(user.city || '')
+   156→      setEditState(user.state || '')
+   157→      setEditBio(user.bio || '')
+   158→      setEditDoc(user.professionalDoc || '')
+   159→    }
+   160→  }, [user, isEditing])
+   161→
+   162→  const loadRatings = async () => {
+   163→    if (!user) return
+   164→    setLoadingRatings(true)
+   165→    try {
+   166→      const res = await fetch(`/api/users/${user.id}/ratings`)
+   167→      if (res.ok) {
+   168→        const data = await res.json()
+   169→        setRatings(data.ratings || [])
+   170→        setAvgRating(data.avgRating || 0)
+   171→        setTotalRatings(data.totalRatings || 0)
+   172→      }
+   173→    } catch {
+   174→      // silently fail
+   175→    } finally {
+   176→      setLoadingRatings(false)
+   177→    }
+   178→  }
+   179→
+   180→  const loadFavorites = async () => {
+   181→    if (!user) return
+   182→    setLoadingFavorites(true)
+   183→    try {
+   184→      const res = await fetch(`/api/favorites?userId=${user.id}`)
+   185→      if (res.ok) {
+   186→        const data = await res.json()
+   187→        // API returns { ...favorite, shift: { ...shiftData } }, extract shift data
+   188→        const shifts: FavoriteShift[] = data
+   189→          .filter((item: { shift: unknown }) => item.shift)
+   190→          .map((item: { shift: FavoriteShift; shiftId: string }) => ({
+   191→            ...item.shift,
+   192→            id: item.shiftId,
+   193→          }))
+   194→        setFavoriteShifts(shifts)
+   195→        setFavoriteIds(shifts.map((s: FavoriteShift) => s.id))
+   196→      }
+   197→    } catch {
+   198→      // silently fail
+   199→    } finally {
+   200→      setLoadingFavorites(false)
+   201→    }
+   202→  }
+   203→
+   204→  const loadUserStats = async () => {
+   205→    if (!user) return
+   206→    setLoadingStats(true)
+   207→    try {
+   208→      const res = await fetch(`/api/users/${user.id}/stats`)
+   209→      if (res.ok) {
+   210→        const data = await res.json()
+   211→        setUserStats(data as UserStats)
+   212→      }
+   213→    } catch {
+   214→      // silently fail
+   215→    } finally {
+   216→      setLoadingStats(false)
+   217→    }
+   218→  }
+   219→
+   220→  const loadAlerts = async () => {
+   221→    if (!user) return
+   222→    setLoadingAlerts(true)
+   223→    try {
+   224→      const res = await fetch(`/api/alerts?userId=${user.id}`)
+   225→      if (res.ok) {
+   226→        const data = await res.json()
+   227→        setAlerts(data.alerts || [])
+   228→      }
+   229→    } catch {
+   230→      // silently fail
+   231→    } finally {
+   232→      setLoadingAlerts(false)
+   233→    }
+   234→  }
+   235→
+   236→  const handleLogout = () => {
+   237→    setUser(null)
+   238→  }
+   239→
+   240→  const handleRemoveFavorite = async (shiftId: string) => {
+   241→    if (!user) return
+   242→    try {
+   243→      const res = await fetch(`/api/favorites/${shiftId}?userId=${user.id}`, { method: 'DELETE' })
+   244→      if (res.ok) {
+   245→        setFavoriteShifts(favoriteShifts.filter(s => s.id !== shiftId))
+   246→        setFavoriteIds(favoriteIds.filter(id => id !== shiftId))
+   247→        toast.success('Removido dos favoritos')
+   248→      }
+   249→    } catch {
+   250→      // silently fail
+   251→    }
+   252→  }
+   253→
+   254→  const handleStartEdit = () => {
+   255→    if (!user) return
+   256→    setEditName(user.name || '')
+   257→    setEditPhone(user.phone || '')
+   258→    setEditCity(user.city || '')
+   259→    setEditState(user.state || '')
+   260→    setEditBio(user.bio || '')
+   261→    setEditDoc(user.professionalDoc || '')
+   262→    setIsEditing(true)
+   263→  }
+   264→
+   265→  const handleCancelEdit = () => {
+   266→    setIsEditing(false)
+   267→  }
+   268→
+   269→  const handleSaveProfile = async () => {
+   270→    if (!user) return
+   271→    setSavingProfile(true)
+   272→    try {
+   273→      const res = await fetch(`/api/users/${user.id}`, {
+   274→        method: 'PUT',
+   275→        headers: { 'Content-Type': 'application/json' },
+   276→        body: JSON.stringify({
+   277→          name: editName,
+   278→          phone: editPhone,
+   279→          city: editCity,
+   280→          state: editState,
+   281→          bio: editBio,
+   282→          professionalDoc: editDoc,
+   283→        })
+   284→      })
+   285→      if (res.ok) {
+   286→        const updatedUser = await res.json()
+   287→        setUser(updatedUser as AuthUser)
+   288→        setIsEditing(false)
+   289→        toast.success('Perfil atualizado com sucesso!')
+   290→      } else {
+   291→        const data = await res.json()
+   292→        toast.error(data.error || 'Erro ao atualizar perfil')
+   293→      }
+   294→    } catch {
+   295→      toast.error('Erro ao atualizar perfil')
+   296→    } finally {
+   297→      setSavingProfile(false)
+   298→    }
+   299→  }
+   300→
+   301→  const handleChangePassword = async () => {
+   302→    if (!user) return
+   303→
+   304→    if (!currentPassword) {
+   305→      toast.error('Informe a senha atual')
+   306→      return
+   307→    }
+   308→    if (newPassword.length < 6) {
+   309→      toast.error('A nova senha deve ter pelo menos 6 caracteres')
+   310→      return
+   311→    }
+   312→    if (newPassword !== confirmPassword) {
+   313→      toast.error('As senhas não coincidem')
+   314→      return
+   315→    }
+   316→
+   317→    setSavingPassword(true)
+   318→    try {
+   319→      const res = await fetch(`/api/users/${user.id}/password`, {
+   320→        method: 'PUT',
+   321→        headers: { 'Content-Type': 'application/json' },
+   322→        body: JSON.stringify({ currentPassword, newPassword })
+   323→      })
+   324→      if (res.ok) {
+   325→        setCurrentPassword('')
+   326→        setNewPassword('')
+   327→        setConfirmPassword('')
+   328→        toast.success('Senha alterada com sucesso!')
+   329→      } else {
+   330→        const data = await res.json()
+   331→        toast.error(data.error || 'Erro ao alterar senha')
+   332→      }
+   333→    } catch {
+   334→      toast.error('Erro ao alterar senha')
+   335→    } finally {
+   336→      setSavingPassword(false)
+   337→    }
+   338→  }
+   339→
+   340→  const handleCreateAlert = async () => {
+   341→    if (!user) return
+   342→
+   343→    const hasCriteria = alertForm.professionalType || alertForm.city || alertForm.state || alertForm.minValue || alertForm.maxValue || alertForm.shiftType
+   344→    if (!hasCriteria) {
+   345→      toast.error('Defina pelo menos um critério para o alerta')
+   346→      return
+   347→    }
+   348→
+   349→    setSavingAlert(true)
+   350→    try {
+   351→      const res = await fetch('/api/alerts', {
+   352→        method: 'POST',
+   353→        headers: { 'Content-Type': 'application/json' },
+   354→        body: JSON.stringify({
+   355→          userId: user.id,
+   356→          ...alertForm,
+   357→        })
+   358→      })
+   359→      if (res.ok) {
+   360→        setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' })
+   361→        setShowAlertForm(false)
+   362→        loadAlerts()
+   363→        toast.success('Alerta criado com sucesso!')
+   364→      } else {
+   365→        const data = await res.json()
+   366→        toast.error(data.error || 'Erro ao criar alerta')
+   367→      }
+   368→    } catch {
+   369→      toast.error('Erro ao criar alerta')
+   370→    } finally {
+   371→      setSavingAlert(false)
+   372→    }
+   373→  }
+   374→
+   375→  const handleDeleteAlert = async (alertId: string) => {
+   376→    if (!user) return
+   377→    try {
+   378→      const res = await fetch(`/api/alerts/${alertId}`, {
+   379→        method: 'DELETE',
+   380→        headers: { 'Content-Type': 'application/json' },
+   381→        body: JSON.stringify({ userId: user.id })
+   382→      })
+   383→      if (res.ok) {
+   384→        setAlerts(alerts.filter(a => a.id !== alertId))
+   385→        toast.success('Alerta excluído')
+   386→      }
+   387→    } catch {
+   388→      toast.error('Erro ao excluir alerta')
+   389→    }
+   390→  }
+   391→
+   392→  const handleToggleAlert = async (alertId: string, currentActive: boolean) => {
+   393→    if (!user) return
+   394→    try {
+   395→      const res = await fetch(`/api/alerts/${alertId}`, {
+   396→        method: 'PATCH',
+   397→        headers: { 'Content-Type': 'application/json' },
+   398→        body: JSON.stringify({ userId: user.id, active: !currentActive })
+   399→      })
+   400→      if (res.ok) {
+   401→        setAlerts(alerts.map(a => a.id === alertId ? { ...a, active: !currentActive } : a))
+   402→        toast.success(currentActive ? 'Alerta desativado' : 'Alerta ativado')
+   403→      }
+   404→    } catch {
+   405→      toast.error('Erro ao atualizar alerta')
+   406→    }
+   407→  }
+   408→
+   409→  if (!user) {
+   410→    return (
+   411→      <div className="flex flex-col items-center justify-center py-16 px-4">
+   412→        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-4">
+   413→          <User className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+   414→        </div>
+   415→        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">Perfil</h3>
+   416→        <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
+   417→          Faça login para ver seu perfil e histórico
+   418→        </p>
+   419→        <Button
+   420→          onClick={() => {
+   421→            setAuthMode('login')
+   422→            setShowAuthModal(true)
+   423→          }}
+   424→          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-2"
+   425→        >
+   426→          <LogIn className="w-4 h-4" />
+   427→          Entrar
+   428→        </Button>
+   429→      </div>
+   430→    )
+   431→  }
+   432→
+   433→  const initials = user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+   434→
+   435→  const getProfessionalDocLabel = () => {
+   436→    switch (user.role) {
+   437→      case 'MEDICO': return 'CRM'
+   438→      case 'ENFERMEIRO':
+   439→      case 'TECNICO_ENFERMAGEM': return 'COREN'
+   440→      case 'EMPRESA': return 'CNPJ'
+   441→      default: return 'Documento Profissional'
+   442→    }
+   443→  }
+   444→
+   445→  return (
+   446→    <div className="space-y-4">
+   447→      {/* Profile Header */}
+   448→      <Card className="rounded-xl shadow-sm border-0 overflow-hidden relative">
+   449→        {/* Confetti-like decorative pattern */}
+   450→        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+   451→          {[...Array(12)].map((_, i) => (
+   452→            <div
+   453→              key={i}
+   454→              className="absolute w-2 h-2 rounded-full bg-white/10"
+   455→              style={{
+   456→                top: `${Math.random() * 100}%`,
+   457→                left: `${Math.random() * 100}%`,
+   458→                animationDelay: `${i * 200}ms`,
+   459→              }}
+   460→            />
+   461→          ))}
+   462→        </div>
+   463→        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 relative z-10">
+   464→          <div className="flex items-center gap-4">
+   465→            {/* Avatar with progress ring */}
+   466→            <div className="relative">
+   467→              <svg className="absolute -inset-1 w-[calc(100%+8px)] h-[calc(100%+8px)]" viewBox="0 0 72 72">
+   468→                <circle cx="36" cy="36" r="33" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+   469→                <circle cx="36" cy="36" r="33" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${((user.email ? 20 : 0) + (user.phone ? 20 : 0) + (user.city ? 15 : 0) + (user.professionalDoc ? 25 : 0) + (user.bio ? 20 : 0)) / 100 * 207.3} 207.3`} transform="rotate(-90 36 36)" />
+   470→              </svg>
+   471→              <Avatar className="w-16 h-16 border-3 border-white/30">
+   472→                <AvatarFallback className="bg-white/20 text-white text-xl font-bold">
+   473→                  {initials}
+   474→                </AvatarFallback>
+   475→              </Avatar>
+   476→            </div>
+   477→            <div className="flex-1 min-w-0">
+   478→              <h3 className="text-lg font-bold text-white truncate">{user.name}</h3>
+   479→              <p className="text-emerald-100 text-sm">{getRoleLabel(user.role)}</p>
+   480→              <div className="flex items-center gap-2 mt-1 flex-wrap">
+   481→                <span className={cn(
+   482→                  'text-xs px-2 py-0.5 rounded-full font-medium',
+   483→                  user.registrationStatus === 'APPROVED' ? 'bg-emerald-400/30 text-emerald-50' :
+   484→                  user.registrationStatus === 'PENDING' ? 'bg-yellow-400/30 text-yellow-100' :
+   485→                  'bg-red-400/30 text-red-100'
+   486→                )}>
+   487→                  {getStatusLabel(user.registrationStatus)}
+   488→                </span>
+   489→                {/* Badge system */}
+   490→                {user.registrationStatus === 'APPROVED' && (
+   491→                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-400/30 text-emerald-50 inline-flex items-center gap-0.5">
+   492→                    ✓ Verificado
+   493→                  </span>
+   494→                )}
+   495→                {avgRating >= 4.5 && (
+   496→                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-amber-400/30 text-amber-100 inline-flex items-center gap-0.5">
+   497→                    ⭐ Top
+   498→                  </span>
+   499→                )}
+   500→              </div>
+   501→            </div>
+   502→          </div>
+   503→        </div>
+   504→        {avgRating > 0 && (
+   505→          <CardContent className="p-4">
+   506→            <div className="flex items-center gap-2">
+   507→              <span className="text-amber-500 text-lg">{renderStars(avgRating)}</span>
+   508→              <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{avgRating.toFixed(1)}</span>
+   509→              <span className="text-xs text-gray-400">({totalRatings} avaliação{totalRatings !== 1 ? 'ões' : ''})</span>
+   510→            </div>
+   511→          </CardContent>
+   512→        )}
+   513→      </Card>
+   514→
+   515→      {/* Profile Completion Nudges */}
+   516→      <ProfileCompletionNudge
+   517→        user={user}
+   518→        onEdit={handleStartEdit}
+   519→      />
+   520→
+   521→      {/* Profile Details */}
+   522→      <Tabs defaultValue="info" className="w-full">
+   523→        <TabsList className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+   524→          <TabsTrigger value="info" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+   525→            Informações
+   526→          </TabsTrigger>
+   527→          <TabsTrigger value="ratings" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+   528→            Avaliações
+   529→          </TabsTrigger>
+   530→          <TabsTrigger value="favorites" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+   531→            <Heart className="w-3 h-3 mr-1" />
+   532→            Favoritos
+   533→          </TabsTrigger>
+   534→          <TabsTrigger value="settings" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+   535→            <Settings className="w-3 h-3 mr-1" />
+   536→            Config
+   537→          </TabsTrigger>
+   538→          <TabsTrigger value="alerts" className="flex-1 rounded-lg text-xs data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+   539→            <Bell className="w-3 h-3 mr-1" />
+   540→            Alertas
+   541→          </TabsTrigger>
+   542→        </TabsList>
+   543→
+   544→        <TabsContent value="info" className="mt-4">
+   545→          <Card className="rounded-xl shadow-sm border-0">
+   546→            <CardContent className="p-0">
+   547→              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+   548→                {/* Gradient divider accent */}
+   549→                <div className="h-0.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
+   550→                <div className="flex items-center gap-3 p-4">
+   551→                  <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
+   552→                    <Mail className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   553→                  </div>
+   554→                  <div className="min-w-0">
+   555→                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Email</p>
+   556→                    <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{user.email}</p>
+   557→                  </div>
+   558→                </div>
+   559→
+   560→                {user.phone && (
+   561→                  <div className="flex items-center gap-3 p-4">
+   562→                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
+   563→                      <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   564→                    </div>
+   565→                    <div className="min-w-0">
+   566→                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Telefone</p>
+   567→                      <p className="text-sm text-gray-800 dark:text-gray-200">{user.phone}</p>
+   568→                    </div>
+   569→                  </div>
+   570→                )}
+   571→
+   572→                {(user.city || user.state) && (
+   573→                  <div className="flex items-center gap-3 p-4">
+   574→                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
+   575→                      <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   576→                    </div>
+   577→                    <div className="min-w-0">
+   578→                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Localização</p>
+   579→                      <p className="text-sm text-gray-800 dark:text-gray-200">{user.city}{user.city && user.state ? ', ' : ''}{user.state}</p>
+   580→                    </div>
+   581→                  </div>
+   582→                )}
+   583→
+   584→                {user.professionalDoc && (
+   585→                  <div className="flex items-center gap-3 p-4">
+   586→                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
+   587→                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   588→                    </div>
+   589→                    <div className="min-w-0">
+   590→                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">{getProfessionalDocLabel()}</p>
+   591→                      <p className="text-sm text-gray-800 dark:text-gray-200">{user.professionalDoc}</p>
+   592→                    </div>
+   593→                  </div>
+   594→                )}
+   595→
+   596→                {user.companyName && (
+   597→                  <div className="flex items-center gap-3 p-4">
+   598→                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center shrink-0">
+   599→                      <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   600→                    </div>
+   601→                    <div className="min-w-0">
+   602→                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Empresa</p>
+   603→                      <p className="text-sm text-gray-800 dark:text-gray-200">{user.companyName}</p>
+   604→                    </div>
+   605→                  </div>
+   606→                )}
+   607→
+   608→                {user.bio && (
+   609→                  <div className="p-4">
+   610→                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Bio</p>
+   611→                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{user.bio}</p>
+   612→                  </div>
+   613→                )}
+   614→              </div>
+   615→            </CardContent>
+   616→          </Card>
+   617→
+   618→          {/* ── Suas Estatísticas ── */}
+   619→          <Card className="rounded-xl shadow-sm border-0 mt-4 overflow-hidden">
+   620→            <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400" />
+   621→            <CardContent className="p-4">
+   622→              <div className="flex items-center gap-2 mb-4">
+   623→                <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+   624→                  <BarChart3 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+   625→                </div>
+   626→                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Suas Estatísticas</h3>
+   627→              </div>
+   628→
+   629→              {loadingStats ? (
+   630→                <div className="grid grid-cols-4 gap-3">
+   631→                  {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+   632→                    <div key={i} className="text-center">
+   633→                      <Skeleton className="w-8 h-8 rounded-lg mx-auto mb-1.5" />
+   634→                      <Skeleton className="h-4 w-12 mx-auto mb-1" />
+   635→                      <Skeleton className="h-2.5 w-16 mx-auto" />
+   636→                    </div>
+   637→                  ))}
+   638→                </div>
+   639→              ) : userStats ? (
+   640→                <div className="space-y-3">
+   641→                  {/* Row 1 */}
+   642→                  <div className="grid grid-cols-4 gap-3">
+   643→                    <div className="text-center">
+   644→                      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   645→                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   646→                      </div>
+   647→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalPublished}</p>
+   648→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Publicados</p>
+   649→                    </div>
+   650→                    <div className="text-center">
+   651→                      <div className="w-9 h-9 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   652→                        <ShoppingCart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+   653→                      </div>
+   654→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalSold}</p>
+   655→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Vendidos</p>
+   656→                    </div>
+   657→                    <div className="text-center">
+   658→                      <div className="w-9 h-9 bg-teal-50 dark:bg-teal-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   659→                        <DollarSign className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+   660→                      </div>
+   661→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.totalBought}</p>
+   662→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Comprados</p>
+   663→                    </div>
+   664→                    <div className="text-center">
+   665→                      <div className="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   666→                        <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+   667→                      </div>
+   668→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{formatCurrency(userStats.totalEarned)}</p>
+   669→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Total Ganho</p>
+   670→                    </div>
+   671→                  </div>
+   672→
+   673→                  {/* Row 2 */}
+   674→                  <div className="grid grid-cols-4 gap-3">
+   675→                    <div className="text-center">
+   676→                      <div className="w-9 h-9 bg-rose-50 dark:bg-rose-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   677→                        <DollarSign className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+   678→                      </div>
+   679→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{formatCurrency(userStats.totalSpent)}</p>
+   680→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Total Gasto</p>
+   681→                    </div>
+   682→                    <div className="text-center">
+   683→                      <div className="w-9 h-9 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   684→                        <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+   685→                      </div>
+   686→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.avgRating > 0 ? userStats.avgRating.toFixed(1) : '—'}</p>
+   687→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Avaliação Média</p>
+   688→                    </div>
+   689→                    <div className="text-center">
+   690→                      <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   691→                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   692→                      </div>
+   693→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.completionRate}%</p>
+   694→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Taxa Conclusão</p>
+   695→                    </div>
+   696→                    <div className="text-center">
+   697→                      <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   698→                        <CalendarDays className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+   699→                      </div>
+   700→                      <p className="text-base font-bold text-gray-800 dark:text-gray-200">{userStats.accountAgeDays}</p>
+   701→                      <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Membro há (dias)</p>
+   702→                    </div>
+   703→                  </div>
+   704→                </div>
+   705→              ) : null}
+   706→            </CardContent>
+   707→          </Card>
+   708→        </TabsContent>
+   709→
+   710→        <TabsContent value="ratings" className="mt-4">
+   711→          {/* Rating Distribution Chart */}
+   712→          {ratings.length > 0 && (
+   713→            <Card className="rounded-xl shadow-sm border-0 mb-4 overflow-hidden">
+   714→              <div className="h-1 bg-gradient-to-r from-amber-400 via-emerald-400 to-amber-400" />
+   715→              <CardContent className="p-4">
+   716→                <div className="flex items-center gap-2 mb-4">
+   717→                  <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+   718→                    <BarChart3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+   719→                  </div>
+   720→                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Distribuição de Avaliações</h3>
+   721→                </div>
+   722→                <div className="flex items-center gap-6">
+   723→                  {/* Average rating display */}
+   724→                  <div className="text-center shrink-0">
+   725→                    <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+   726→                      {avgRating > 0 ? avgRating.toFixed(1) : '—'}
+   727→                    </div>
+   728→                    <div className="text-amber-500 text-lg mt-0.5">
+   729→                      {renderStars(avgRating)}
+   730→                    </div>
+   731→                    <div className="text-[10px] text-gray-400 mt-1">
+   732→                      {totalRatings} avaliação{totalRatings !== 1 ? 'ões' : ''}
+   733→                    </div>
+   734→                  </div>
+   735→                  {/* Horizontal bar chart */}
+   736→                  <div className="flex-1 space-y-1.5">
+   737→                    {[5, 4, 3, 2, 1].map(starCount => {
+   738→                      const count = ratings.filter(r => r.stars === starCount).length
+   739→                      const maxCount = Math.max(...[5, 4, 3, 2, 1].map(s => ratings.filter(r => r.stars === s).length), 1)
+   740→                      const widthPercent = (count / maxCount) * 100
+   741→                      return (
+   742→                        <div key={starCount} className="flex items-center gap-2">
+   743→                          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 w-6 text-right shrink-0">{starCount}★</span>
+   744→                          <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+   745→                            <div
+   746→                              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
+   747→                              style={{ width: `${widthPercent}%` }}
+   748→                            />
+   749→                          </div>
+   750→                          <span className="text-[10px] text-gray-400 w-4 shrink-0">{count}</span>
+   751→                        </div>
+   752→                      )
+   753→                    })}
+   754→                  </div>
+   755→                </div>
+   756→              </CardContent>
+   757→            </Card>
+   758→          )}
+   759→          {loadingRatings ? (
+   760→            <div className="space-y-3">
+   761→              {[1, 2, 3].map(i => (
+   762→                <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+   763→              ))}
+   764→            </div>
+   765→          ) : ratings.length === 0 ? (
+   766→            <Card className="rounded-2xl bg-gray-50 border-0">
+   767→              <CardContent className="p-8 text-center">
+   768→                <MessageSquare className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2 animate-pulse" />
+   769→                <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma avaliação recebida ainda</p>
+   770→                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Complete transações para receber avaliações!</p>
+   771→              </CardContent>
+   772→            </Card>
+   773→          ) : (
+   774→            <div className="space-y-3">
+   775→              {ratings.map((rating) => (
+   776→                <Card key={rating.id} className="rounded-xl shadow-sm border-0">
+   777→                  <CardContent className="p-4">
+   778→                    <div className="flex items-start justify-between">
+   779→                      <div className="flex items-center gap-2">
+   780→                        <Avatar className="w-7 h-7">
+   781→                          <AvatarFallback className="text-[10px] bg-gray-100 dark:bg-gray-800">
+   782→                            {rating.rater.name.charAt(0)}
+   783→                          </AvatarFallback>
+   784→                        </Avatar>
+   785→                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{rating.rater.name}</span>
+   786→                      </div>
+   787→                      <span className="text-amber-500 text-sm">{renderStars(rating.stars)}</span>
+   788→                    </div>
+   789→                    {rating.comment && (
+   790→                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{rating.comment}</p>
+   791→                    )}
+   792→                    <p className="text-[10px] text-gray-400 mt-1">
+   793→                      Plantão: {rating.shift.title}
+   794→                    </p>
+   795→                  </CardContent>
+   796→                </Card>
+   797→              ))}
+   798→            </div>
+   799→          )}
+   800→        </TabsContent>
+   801→
+   802→        <TabsContent value="favorites" className="mt-4">
+   803→          {loadingFavorites ? (
+   804→            <div className="space-y-3">
+   805→              {[1, 2, 3].map(i => (
+   806→                <Skeleton key={i} className="h-20 rounded-xl animate-pulse" />
+   807→              ))}
+   808→            </div>
+   809→          ) : favoriteShifts.length === 0 ? (
+   810→            <Card className="rounded-2xl bg-gray-50 border-0">
+   811→              <CardContent className="p-8 text-center">
+   812→                <Heart className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2 animate-pulse" />
+   813→                <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum plantão favoritado</p>
+   814→                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Toque no ❤️ nos plantões para salvar aqui</p>
+   815→              </CardContent>
+   816→            </Card>
+   817→          ) : (
+   818→            <div className="space-y-3">
+   819→              {favoriteShifts.map((shift) => (
+   820→                <Card key={shift.id} className="rounded-xl shadow-sm border-0">
+   821→                  <CardContent className="p-4">
+   822→                    <div className="flex items-start justify-between gap-3">
+   823→                      <div
+   824→                        className="flex-1 min-w-0 cursor-pointer"
+   825→                        onClick={() => {
+   826→                          setSelectedShiftId(shift.id)
+   827→                          setActiveTab('plantoes')
+   828→                        }}
+   829→                      >
+   830→                        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
+   831→                        <div className="flex items-center gap-2 mt-1">
+   832→                          <MapPinIcon className="w-3 h-3 text-gray-400" />
+   833→                          <span className="text-xs text-gray-500 dark:text-gray-400">{shift.city}/{shift.state}</span>
+   834→                        </div>
+   835→                        <div className="flex items-center gap-2 mt-1">
+   836→                          <Clock className="w-3 h-3 text-gray-400" />
+   837→                          <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+   838→                        </div>
+   839→                        <p className="text-emerald-700 dark:text-emerald-400 font-bold text-sm mt-1">{formatCurrency(shift.value)}</p>
+   840→                      </div>
+   841→                      <button
+   842→                        onClick={() => handleRemoveFavorite(shift.id)}
+   843→                        className="w-8 h-8 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+   844→                      >
+   845→                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+   846→                      </button>
+   847→                    </div>
+   848→                  </CardContent>
+   849→                </Card>
+   850→              ))}
+   851→            </div>
+   852→          )}
+   853→        </TabsContent>
+   854→
+   855→        <TabsContent value="alerts" className="mt-4">
+   856→          <Card className="rounded-xl shadow-sm border-0">
+   857→            <CardContent className="p-4">
+   858→              <div className="flex items-center justify-between mb-4">
+   859→                <div className="flex items-center gap-3">
+   860→                  <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+   861→                    <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   862→                  </div>
+   863→                  <div>
+   864→                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Alertas de Plantão</p>
+   865→                    <p className="text-xs text-gray-500 dark:text-gray-400">Receba notificações quando plantões compatíveis forem publicados</p>
+   866→                  </div>
+   867→                </div>
+   868→                {!showAlertForm && (
+   869→                  <Button
+   870→                    onClick={() => setShowAlertForm(true)}
+   871→                    size="sm"
+   872→                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1"
+   873→                  >
+   874→                    <Plus className="w-3 h-3" />
+   875→                    Criar
+   876→                  </Button>
+   877→                )}
+   878→              </div>
+   879→
+   880→              {/* Alert Creation Form */}
+   881→              {showAlertForm && (
+   882→                <div className="space-y-3 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
+   883→                  <div className="flex items-center justify-between">
+   884→                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Criar Novo Alerta</p>
+   885→                    <Button
+   886→                      onClick={() => { setShowAlertForm(false); setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' }) }}
+   887→                      size="sm"
+   888→                      variant="ghost"
+   889→                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg gap-1"
+   890→                    >
+   891→                      <X className="w-3 h-3" />
+   892→                      Cancelar
+   893→                    </Button>
+   894→                  </div>
+   895→
+   896→                  <div className="space-y-3">
+   897→                    <div className="space-y-1.5">
+   898→                      <Label className="text-xs text-gray-500 dark:text-gray-400">Tipo Profissional</Label>
+   899→                      <select
+   900→                        value={alertForm.professionalType}
+   901→                        onChange={(e) => setAlertForm({ ...alertForm, professionalType: e.target.value })}
+   902→                        className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+   903→                      >
+   904→                        <option value="">Qualquer tipo</option>
+   905→                        <option value="MEDICO">Médico</option>
+   906→                        <option value="ENFERMEIRO">Enfermeiro</option>
+   907→                        <option value="TECNICO_ENFERMAGEM">Téc. Enfermagem</option>
+   908→                      </select>
+   909→                    </div>
+   910→
+   911→                    <div className="grid grid-cols-2 gap-3">
+   912→                      <div className="space-y-1.5">
+   913→                        <Label className="text-xs text-gray-500 dark:text-gray-400">Cidade</Label>
+   914→                        <Input
+   915→                          value={alertForm.city}
+   916→                          onChange={(e) => setAlertForm({ ...alertForm, city: e.target.value })}
+   917→                          placeholder="Qualquer cidade"
+   918→                          className="rounded-lg text-sm"
+   919→                        />
+   920→                      </div>
+   921→                      <div className="space-y-1.5">
+   922→                        <Label className="text-xs text-gray-500 dark:text-gray-400">Estado</Label>
+   923→                        <select
+   924→                          value={alertForm.state}
+   925→                          onChange={(e) => setAlertForm({ ...alertForm, state: e.target.value })}
+   926→                          className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+   927→                        >
+   928→                          <option value="">Qualquer estado</option>
+   929→                          {BRAZILIAN_STATES.map(st => (
+   930→                            <option key={st} value={st}>{st}</option>
+   931→                          ))}
+   932→                        </select>
+   933→                      </div>
+   934→                    </div>
+   935→
+   936→                    <div className="grid grid-cols-2 gap-3">
+   937→                      <div className="space-y-1.5">
+   938→                        <Label className="text-xs text-gray-500 dark:text-gray-400">Valor Mínimo (R$)</Label>
+   939→                        <Input
+   940→                          type="number"
+   941→                          value={alertForm.minValue}
+   942→                          onChange={(e) => setAlertForm({ ...alertForm, minValue: e.target.value })}
+   943→                          placeholder="0"
+   944→                          className="rounded-lg text-sm"
+   945→                        />
+   946→                      </div>
+   947→                      <div className="space-y-1.5">
+   948→                        <Label className="text-xs text-gray-500 dark:text-gray-400">Valor Máximo (R$)</Label>
+   949→                        <Input
+   950→                          type="number"
+   951→                          value={alertForm.maxValue}
+   952→                          onChange={(e) => setAlertForm({ ...alertForm, maxValue: e.target.value })}
+   953→                          placeholder="Sem limite"
+   954→                          className="rounded-lg text-sm"
+   955→                        />
+   956→                      </div>
+   957→                    </div>
+   958→
+   959→                    <div className="space-y-1.5">
+   960→                      <Label className="text-xs text-gray-500 dark:text-gray-400">Tipo de Plantão</Label>
+   961→                      <select
+   962→                        value={alertForm.shiftType}
+   963→                        onChange={(e) => setAlertForm({ ...alertForm, shiftType: e.target.value })}
+   964→                        className="w-full h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 text-sm text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+   965→                      >
+   966→                        <option value="">Qualquer tipo</option>
+   967→                        <option value="Diurno">☀️ Diurno</option>
+   968→                        <option value="Noturno">🌙 Noturno</option>
+   969→                        <option value="Misto">🌅 Misto</option>
+   970→                      </select>
+   971→                    </div>
+   972→
+   973→                    <div className="flex gap-2 pt-1">
+   974→                      <Button
+   975→                        onClick={handleCreateAlert}
+   976→                        disabled={savingAlert}
+   977→                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-2"
+   978→                      >
+   979→                        {savingAlert ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+   980→                        {savingAlert ? 'Criando...' : 'Criar Alerta'}
+   981→                      </Button>
+   982→                      <Button
+   983→                        onClick={() => { setShowAlertForm(false); setAlertForm({ professionalType: '', city: '', state: '', minValue: '', maxValue: '', shiftType: '' }) }}
+   984→                        variant="outline"
+   985→                        className="flex-1 rounded-lg gap-2"
+   986→                        disabled={savingAlert}
+   987→                      >
+   988→                        <X className="w-4 h-4" />
+   989→                        Cancelar
+   990→                      </Button>
+   991→                    </div>
+   992→                  </div>
+   993→                </div>
+   994→              )}
+   995→
+   996→              {/* Alert List */}
+   997→              {loadingAlerts ? (
+   998→                <div className="space-y-3">
+   999→                  {[1, 2, 3].map(i => (
+  1000→                    <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+  1001→                  ))}
+  1002→                </div>
+  1003→              ) : alerts.length === 0 ? (
+  1004→                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 text-center">
+  1005→                  <Bell className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2 animate-pulse" />
+  1006→                  <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum alerta configurado</p>
+  1007→                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Crie alertas para ser notificado quando plantões compatíveis forem publicados</p>
+  1008→                </div>
+  1009→              ) : (
+  1010→                <div className="space-y-3">
+  1011→                  {alerts.map((alert) => (
+  1012→                    <Card key={alert.id} className={cn(
+  1013→                      "rounded-xl border-0 shadow-sm transition-all",
+  1014→                      alert.active ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50 opacity-60"
+  1015→                    )}>
+  1016→                      <CardContent className="p-4">
+  1017→                        <div className="flex items-start justify-between gap-3">
+  1018→                          <div className="flex-1 min-w-0">
+  1019→                            <div className="flex flex-wrap gap-1.5">
+  1020→                              {alert.professionalType && (
+  1021→                                <Badge variant="secondary" className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+  1022→                                  {getRoleLabel(alert.professionalType as 'MEDICO' | 'ENFERMEIRO' | 'TECNICO_ENFERMAGEM' | 'EMPRESA' | 'ADMIN')}
+  1023→                                </Badge>
+  1024→                              )}
+  1025→                              {alert.shiftType && (
+  1026→                                <Badge variant="secondary" className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+  1027→                                  {alert.shiftType === 'Diurno' ? '☀️' : alert.shiftType === 'Noturno' ? '🌙' : '🌅'} {alert.shiftType}
+  1028→                                </Badge>
+  1029→                              )}
+  1030→                              {alert.city && (
+  1031→                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+  1032→                                  📍 {alert.city}
+  1033→                                </Badge>
+  1034→                              )}
+  1035→                              {alert.state && (
+  1036→                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+  1037→                                  {alert.state}
+  1038→                                </Badge>
+  1039→                              )}
+  1040→                              {alert.minValue != null && (
+  1041→                                <Badge variant="secondary" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+  1042→                                  Min {formatCurrency(alert.minValue)}
+  1043→                                </Badge>
+  1044→                              )}
+  1045→                              {alert.maxValue != null && (
+  1046→                                <Badge variant="secondary" className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+  1047→                                  Max {formatCurrency(alert.maxValue)}
+  1048→                                </Badge>
+  1049→                              )}
+  1050→                              {!alert.professionalType && !alert.shiftType && !alert.city && !alert.state && alert.minValue == null && alert.maxValue == null && (
+  1051→                                <Badge variant="secondary" className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500">
+  1052→                                  Qualquer plantão
+  1053→                                </Badge>
+  1054→                              )}
+  1055→                            </div>
+  1056→                            <p className="text-[10px] text-gray-400 mt-2">
+  1057→                              Criado em {formatDate(alert.createdAt)}
+  1058→                            </p>
+  1059→                          </div>
+  1060→                          <div className="flex items-center gap-2 shrink-0">
+  1061→                            <Switch
+  1062→                              checked={alert.active}
+  1063→                              onCheckedChange={() => handleToggleAlert(alert.id, alert.active)}
+  1064→                              className="data-[state=checked]:bg-emerald-600"
+  1065→                            />
+  1066→                            <button
+  1067→                              onClick={() => handleDeleteAlert(alert.id)}
+  1068→                              className="w-7 h-7 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg flex items-center justify-center transition-colors"
+  1069→                            >
+  1070→                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+  1071→                            </button>
+  1072→                          </div>
+  1073→                        </div>
+  1074→                      </CardContent>
+  1075→                    </Card>
+  1076→                  ))}
+  1077→                </div>
+  1078→              )}
+  1079→            </CardContent>
+  1080→          </Card>
+  1081→        </TabsContent>
+  1082→
+  1083→        <TabsContent value="settings" className="mt-4 space-y-4">
+  1084→          {/* Profile Edit Section */}
+  1085→          <Card className="rounded-xl shadow-sm border-0">
+  1086→            <CardContent className="p-4">
+  1087→              {!isEditing ? (
+  1088→                <div className="flex items-center justify-between">
+  1089→                  <div className="flex items-center gap-3">
+  1090→                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+  1091→                      <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+  1092→                    </div>
+  1093→                    <div>
+  1094→                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Editar Perfil</p>
+  1095→                      <p className="text-xs text-gray-500 dark:text-gray-400">Atualize suas informações pessoais</p>
+  1096→                    </div>
+  1097→                  </div>
+  1098→                  <Button
+  1099→                    onClick={handleStartEdit}
+  1100→                    size="sm"
+  1101→                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1"
+  1102→                  >
+  1103→                    <Pencil className="w-3 h-3" />
+  1104→                    Editar
+  1105→                  </Button>
+  1106→                </div>
+  1107→              ) : (
+  1108→                <div className="space-y-4">
+  1109→                  <div className="flex items-center justify-between">
+  1110→                    <div className="flex items-center gap-3">
+  1111→                      <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+  1112→                        <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+  1113→                      </div>
+  1114→                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Editar Perfil</p>
+  1115→                    </div>
+  1116→                    <Button
+  1117→                      onClick={handleCancelEdit}
+  1118→                      size="sm"
+  1119→                      variant="ghost"
+  1120→                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg gap-1"
+  1121→                    >
+  1122→                      <X className="w-3 h-3" />
+  1123→                      Cancelar
+  1124→                    </Button>
+  1125→                  </div>
+  1126→
+  1127→                  <div className="space-y-3">
+  1128→                    <div className="space-y-1.5">
+  1129→                      <Label htmlFor="edit-name" className="text-xs text-gray-500 dark:text-gray-400">Nome</Label>
+  1130→                      <Input
+  1131→                        id="edit-name"
+  1132→                        value={editName}
+  1133→                        onChange={(e) => setEditName(e.target.value)}
+  1134→                        placeholder="Seu nome completo"
+  1135→                        className="rounded-lg text-sm"
+  1136→                      />
+  1137→                    </div>
+  1138→
+  1139→                    <div className="space-y-1.5">
+  1140→                      <Label htmlFor="edit-phone" className="text-xs text-gray-500 dark:text-gray-400">Telefone</Label>
+  1141→                      <Input
+  1142→                        id="edit-phone"
+  1143→                        value={editPhone}
+  1144→                        onChange={(e) => setEditPhone(e.target.value)}
+  1145→                        placeholder="(00) 00000-0000"
+  1146→                        className="rounded-lg text-sm"
+  1147→                      />
+  1148→                    </div>
+  1149→
+  1150→                    <div className="grid grid-cols-2 gap-3">
+  1151→                      <div className="space-y-1.5">
+  1152→                        <Label htmlFor="edit-city" className="text-xs text-gray-500 dark:text-gray-400">Cidade</Label>
+  1153→                        <Input
+  1154→                          id="edit-city"
+  1155→                          value={editCity}
+  1156→                          onChange={(e) => setEditCity(e.target.value)}
+  1157→                          placeholder="Cidade"
+  1158→                          className="rounded-lg text-sm"
+  1159→                        />
+  1160→                      </div>
+  1161→                      <div className="space-y-1.5">
+  1162→                        <Label htmlFor="edit-state" className="text-xs text-gray-500 dark:text-gray-400">Estado</Label>
+  1163→                        <Input
+  1164→                          id="edit-state"
+  1165→                          value={editState}
+  1166→                          onChange={(e) => setEditState(e.target.value)}
+  1167→                          placeholder="UF"
+  1168→                          className="rounded-lg text-sm"
+  1169→                          maxLength={2}
+  1170→                        />
+  1171→                      </div>
+  1172→                    </div>
+  1173→
+  1174→                    <div className="space-y-1.5">
+  1175→                      <Label htmlFor="edit-doc" className="text-xs text-gray-500 dark:text-gray-400">{getProfessionalDocLabel()}</Label>
+  1176→                      <Input
+  1177→                        id="edit-doc"
+  1178→                        value={editDoc}
+  1179→                        onChange={(e) => setEditDoc(e.target.value)}
+  1180→                        placeholder={getProfessionalDocLabel()}
+  1181→                        className="rounded-lg text-sm"
+  1182→                      />
+  1183→                    </div>
+  1184→
+  1185→                    <div className="space-y-1.5">
+  1186→                      <Label htmlFor="edit-bio" className="text-xs text-gray-500 dark:text-gray-400">Bio</Label>
+  1187→                      <Textarea
+  1188→                        id="edit-bio"
+  1189→                        value={editBio}
+  1190→                        onChange={(e) => setEditBio(e.target.value)}
+  1191→                        placeholder="Conte um pouco sobre você..."
+  1192→                        className="rounded-lg text-sm min-h-[80px] resize-none"
+  1193→                        rows={3}
+  1194→                      />
+  1195→                    </div>
+  1196→                  </div>
+  1197→
+  1198→                  <div className="flex gap-2 pt-1">
+  1199→                    <Button
+  1200→                      onClick={handleSaveProfile}
+  1201→                      disabled={savingProfile}
+  1202→                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-2"
+  1203→                    >
+  1204→                      {savingProfile ? (
+  1205→                        <Loader2 className="w-4 h-4 animate-spin" />
+  1206→                      ) : (
+  1207→                        <Save className="w-4 h-4" />
+  1208→                      )}
+  1209→                      {savingProfile ? 'Salvando...' : 'Salvar'}
+  1210→                    </Button>
+  1211→                    <Button
+  1212→                      onClick={handleCancelEdit}
+  1213→                      variant="outline"
+  1214→                      className="flex-1 rounded-lg gap-2"
+  1215→                      disabled={savingProfile}
+  1216→                    >
+  1217→                      <X className="w-4 h-4" />
+  1218→                      Cancelar
+  1219→                    </Button>
+  1220→                  </div>
+  1221→                </div>
+  1222→              )}
+  1223→            </CardContent>
+  1224→          </Card>
+  1225→
+  1226→          {/* Password Change Section */}
+  1227→          <Card className="rounded-xl shadow-sm border-0">
+  1228→            <CardContent className="p-4">
+  1229→              <div className="flex items-center gap-3 mb-4">
+  1230→                <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+  1231→                  <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+  1232→                </div>
+  1233→                <div>
+  1234→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Alterar Senha</p>
+  1235→                  <p className="text-xs text-gray-500 dark:text-gray-400">Mantenha sua conta segura</p>
+  1236→                </div>
+  1237→              </div>
+  1238→
+  1239→              <div className="space-y-3">
+  1240→                <div className="space-y-1.5">
+  1241→                  <Label htmlFor="current-password" className="text-xs text-gray-500 dark:text-gray-400">Senha Atual</Label>
+  1242→                  <div className="relative">
+  1243→                    <Input
+  1244→                      id="current-password"
+  1245→                      type={showCurrentPassword ? 'text' : 'password'}
+  1246→                      value={currentPassword}
+  1247→                      onChange={(e) => setCurrentPassword(e.target.value)}
+  1248→                      placeholder="Digite sua senha atual"
+  1249→                      className="rounded-lg text-sm pr-10"
+  1250→                    />
+  1251→                    <button
+  1252→                      type="button"
+  1253→                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+  1254→                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+  1255→                    >
+  1256→                      {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+  1257→                    </button>
+  1258→                  </div>
+  1259→                </div>
+  1260→
+  1261→                <div className="space-y-1.5">
+  1262→                  <Label htmlFor="new-password" className="text-xs text-gray-500 dark:text-gray-400">Nova Senha</Label>
+  1263→                  <div className="relative">
+  1264→                    <Input
+  1265→                      id="new-password"
+  1266→                      type={showNewPassword ? 'text' : 'password'}
+  1267→                      value={newPassword}
+  1268→                      onChange={(e) => setNewPassword(e.target.value)}
+  1269→                      placeholder="Mínimo 6 caracteres"
+  1270→                      className="rounded-lg text-sm pr-10"
+  1271→                    />
+  1272→                    <button
+  1273→                      type="button"
+  1274→                      onClick={() => setShowNewPassword(!showNewPassword)}
+  1275→                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+  1276→                    >
+  1277→                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+  1278→                    </button>
+  1279→                  </div>
+  1280→                </div>
+  1281→
+  1282→                <div className="space-y-1.5">
+  1283→                  <Label htmlFor="confirm-password" className="text-xs text-gray-500 dark:text-gray-400">Confirmar Nova Senha</Label>
+  1284→                  <Input
+  1285→                    id="confirm-password"
+  1286→                    type="password"
+  1287→                    value={confirmPassword}
+  1288→                    onChange={(e) => setConfirmPassword(e.target.value)}
+  1289→                    placeholder="Repita a nova senha"
+  1290→                    className="rounded-lg text-sm"
+  1291→                  />
+  1292→                </div>
+  1293→
+  1294→                <Button
+  1295→                  onClick={handleChangePassword}
+  1296→                  disabled={savingPassword}
+  1297→                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-2 mt-1"
+  1298→                >
+  1299→                  {savingPassword ? (
+  1300→                    <Loader2 className="w-4 h-4 animate-spin" />
+  1301→                  ) : (
+  1302→                    <Lock className="w-4 h-4" />
+  1303→                  )}
+  1304→                  {savingPassword ? 'Alterando...' : 'Alterar Senha'}
+  1305→                </Button>
+  1306→              </div>
+  1307→            </CardContent>
+  1308→          </Card>
+  1309→
+  1310→          {/* Dark mode */}
+  1311→          <Card className="rounded-xl shadow-sm border-0">
+  1312→            <CardContent className="p-4">
+  1313→              <div className="flex items-center justify-between">
+  1314→                <div className="flex items-center gap-3">
+  1315→                  <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+  1316→                    <Moon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+  1317→                  </div>
+  1318→                  <div>
+  1319→                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Modo escuro</p>
+  1320→                    <p className="text-xs text-gray-500 dark:text-gray-400">Alternar entre tema claro e escuro</p>
+  1321→                  </div>
+  1322→                </div>
+  1323→                <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
+  1324→              </div>
+  1325→            </CardContent>
+  1326→          </Card>
+  1327→
+  1328→          {/* App info */}
+  1329→          <Card className="rounded-xl shadow-sm border-0">
+  1330→            <CardContent className="p-4">
+  1331→              <div className="flex items-center gap-3">
+  1332→                <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+  1333→                  <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+  1334→                </div>
+  1335→                <div>
+  1336→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Plantão Help</p>
+  1337→                  <p className="text-xs text-gray-500 dark:text-gray-400">Versão 1.1.0 • Marketplace de Plantões</p>
+  1338→                </div>
+  1339→              </div>
+  1340→            </CardContent>
+  1341→          </Card>
+  1342→
+  1343→          {/* Legal links */}
+  1344→          <Card className="rounded-xl shadow-sm border-0">
+  1345→            <CardContent className="p-0">
+  1346→              <button onClick={() => setShowTerms(true)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-t-xl">
+  1347→                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+  1348→                  <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+  1349→                </div>
+  1350→                <div className="flex-1 text-left">
+  1351→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Termos de Uso</p>
+  1352→                  <p className="text-xs text-gray-500 dark:text-gray-400">Condições de uso da plataforma</p>
+  1353→                </div>
+  1354→                <ChevronRight className="w-4 h-4 text-gray-400" />
+  1355→              </button>
+  1356→              <div className="border-t border-gray-100 dark:border-gray-800" />
+  1357→              <button onClick={() => setShowPrivacy(true)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-b-xl">
+  1358→                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+  1359→                  <Shield className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+  1360→                </div>
+  1361→                <div className="flex-1 text-left">
+  1362→                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Política de Privacidade</p>
+  1363→                  <p className="text-xs text-gray-500 dark:text-gray-400">Como tratamos seus dados</p>
+  1364→                </div>
+  1365→                <ChevronRight className="w-4 h-4 text-gray-400" />
+  1366→              </button>
+  1367→            </CardContent>
+  1368→          </Card>
+  1369→        </TabsContent>
+  1370→      </Tabs>
+  1371→
+  1372→      {/* Admin Button */}
+  1373→      {user.role === 'ADMIN' && (
+  1374→        <Button
+  1375→          onClick={() => setActiveTab('admin')}
+  1376→          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 gap-2"
+  1377→        >
+  1378→          <Settings className="w-5 h-5" />
+  1379→          Painel Administrativo
+  1380→          <ChevronRight className="w-4 h-4 ml-auto" />
+  1381→        </Button>
+  1382→      )}
+  1383→
+  1384→      {/* Logout */}
+  1385→      <Button
+  1386→        onClick={handleLogout}
+  1387→        variant="outline"
+  1388→        className="w-full border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl h-10 gap-2"
+  1389→      >
+  1390→        <LogOut className="w-4 h-4" />
+  1391→        Sair
+  1392→      </Button>
+  1393→
+  1394→      {/* Terms of Use Dialog */}
+  1395→      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+  1396→        <DialogContent className="max-w-lg max-h-[85vh]" aria-describedby={undefined}>
+  1397→          <DialogHeader>
+  1398→            <DialogTitle className="flex items-center gap-2">
+  1399→              <ScrollText className="w-5 h-5 text-emerald-600" />
+  1400→              Termos de Uso
+  1401→            </DialogTitle>
+  1402→          </DialogHeader>
+  1403→          <div className="overflow-y-auto max-h-[65vh] pr-2 space-y-4 text-sm text-gray-700 dark:text-gray-300">
+  1404→            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+  1405→              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+  1406→                Última atualização: Janeiro de 2025 • Versão 1.0
+  1407→              </p>
+  1408→            </div>
+  1409→
+  1410→            <div>
+  1411→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">1. Aceitação dos Termos</h3>
+  1412→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1413→                Ao acessar e utilizar a plataforma Plantão Help, o usuário declara estar de acordo com os presentes Termos de Uso, que regulam o acesso e a utilização de todos os serviços oferecidos pela plataforma. Caso não concorde com qualquer disposição, o usuário deve cessar imediatamente o uso da plataforma.
+  1414→              </p>
+  1415→            </div>
+  1416→
+  1417→            <div>
+  1418→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">2. Descrição do Serviço</h3>
+  1419→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1420→                O Plantão Help é uma plataforma digital de marketplace que conecta profissionais de saúde (médicos, enfermeiros e técnicos de enfermagem) a oportunidades de plantões em estabelecimentos de saúde. A plataforma atua como intermediária, facilitando a negociação entre vendedores e compradores de plantões, não sendo responsável pela execução direta dos serviços médicos.
+  1421→              </p>
+  1422→            </div>
+  1423→
+  1424→            <div>
+  1425→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">3. Cadastro e Conta do Usuário</h3>
+  1426→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1427→                Para utilizar os serviços da plataforma, o usuário deve criar uma conta fornecendo informações verdadeiras, completas e atualizadas. O usuário é responsável pela segurança de suas credenciais de acesso e por todas as atividades realizadas em sua conta. Profissionais de saúde devem informar seu número de registro profissional (CRM, COREN) que será verificado pela administração.
+  1428→              </p>
+  1429→            </div>
+  1430→
+  1431→            <div>
+  1432→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">4. Publicação e Compra de Plantões</h3>
+  1433→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1434→                O usuário pode publicar plantões para venda, informando dados como data, horário, valor, localização e hospital. A compra de um plantão é realizada diretamente pela plataforma. Após a confirmação da compra, o comprador assume a responsabilidade pelo cumprimento do plantão junto ao estabelecimento de saúde. Cancelamentos estão sujeitos às políticas específicas de cada plantão.
+  1435→              </p>
+  1436→            </div>
+  1437→
+  1438→            <div>
+  1439→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">5. Taxas e Pagamentos</h3>
+  1440→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1441→                A plataforma pode cobrar taxas de registro de acordo com o tipo profissional do usuário. Os valores praticados nos plantões são definidos livremente pelos vendedores. O Plantão Help poderá cobrar uma taxa de serviço sobre as transações realizadas na plataforma, conforme informado no momento da operação.
+  1442→              </p>
+  1443→            </div>
+  1444→
+  1445→            <div>
+  1446→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">6. Avaliações e Reputação</h3>
+  1447→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1448→                Após a conclusão de um plantão, as partes podem avaliar mutuamente a experiência por meio de um sistema de estrelas (1 a 5) e comentários. As avaliações são públicas e contribuem para a reputação dos usuários na plataforma. Avaliações falsas, ofensivas ou que violem a boa-fé podem ser removidas pela administração.
+  1449→              </p>
+  1450→            </div>
+  1451→
+  1452→            <div>
+  1453→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">7. Responsabilidades do Usuário</h3>
+  1454→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1455→                O usuário se compromete a: (a) fornecer informações verdadeiras e atualizadas; (b) cumprir os plantões adquiridos; (c) respeitar a legislação profissional vigente; (d) não utilizar a plataforma para fins ilícitos; (e) manter a confidencialidade de suas credenciais de acesso; (f) comunicar imediatamente qualquer uso não autorizado de sua conta.
+  1456→              </p>
+  1457→            </div>
+  1458→
+  1459→            <div>
+  1460→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">8. Limitação de Responsabilidade</h3>
+  1461→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1462→                O Plantão Help não se responsabiliza por: (a) atrasos ou falhas na execução dos plantões; (b) condutas dos usuários que violem a lei ou estes Termos; (c) danos indiretos, incidentais ou consequenciais; (d) interrupções temporárias do serviço por motivos técnicos. A plataforma atua como intermediária e não garante a qualidade dos serviços prestados pelos profissionais.
+  1463→              </p>
+  1464→            </div>
+  1465→
+  1466→            <div>
+  1467→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">9. Modificações nos Termos</h3>
+  1468→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1469→                O Plantão Help reserva-se o direito de modificar estes Termos de Uso a qualquer momento, notificando os usuários por meio da plataforma ou por e-mail. O uso continuado da plataforma após as modificações implica na aceitação dos novos termos.
+  1470→              </p>
+  1471→            </div>
+  1472→
+  1473→            <div>
+  1474→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">10. Legislação Aplicável</h3>
+  1475→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1476→                Estes Termos são regidos pela legislação brasileira. Quaisquer disputas serão submetidas ao foro da comarca do domicílio do usuário, conforme o Código de Defesa do Consumidor. Para dúvidas sobre estes Termos, entre em contato pelo e-mail contato@plantaohelp.com.
+  1477→              </p>
+  1478→            </div>
+  1479→          </div>
+  1480→        </DialogContent>
+  1481→      </Dialog>
+  1482→
+  1483→      {/* Privacy Policy Dialog */}
+  1484→      <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+  1485→        <DialogContent className="max-w-lg max-h-[85vh]" aria-describedby={undefined}>
+  1486→          <DialogHeader>
+  1487→            <DialogTitle className="flex items-center gap-2">
+  1488→              <Shield className="w-5 h-5 text-emerald-600" />
+  1489→              Política de Privacidade
+  1490→            </DialogTitle>
+  1491→          </DialogHeader>
+  1492→          <div className="overflow-y-auto max-h-[65vh] pr-2 space-y-4 text-sm text-gray-700 dark:text-gray-300">
+  1493→            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800">
+  1494→              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+  1495→                Última atualização: Janeiro de 2025 • Versão 1.0
+  1496→              </p>
+  1497→            </div>
+  1498→
+  1499→            <div>
+  1500→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">1. Informações que Coletamos</h3>
+  1501→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1502→                Coletamos as seguintes categorias de informações: <strong>Dados de identificação:</strong> nome completo, e-mail, telefone, CPF/CNPJ; <strong>Dados profissionais:</strong> CRM, COREN ou outro registro profissional, especialidade; <strong>Dados de localização:</strong> cidade e estado de atuação; <strong>Dados de transação:</strong> histórico de plantões publicados, comprados e vendidos, valores transacionados; <strong>Dados de uso:</strong> logs de acesso, interações na plataforma, endereço IP.
+  1503→              </p>
+  1504→            </div>
+  1505→
+  1506→            <div>
+  1507→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">2. Como Utilizamos suas Informações</h3>
+  1508→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1509→                As informações coletadas são utilizadas para: (a) criação e gerenciamento de contas; (b) verificação de identidade e registro profissional; (c) viabilizar a compra e venda de plantões; (d) comunicação sobre transações, atualizações e novidades; (e) geração de avaliações e reputação; (f) melhoria contínua da plataforma; (g) cumprimento de obrigações legais e regulatórias.
+  1510→              </p>
+  1511→            </div>
+  1512→
+  1513→            <div>
+  1514→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">3. Compartilhamento de Dados</h3>
+  1515→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1516→                Seus dados podem ser compartilhados com: (a) outros usuários, na medida necessária para a realização de transações (nome, profissional tipo e avaliação); (b) autoridades competentes, quando exigido por lei ou ordem judicial; (c) prestadores de serviços que auxiliam na operação da plataforma (hospedagem, processamento de pagamentos), sempre sob obrigações de confidencialidade. Não vendemos seus dados pessoais a terceiros.
+  1517→              </p>
+  1518→            </div>
+  1519→
+  1520→            <div>
+  1521→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">4. Armazenamento e Segurança</h3>
+  1522→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1523→                Seus dados são armazenados em servidores seguros com criptografia e controles de acesso rigorosos. Adotamos medidas técnicas e organizacionais adequadas para proteger suas informações contra acesso não autorizado, alteração, divulgação ou destruição. As senhas são armazenadas de forma criptografada (hash) e não podem ser recuperadas em texto claro.
+  1524→              </p>
+  1525→            </div>
+  1526→
+  1527→            <div>
+  1528→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">5. Seus Direitos (LGPD)</h3>
+  1529→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1530→                Em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018), você tem direito a: (a) confirmar a existência de tratamento de dados; (b) acessar seus dados pessoais; (c) corrigir dados incompletos, inexatos ou desatualizados; (d) solicitar a anonimização, bloqueio ou eliminação de dados desnecessários; (e) solicitar a portabilidade dos dados; (f) eliminar dados tratados com consentimento; (g) revogar o consentimento a qualquer momento.
+  1531→              </p>
+  1532→            </div>
+  1533→
+  1534→            <div>
+  1535→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">6. Cookies e Tecnologias Semelhantes</h3>
+  1536→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1537→                Utilizamos cookies e tecnologias semelhantes para melhorar sua experiência, como: cookies essenciais para o funcionamento da plataforma; cookies de preferência para lembrar suas configurações (como tema escuro); cookies analíticos para entender como a plataforma é utilizada. Você pode gerenciar suas preferências de cookies nas configurações do navegador.
+  1538→              </p>
+  1539→            </div>
+  1540→
+  1541→            <div>
+  1542→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">7. Retenção de Dados</h3>
+  1543→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1544→                Mantemos seus dados pessoais pelo tempo necessário para cumprir as finalidades descritas nesta política, ou conforme exigido por lei. Dados de transações financeiras são mantidos pelo prazo mínimo estabelecido pela legislação tributária e contábil. Após o período de retenção, os dados são eliminados ou anonimizados de forma segura.
+  1545→              </p>
+  1546→            </div>
+  1547→
+  1548→            <div>
+  1549→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">8. Menores de Idade</h3>
+  1550→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1551→                A plataforma Plantão Help não é destinada a menores de 18 anos. Não coletamos intencionalmente dados pessoais de menores. Caso tomemos conhecimento de que um menor forneu dados pessoais sem o consentimento dos pais ou responsáveis, tomaremos medidas para excluir essas informações.
+  1552→              </p>
+  1553→            </div>
+  1554→
+  1555→            <div>
+  1556→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">9. Alterações nesta Política</h3>
+  1557→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1558→                Esta Política de Privacidade pode ser atualizada periodicamente. Notificaremos você sobre mudanças significativas por meio da plataforma ou por e-mail. A data da última atualização será sempre indicada no topo deste documento. Recomendamos a revisão periódica desta política.
+  1559→              </p>
+  1560→            </div>
+  1561→
+  1562→            <div>
+  1563→              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-1">10. Contato</h3>
+  1564→              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+  1565→                Para exercer seus direitos, tirar dúvidas ou fazer reclamações sobre o tratamento de dados pessoais, entre em contato com nosso Encarregado de Proteção de Dados (DPO) pelo e-mail: <strong>privacidade@plantaohelp.com</strong>. Respondemos solicitações de titulares de dados em até 15 dias úteis, conforme previsto na LGPD.
+  1566→              </p>
+  1567→            </div>
+  1568→          </div>
+  1569→        </DialogContent>
+  1570→      </Dialog>
+  1571→    </div>
+  1572→  )
+  1573→}
+  1574→
+  1575→// ─── Profile Completion Nudge Component ───
+  1576→interface ProfileField {
+  1577→  key: string
+  1578→  label: string
+  1579→  filled: boolean
+  1580→  suggestion: string
+  1581→  icon: React.ReactNode
+  1582→  weight: number // importance weight
+  1583→}
+  1584→
+  1585→function ProfileCompletionNudge({ user, onEdit }: { user: AuthUser; onEdit: () => void }) {
+  1586→  const fields: ProfileField[] = [
+  1587→    {
+  1588→      key: 'name',
+  1589→      label: 'Nome',
+  1590→      filled: !!user.name,
+  1591→      suggestion: 'Adicione seu nome completo',
+  1592→      icon: <User className="w-3.5 h-3.5" />,
+  1593→      weight: 15,
+  1594→    },
+  1595→    {
+  1596→      key: 'email',
+  1597→      label: 'Email',
+  1598→      filled: !!user.email,
+  1599→      suggestion: 'Adicione seu email',
+  1600→      icon: <Mail className="w-3.5 h-3.5" />,
+  1601→      weight: 15,
+  1602→    },
+  1603→    {
+  1604→      key: 'phone',
+  1605→      label: 'Telefone',
+  1606→      filled: !!user.phone,
+  1607→      suggestion: 'Adicione seu telefone para contato rápido',
+  1608→      icon: <Phone className="w-3.5 h-3.5" />,
+  1609→      weight: 15,
+  1610→    },
+  1611→    {
+  1612→      key: 'city',
+  1613→      label: 'Cidade',
+  1614→      filled: !!user.city,
+  1615→      suggestion: 'Adicione sua cidade para receber recomendações melhores',
+  1616→      icon: <MapPin className="w-3.5 h-3.5" />,
+  1617→      weight: 12,
+  1618→    },
+  1619→    {
+  1620→      key: 'state',
+  1621→      label: 'Estado',
+  1622→      filled: !!user.state,
+  1623→      suggestion: 'Adicione seu estado para ver plantões na sua região',
+  1624→      icon: <MapPin className="w-3.5 h-3.5" />,
+  1625→      weight: 8,
+  1626→    },
+  1627→    {
+  1628→      key: 'professionalDoc',
+  1629→      label: user.role === 'MEDICO' ? 'CRM' : user.role === 'ENFERMEIRO' || user.role === 'TECNICO_ENFERMAGEM' ? 'COREN' : 'Documento Profissional',
+  1630→      filled: !!user.professionalDoc,
+  1631→      suggestion: 'Adicione seu documento profissional para verificação',
+  1632→      icon: <FileText className="w-3.5 h-3.5" />,
+  1633→      weight: 20,
+  1634→    },
+  1635→    {
+  1636→      key: 'bio',
+  1637→      label: 'Bio',
+  1638→      filled: !!user.bio,
+  1639→      suggestion: 'Adicione uma bio para que outros conheçam você',
+  1640→      icon: <MessageSquare className="w-3.5 h-3.5" />,
+  1641→      weight: 15,
+  1642→    },
+  1643→  ]
+  1644→
+  1645→  const totalWeight = fields.reduce((sum, f) => sum + f.weight, 0)
+  1646→  const filledWeight = fields.filter(f => f.filled).reduce((sum, f) => sum + f.weight, 0)
+  1647→  const completionPercent = Math.round((filledWeight / totalWeight) * 100)
+  1648→
+  1649→  const missingFields = fields.filter(f => !f.filled)
+  1650→  const isComplete = completionPercent === 100
+  1651→
+  1652→  // Get color based on completion
+  1653→  const getProgressColor = () => {
+  1654→    if (completionPercent >= 80) return 'from-emerald-400 to-emerald-500'
+  1655→    if (completionPercent >= 50) return 'from-amber-400 to-emerald-400'
+  1656→    return 'from-red-400 to-amber-400'
+  1657→  }
+  1658→
+  1659→  const getProgressTextColor = () => {
+  1660→    if (completionPercent >= 80) return 'text-emerald-600 dark:text-emerald-400'
+  1661→    if (completionPercent >= 50) return 'text-amber-600 dark:text-amber-400'
+  1662→    return 'text-red-600 dark:text-red-400'
+  1663→  }
+  1664→
+  1665→  return (
+  1666→    <Card className={cn(
+  1667→      "rounded-xl shadow-sm border-0 overflow-hidden transition-all duration-300",
+  1668→      isComplete ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-400'
+  1669→    )}>
+  1670→      <CardContent className="p-4">
+  1671→        {/* Header */}
+  1672→        <div className="flex items-center justify-between mb-3">
+  1673→          <div className="flex items-center gap-2">
+  1674→            {isComplete ? (
+  1675→              <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+  1676→                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+  1677→              </div>
+  1678→            ) : (
+  1679→              <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+  1680→                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+  1681→              </div>
+  1682→            )}
+  1683→            <div>
+  1684→              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+  1685→                {isComplete ? 'Perfil Completo!' : 'Complete seu Perfil'}
+  1686→              </p>
+  1687→              <p className="text-xs text-gray-500 dark:text-gray-400">
+  1688→                {isComplete
+  1689→                  ? 'Seu perfil está completo. Continue atualizando!'
+  1690→                  : `${completionPercent}% preenchido`}
+  1691→              </p>
+  1692→            </div>
+  1693→          </div>
+  1694→          <span className={cn('text-2xl font-bold', getProgressTextColor())}>
+  1695→            {completionPercent}%
+  1696→          </span>
+  1697→        </div>
+  1698→
+  1699→        {/* Progress bar */}
+  1700→        <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-3">
+  1701→          <div
+  1702→            className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-700', getProgressColor())}
+  1703→            style={{ width: `${completionPercent}%` }}
+  1704→          />
+  1705→        </div>
+  1706→
+  1707→        {/* Field completion indicators */}
+  1708→        <div className="flex flex-wrap gap-1.5 mb-3">
+  1709→          {fields.map(field => (
+  1710→            <div
+  1711→              key={field.key}
+  1712→              className={cn(
+  1713→                'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-200',
+  1714→                field.filled
+  1715→                  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+  1716→                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+  1717→              )}
+  1718→            >
+  1719→              {field.filled ? (
+  1720→                <CheckCircle2 className="w-2.5 h-2.5" />
+  1721→              ) : (
+  1722→                <AlertCircle className="w-2.5 h-2.5" />
+  1723→              )}
+  1724→              {field.label}
+  1725→            </div>
+  1726→          ))}
+  1727→        </div>
+  1728→
+  1729→        {/* Missing field suggestions */}
+  1730→        {missingFields.length > 0 && (
+  1731→          <div className="space-y-1.5">
+  1732→            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-medium">
+  1733→              Sugestões para melhorar seu perfil
+  1734→            </p>
+  1735→            {missingFields.slice(0, 3).map(field => (
+  1736→              <div
+  1737→                key={field.key}
+  1738→                className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors cursor-pointer"
+  1739→                onClick={onEdit}
+  1740→              >
+  1741→                <div className="w-5 h-5 bg-white dark:bg-gray-700 rounded flex items-center justify-center text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 shrink-0">
+  1742→                  {field.icon}
+  1743→                </div>
+  1744→                <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">{field.suggestion}</p>
+  1745→                <ArrowRight className="w-3 h-3 text-gray-300 dark:text-gray-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 shrink-0" />
+  1746→              </div>
+  1747→            ))}
+  1748→            {missingFields.length > 3 && (
+  1749→              <button
+  1750→                onClick={onEdit}
+  1751→                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 ml-1"
+  1752→              >
+  1753→                +{missingFields.length - 3} mais sugestões
+  1754→                <ArrowRight className="w-3 h-3" />
+  1755→              </button>
+  1756→            )}
+  1757→          </div>
+  1758→        )}
+  1759→      </CardContent>
+  1760→    </Card>
+  1761→  )
+  1762→}
+  1763→

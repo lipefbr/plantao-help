@@ -1,0 +1,1797 @@
+     1→     1→# Plantão Help - Worklog
+     2→     2→
+     3→     3→## Project Status
+     4→     4→**Status**: Production-ready marketplace with beautiful landing page, rich features, enhanced styling, analytics, admin tools, smart recommendations, and onboarding
+     5→     5→**Last Updated**: 2025-05-08 (Phase 13 - Landing Page + Bug Fixes + Enhanced Styling + New Features)
+     6→     6→
+     7→     7→## Current State
+     8→     8→- Complete marketplace for healthcare shifts (plantões) with all core features working
+     9→     9→- Database seeded with sample data (10 hospitals, 10 locations, 14 shifts, 7 contests, 8 users)
+    10→    10→- All API endpoints functional and tested (30+ endpoints)
+    11→    11→- Frontend fully responsive with mobile-first design
+    12→    12→- Admin panel with interactive charts, shift management, revenue report, data export
+    13→    13→- Enhanced UI/UX with glassmorphism, animations, frosted glass nav, shift type badges, countdown timers
+    14→    14→- Activity timeline, calendar view, shift recommendations, and comparison features
+    15→    15→- FAQ section, contact support, terms of use, and privacy policy
+    16→    16→- Smart shift recommendations and side-by-side comparison
+    17→    17→- No console errors, lint passes clean
+    18→    18→
+    19→    19→## Architecture
+    20→    20→- **Frontend**: Single-page application (Next.js 16) with tab-based navigation and bottom nav bar
+    21→    21→- **Backend**: Next.js API routes with Prisma ORM (SQLite)
+    22→    22→- **State**: Zustand with persist middleware for auth state
+    23→    23→- **Theme**: Emerald/green healthcare theme with dark mode support
+    24→    24→- **UI**: shadcn/ui components + Lucide icons + Framer Motion transitions
+    25→    25→
+    26→    26→## Key Features Implemented
+    27→    27→1. **User Registration/Login** - With role selection (Médico, Enfermeiro, Téc. Enfermagem, Empresa)
+    28→    28→2. **Shift Marketplace** - Browse, search, filter by city/state/type/min-max price, sort by date/price/rating, create, buy, cancel shifts
+    29→    29→3. **Rating System** - Star ratings (1-5) with comments on completed transactions
+    30→    30→4. **Contests Section** - Filtered by user's professional type and region, with detail view
+    31→    31→5. **Profile Page** - Shows user info, registration status, ratings received, favorites
+    32→    32→6. **Profile Editing** - Edit name, phone, city, state, bio, professional doc + password change
+    33→    33→7. **Admin Panel** - Dashboard stats, user approval, hospital CRUD, contest CRUD, location management, fee management
+    34→    34→8. **Location-based Filtering** - Shifts and contests filtered by city/state
+    35→    35→9. **Registration Fees** - Different fees per professional type
+    36→    36→10. **Bottom Navigation** - Mobile-app style navigation with admin tab for admins
+    37→    37→11. **Pending Approval Workflow** - Users need admin approval before they can fully use the system
+    38→    38→12. **Favorites System** - Save shifts to favorites, view in profile
+    39→    39→13. **Notifications** - Bell icon with notification center, mark as read
+    40→    40→14. **WhatsApp Share** - Share shifts and contests via WhatsApp
+    41→    41→15. **Buy Confirmation Dialog** - AlertDialog before purchasing a shift
+    42→    42→16. **Deep Linking** - URL param `?shift=<id>` auto-opens shift detail
+    43→    43→17. **How it Works** - Step-by-step onboarding section on landing page
+    44→    44→18. **Trust Bar** - Stats bar showing active shifts, verification, support
+    45→    45→19. **4-Stat Dashboard** - Available, Published, Bought, Rating for logged-in users
+    46→    46→
+    47→    47→## Test Credentials
+    48→    48→- **Admin**: admin@plantaohelp.com / admin123
+    49→    49→- **Doctor**: dr.silva@medico.com / 123456
+    50→    50→- **Nurse**: maria@enfermeiro.com / 123456
+    51→    51→- **Technician**: lucas@tecnico.com / 123456
+    52→    52→
+    53→    53→## Phase 2 Changes (This Session)
+    54→    54→
+    55→    55→### Bug Fixes & Refactoring
+    56→    56→- Moved `getProfessionalTypeColor` from 5 duplicated locations to shared `src/lib/utils.ts`
+    57→    57→- Fixed `toast` import position in `perfil-tab.tsx` (was at bottom of file)
+    58→    58→- Added `formatTimeAgo`, `formatPhone`, `shareShiftLink`, `shareToWhatsApp` utilities to utils.ts
+    59→    59→
+    60→    60→### New Features
+    61→    61→- **Profile Editing API** (`PUT /api/users/[id]`) - Update name, phone, city, state, bio, professionalDoc
+    62→    62→- **Password Change API** (`PUT /api/users/[id]/password`) - Change password with current password verification
+    63→    63→- **Profile Edit Form** - In Settings tab, edit profile info and change password
+    64→    64→- **Shift Value Range Filter** - Min/max price inputs in filter panel
+    65→    65→- **Sort Options** - Sort by most recent, lowest price, highest price, best rating
+    66→    66→- **Active Filter Count Badge** - Shows count of active filters on filter button
+    67→    67→- **Confirmation Dialog for Buying** - AlertDialog before purchasing a shift
+    68→    68→- **WhatsApp Share** - Share button on shift detail and contest detail pages
+    69→    69→- **Contest Detail View** - Click contest to see full details, description, deadline, link to edital
+    70→    70→- **Deep Linking** - URL `?shift=<id>` auto-opens shift detail view
+    71→    71→- **Notification Auto-creation** - Notifications created on: shift bought, shift cancelled, user approved, user rejected
+    72→    72→- **How it Works Section** - 4-step onboarding on landing page
+    73→    73→- **Trust Bar** - Stats bar on landing page (active shifts, verified, support)
+    74→    74→- **4-Stat Dashboard** - Available, Published, Bought, Rating for logged-in users
+    75→    75→
+    76→    76→### UI/UX Enhancements
+    77→    77→- Enhanced card styling with `hover:shadow-lg`, `border-l-4 border-l-emerald-400`, consistent `active:scale-[0.98]`
+    78→    78→- Better badge/tag styling with `text-[11px]` and `border border-current/20`
+    79→    79→- Enhanced bottom navigation with bounce animation, scale-110 active icon, bg-emerald-100
+    80→    80→- Gradient line under top header
+    81→    81→- Better empty states with `animate-pulse` icons, `bg-gray-50 rounded-2xl`, encouraging messages
+    82→    82→- Enhanced form styling with `shadow-sm`, `focus:ring-2 focus:ring-emerald-500/20`, transitions
+    83→    83→- Hero section with shimmer animation, larger CTA button, decorative dots pattern
+    84→    84→- Admin dashboard with `hover:-translate-y-0.5`, gradient borders, `text-3xl font-bold` numbers
+    85→    85→- Consistent loading skeletons with `animate-pulse` and `rounded-xl`
+    86→    86→- Smoother page transitions with `duration: 0.25` and custom easing curve
+    87→    87→- Dark mode scrollbar styling
+    88→    88→- Focus-visible outlines and selection color
+    89→    89→- Smooth scroll behavior
+    90→    90→
+    91→    91→## Files Structure
+    92→    92→- `src/app/page.tsx` - Main single-page app with tab content + deep linking
+    93→    93→- `src/components/top-header.tsx` - Fixed top header with logo, dark mode, notifications, user info
+    94→    94→- `src/components/bottom-nav.tsx` - Fixed bottom navigation (5 tabs + admin)
+    95→    95→- `src/components/auth-modal.tsx` - Login/register dialog
+    96→    96→- `src/components/home-tab.tsx` - Dashboard with stats, featured shifts, quick actions, how-it-works
+    97→    97→- `src/components/plantoes-tab.tsx` - Shift marketplace with search, filters, sort, FAB
+    98→    98→- `src/components/shift-detail.tsx` - Full shift detail with buy/cancel/rate/share/favorite
+    99→    99→- `src/components/concursos-tab.tsx` - Contests listing with filters + detail view
+   100→   100→- `src/components/contest-detail.tsx` - Full contest detail with share and edital link
+   101→   101→- `src/components/meus-plantoes-tab.tsx` - My shifts (published and bought)
+   102→   102→- `src/components/perfil-tab.tsx` - User profile with info, ratings, favorites, settings (edit profile + change password)
+   103→   103→- `src/components/admin-tab.tsx` - Admin panel (6 sub-sections: dashboard, users, hospitals, contests, locations, fees)
+   104→   104→- `src/components/notification-center.tsx` - Notification slide-out panel
+   105→   105→- `src/lib/store.ts` - Zustand store with contest selection support
+   106→   106→- `src/lib/utils.ts` - Utility functions (formatting, colors, sharing)
+   107→   107→- `src/app/api/` - All API routes including:
+   108→   108→  - `/api/users/[id]/route.ts` - Profile update
+   109→   109→  - `/api/users/[id]/password/route.ts` - Password change
+   110→   110→  - `/api/users/[id]/ratings/route.ts` - User ratings
+   111→   111→  - `/api/shifts/route.ts` - Shift listing with filters (minValue, maxValue, sortBy)
+   112→   112→  - `/api/shifts/[id]/route.ts` - Shift detail with buy/cancel + notifications
+   113→   113→  - `/api/shifts/[id]/rate/route.ts` - Rating submission
+   114→   114→  - `/api/contests/route.ts` - Contest listing
+   115→   115→  - `/api/contests/[id]/route.ts` - Contest detail
+   116→   116→  - `/api/favorites/route.ts` - Favorites CRUD
+   117→   117→  - `/api/notifications/route.ts` - Notifications CRUD
+   118→   118→  - `/api/admin/stats/route.ts` - Dashboard stats
+   119→   119→  - `/api/admin/users/[id]/approve/route.ts` - User approval + notifications
+   120→   120→  - And more...
+   121→   121→- `prisma/schema.prisma` - Database schema
+   122→   122→- `prisma/seed.ts` - Seed data script
+   123→   123→
+   124→   124→## Phase 3 Changes (Task 5+6+7)
+   125→   125→
+   126→   126→### New Features
+   127→   127→- **Financial Summary in Meus Plantões** - Emerald gradient card showing Total Ganho (earned from sold shifts), Total Gasto (spent on bought shifts), Plantões Publicados count, Plantões Comprados count
+   128→   128→- **Shift Type Badge (Diurno/Noturno/Misto)** - Automatic classification based on start/end times with color-coded badges (☀️ Diurno=amber, 🌙 Noturno=indigo, 🌅 Misto=gray)
+   129→   129→- **Countdown Timer in Shift Detail** - Shows time remaining until shift starts (days, hours, minutes), updates every minute, displays "Em andamento ou encerrado" if already started
+   130→   130→
+   131→   131→### Utility Functions Added (utils.ts)
+   132→   132→- `getShiftType(startTime, endTime)` - Returns 'Diurno' | 'Noturno' | 'Misto' based on shift hours
+   133→   133→- `getShiftTypeColor(type)` - Returns Tailwind color classes for badge styling
+   134→   134→- `getShiftTypeIcon(type)` - Returns emoji icon for shift type (☀️🌙🌅)
+   135→   135→
+   136→   136→### Files Modified
+   137→   137→- `src/lib/utils.ts` - Added getShiftType, getShiftTypeColor, getShiftTypeIcon
+   138→   138→- `src/components/meus-plantoes-tab.tsx` - Added financial summary card + shift type badges on shift cards
+   139→   139→- `src/components/plantoes-tab.tsx` - Added shift type badge next to professional type badge
+   140→   140→- `src/components/home-tab.tsx` - Added shift type badge to both featured and recent shift cards (logged-in + logged-out views)
+   141→   141→- `src/components/shift-detail.tsx` - Added shift type badge in green gradient card + info section, added countdown timer with Timer icon
+   142→   142→
+   143→   143→## Phase 4 Changes (Task 4 - Admin Dashboard Charts)
+   144→   144→
+   145→   145→### New Features
+   146→   146→- **Admin Analytics API** (`GET /api/admin/analytics`) - Returns chart data for admin dashboard:
+   147→   147→  - Monthly shift creation data (last 6 months) for bar chart
+   148→   148→  - Shift status distribution (Available/Sold/Cancelled) for pie chart
+   149→   149→  - User registration by role (Médico/Enfermeiro/Téc. Enfermagem/Empresa) for pie chart
+   150→   150→  - Revenue by month (last 6 months, sold shifts) for line chart
+   151→   151→  - Admin role verification via `adminId` query parameter
+   152→   152→- **Interactive Charts in Admin Dashboard** - New "Gráficos" section below stat cards:
+   153→   153→  - **Bar Chart** ("Plantões por Mês") - Emerald-colored bars with rounded tops showing shifts created per month
+   154→   154→  - **Line Chart** ("Receita Mensal") - Emerald line with dots showing revenue trend over 6 months
+   155→   155→  - **Pie Chart** ("Status dos Plantões") - Donut chart with green/blue/red for Available/Sold/Cancelled
+   156→   156→  - **Pie Chart** ("Usuários por Tipo") - Donut chart with emerald/teal/amber/purple for each professional role
+   157→   157→  - Loading skeletons while analytics data is fetched
+   158→   158→  - Empty state message when no data available
+   159→   159→  - Responsive 2-column grid on desktop, single column on mobile
+   160→   160→  - Consistent emerald color theme matching project design
+   161→   161→
+   162→   162→### Files Created
+   163→   163→- `src/app/api/admin/analytics/route.ts` - New analytics API endpoint
+   164→   164→
+   165→   165→### Files Modified
+   166→   166→- `src/components/admin-tab.tsx` - Added recharts imports, CHART_COLORS/STATUS_COLORS/ROLE_COLORS constants, enhanced DashboardPanel with analytics state + 4 interactive charts section
+   167→   167→
+   168→   168→### Resolved Issues
+   169→   169→- Item #8 from Unresolved Issues: "Analytics Dashboard: Admin could benefit from more detailed analytics with charts" - **RESOLVED**
+   170→   170→
+   171→   171→## Phase 5 Changes (Task 8 - Styling Improvements All Tabs)
+   172→   172→
+   173→   173→### Global CSS Enhancements (`src/app/globals.css`)
+   174→   174→- **Custom scrollbar**: Thinner (5px), emerald-themed with semi-transparent oklch colors, Firefox scrollbar support via `scrollbar-width: thin`
+   175→   175→- **Selection color**: Emerald-300/25 in light mode, emerald-700/35 in dark mode
+   176→   176→- **Smooth scroll**: `scroll-behavior: smooth` on html
+   177→   177→- **6 new keyframe animations**: `fadeIn` (opacity), `slideUp` (translateY+opacity with spring easing), `pulseSoft` (gentle scale+opacity), `bellBounce` (rotation shake), `successPop` (scale pop), `shimmer` (translateX for skeleton), `borderGrow` (border-left-width expand)
+   178→   178→- **Utility animation classes**: `.animate-fadeIn`, `.animate-slideUp`, `.animate-pulseSoft`, `.animate-bellBounce`, `.animate-successPop`, `.animate-shimmer`, `.animate-borderGrow`
+   179→   179→- **Skeleton shimmer effect**: `.skeleton-shimmer` class with pseudo-element gradient overlay
+   180→   180→- **Focus-visible styles**: Dark mode variant with lighter emerald outline color
+   181→   181→- **Placeholder text styling**: Custom color for light/dark modes
+   182→   182→
+   183→   183→### Top Header Enhancement (`src/components/top-header.tsx`)
+   184→   184→- **Glassmorphism effect**: `backdrop-blur-md bg-white/80 dark:bg-gray-900/80` with semi-transparent border
+   185→   185→- **Pulsing green live indicator**: Double-span ping animation next to "PlantãoHelp" logo text
+   186→   186→- **Notification bell bounce**: `animate-bellBounce` triggered when unreadCount changes (with cleanup timeout)
+   187→   187→- **Gradient border-bottom line**: Emerald-to-teal gradient with 80% opacity
+   188→   188→- **Avatar ring effect**: `ring-2 ring-emerald-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-900`
+   189→   189→- **Dark mode toggle**: `hover:scale-110 active:scale-95` transition
+   190→   190→- **Logo shadow**: Emerald shadow on logo icon, shadow-sm on login button
+   191→   191→
+   192→   192→### Bottom Navigation Enhancement (`src/components/bottom-nav.tsx`)
+   193→   193→- **Frosted glass effect**: `backdrop-blur-lg bg-white/90 dark:bg-gray-900/90`
+   194→   194→- **Top border gradient**: Via-transparent emerald-400/30 gradient line
+   195→   195→- **Active indicator dot**: Small emerald dot below active tab icon with glow shadow
+   196→   196→- **Active tab glow**: `shadow-sm shadow-emerald-200/50 dark:shadow-emerald-800/30` on active icon container
+   197→   197→- **Haptic-like feedback**: `active:scale-90` on all tab buttons
+   198→   198→- **Spring-like transition**: `transition-all duration-300` with scale-110 for active, scale-100 for inactive
+   199→   199→
+   200→   200→### Contests Tab Enhancement (`src/components/concursos-tab.tsx`)
+   201→   201→- **Deadline countdown**: `getDaysRemaining()` calculates days until deadline, shown as urgency badge
+   202→   202→- **Urgency indicators**: Green (>30d), Amber (7-30d), Red (<7d), Gray (expired) with matching icons (CheckCircle2, HourglassIcon, AlertTriangle, Clock)
+   203→   203→- **"Ver edital" link icon**: `FileText` icon replaces `ExternalLink` for contest link buttons with hover scale effect
+   204→   204→- **Card hover border animation**: `hover:border-l-[6px]` with dynamic left border color based on urgency
+   205→   205→- **Shimmer/skeleton loading**: Custom `ShimmerSkeleton` component with gradient overlay animation instead of plain `Skeleton`
+   206→   206→- **Enhanced empty state**: `SearchX` icon in rounded background, encouraging message about new contests being added frequently
+   207→   207→- **Filter slide-up animation**: `animate-slideUp` on filter card
+   208→   208→
+   209→   209→### Auth Modal Enhancement (`src/components/auth-modal.tsx`)
+   210→   210→- **Gradient header area**: Subtle emerald-to-teal gradient overlay with gradient divider line at bottom
+   211→   211→- **Professional role selection cards**: 2x2 grid with emoji icons (🩺💊🏥🏢), labels, descriptions, and animated checkmark on selection
+   212→   212→- **Password strength indicator**: 5-bar visual meter with labels (Fraca→Razoável→Boa→Forte→Muito forte) and color coding (red→amber→emerald)
+   213→   213→- **Smooth mode transition**: `animate-fadeIn` on form content when switching login/register
+   214→   214→- **Success animation**: `animate-successPop` with CheckCircle2 icon when login/register succeeds, 600ms delay before modal closes
+   215→   215→- **Improved password toggle**: Styled button with bg-gray-100/dark:bg-gray-700, rounded-md, `active:scale-90` press feedback
+   216→   216→- **Login button shadow**: `shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30` with `active:scale-[0.98]`
+   217→   217→- **Subtitle text**: Added descriptive subtitles under dialog titles
+   218→   218→
+   219→   219→## Phase 6 Changes (QA, Bug Fixes, FAQ, Legal Links)
+   220→   220→
+   221→   221→### Bug Fixes
+   222→   222→- **Typo "plantãoões"**: Fixed incorrect plural in plantoes-tab.tsx line 243 - changed `plantão${shifts.length !== 1 ? 'ões' : ''}` to `plant${shifts.length !== 1 ? 'ões' : 'ão'}`
+   223→   223→- **Countdown NaN bug**: Fixed in shift-detail.tsx - date was being parsed incorrectly when shift.date was an ISO string. Added proper date extraction with `split('T')[0]` and NaN guard
+   224→   224→- **Lint error (setState in effect)**: Fixed in top-header.tsx - replaced `useState + useEffect` bell animation with `useRef + DOM manipulation` pattern to avoid calling setState synchronously in an effect
+   225→   225→
+   226→   226→### New Features
+   227→   227→- **FAQ/Help Section** (`src/components/faq-help-section.tsx`) - Accordion-style FAQ with 10 common questions, "Ver mais perguntas" expand button, contact support card with email and WhatsApp links
+   228→   228→- **Legal Links in Profile Settings** - Added "Termos de Uso" and "Política de Privacidade" buttons in perfil-tab.tsx Config tab
+   229→   229→- **Version bump** - Updated app version from 1.0.0 to 1.1.0
+   230→   230→
+   231→   231→### Files Created
+   232→   232→- `src/components/faq-help-section.tsx` - FAQ accordion + contact support section
+   233→   233→
+   234→   234→### Files Modified
+   235→   235→- `src/components/plantoes-tab.tsx` - Fixed "plantãoões" typo
+   236→   236→- `src/components/shift-detail.tsx` - Fixed countdown NaN bug with proper date parsing
+   237→   237→- `src/components/top-header.tsx` - Fixed lint error, replaced useState with useRef for bell animation
+   238→   238→- `src/components/home-tab.tsx` - Added FaqHelpSection import and component at bottom of both views
+   239→   239→- `src/components/perfil-tab.tsx` - Added legal links card (Terms of Use + Privacy Policy), updated version to 1.1.0
+   240→   240→
+   241→   241→### QA Testing Summary (via agent-browser)
+   242→   242→- ✅ Homepage loads correctly (both logged-out hero and logged-in dashboard)
+   243→   243→- ✅ Admin login works, dashboard shows stats + pending registrations
+   244→   244→- ✅ Admin analytics charts render correctly (Bar, Line, 2x Pie)
+   245→   245→- ✅ Shifts marketplace shows correct plural "5 plantões encontrados"
+   246→   246→- ✅ Shift type badges show correctly (🌙 Noturno, ☀️ Diurno)
+   247→   247→- ✅ Shift detail shows countdown timer correctly (e.g., "3d 15h 22min")
+   248→   248→- ✅ Concursos tab shows deadline countdowns ("30d restantes", "25d restantes", "15d restantes")
+   249→   249→- ✅ Meus Plantões shows financial summary (Total Ganho, Total Gasto, Publicados, Comprados)
+   250→   250→- ✅ FAQ section visible on homepage with accordion and contact support
+   251→   251→- ✅ Dark mode works correctly
+   252→   252→- ✅ No console errors detected
+   253→   253→- ✅ Lint passes clean
+   254→   254→
+   255→   255→## Phase 7 Changes (Task 3-a - Activity Timeline + Calendar View)
+   256→   256→
+   257→   257→### Feature 1: Activity Timeline on Home Tab
+   258→   258→
+   259→   259→#### New API Endpoint
+   260→   260→- **`GET /api/users/[id]/activity`** - Returns recent activity items for a user, limited to 10 most recent
+   261→   261→  - Combines data from shifts, ratings, notifications, and contests tables
+   262→   262→  - Activity types: `shift_published` (📋), `shift_bought` (🛒), `shift_cancelled` (❌), `new_rating` (⭐), `registration_approved` (✅), `contest_opening` (🏛️)
+   263→   263→  - Each item includes: id, type, title, description, createdAt, icon
+   264→   264→  - Sorted by createdAt descending
+   265→   265→
+   266→   266→#### Home Tab Changes (`src/components/home-tab.tsx`)
+   267→   267→- Added `ActivityItem` interface at module level
+   268→   268→- Added state: `activities`, `activitiesLoading`, `showAllActivities`
+   269→   269→- Added `loadActivities()` function that fetches from `/api/users/[id]/activity`
+   270→   270→- Added "Atividade Recente" section in logged-in dashboard, placed AFTER "Plantões recentes" section and BEFORE FAQ section
+   271→   271→- **Timeline design**: Vertical timeline with:
+   272→   272→  - Color-coded icon circles (emerald=published, blue=bought, red=cancelled, amber=rating, green=approved, purple=contest)
+   273→   273→  - Connecting vertical line between items
+   274→   274→  - Title, description, and time ago (using `formatTimeAgo`) for each item
+   275→   275→  - Staggered `animate-slideUp` animation with 60ms delay per item
+   276→   276→- **Show 5 most recent** with "Ver mais" button to expand to 10
+   277→   277→- **Loading skeleton**: 5 circular skeleton items with text placeholders
+   278→   278→- **Empty state**: Activity icon with encouraging message
+   279→   279→- **Dark mode support**: All colors have dark mode variants
+   280→   280→- Added `Activity` icon from lucide-react import
+   281→   281→- Added `formatTimeAgo` to utils import
+   282→   282→
+   283→   283→### Feature 2: Shift Calendar View in Meus Plantões
+   284→   284→
+   285→   285→#### New API Endpoint
+   286→   286→- **`GET /api/shifts/calendar`** - Returns shifts grouped by date for a user
+   287→   287→  - Accepts `userId` query parameter
+   288→   288→  - Returns shifts with `type` field ('published' | 'bought') based on sellerId matching
+   289→   289→
+   290→   290→#### Meus Plantões Tab Changes (`src/components/meus-plantoes-tab.tsx`)
+   291→   291→- Added `viewMode` state ('list' | 'calendar') with toggle buttons
+   292→   292→- Added `currentMonth` state for calendar navigation
+   293→   293→- Added `selectedDate` state for day click interaction
+   294→   294→- Added calendar helper functions: `getDaysInMonth`, `goToPrevMonth`, `goToNextMonth`, `goToToday`, `formatMonthYear`, `isToday`, `getDateKey`
+   295→   295→- **View mode toggle**: "Lista" / "Calendário" buttons with emerald active state, styled like TabsList
+   296→   296→- **Monthly calendar grid**:
+   297→   297→  - Header with month/year (capitalized pt-BR) and prev/next month navigation (ChevronLeft/ChevronRight)
+   298→   298→  - "Ir para hoje" link when not viewing current month
+   299→   299→  - 7-column grid (Dom, Seg, Ter, Qua, Qui, Sex, Sáb)
+   300→   300→  - Days with shifts show colored dots (emerald for published, blue for bought)
+   301→   301→  - Today highlighted with emerald background and bold text
+   302→   302→  - Selected day has ring-2 ring-emerald-500 and scaled interaction
+   303→   303→  - Empty cells for days outside the month
+   304→   304→  - Legend at bottom showing dot color meanings
+   305→   305→- **Selected date panel**: When clicking a day with shifts:
+   306→   306→  - Shows date header with X close button
+   307→   307→  - Lists shift cards with: title, Published/Bought badge (color-coded), time, location, value, status
+   308→   308→  - `animate-slideUp` entrance animation
+   309→   309→  - Click on shift card opens shift detail
+   310→   310→- **Uses existing shift data** (publishedShifts + boughtShifts) organized by date via `useMemo`, no additional API call
+   311→   311→- **Empty calendar state**: CalendarDays icon with encouraging message
+   312→   312→- **Responsive and mobile-friendly**: Full width calendar grid, aspect-square day cells
+   313→   313→- Added imports: `Badge`, `ChevronLeft`, `ChevronRight`, `List`, `CalendarDays`, `X` from lucide-react
+   314→   314→- Added `useMemo`, `useCallback` from react
+   315→   315→
+   316→   316→### Files Created
+   317→   317→- `src/app/api/users/[id]/activity/route.ts` - Activity timeline API endpoint
+   318→   318→- `src/app/api/shifts/calendar/route.ts` - Calendar shifts API endpoint
+   319→   319→
+   320→   320→### Files Modified
+   321→   321→- `src/components/home-tab.tsx` - Added ActivityItem interface, activity state, loadActivities function, "Atividade Recente" timeline section, Activity icon import, formatTimeAgo import
+   322→   322→- `src/components/meus-plantoes-tab.tsx` - Complete rewrite with calendar view toggle, monthly calendar grid, selected date panel, view mode state, calendar navigation, useMemo/useCallback optimization
+   323→   323→
+   324→   324→### Testing
+   325→   325→- ✅ Lint passes clean
+   326→   326→- ✅ Activity API returns correct data (tested with dr.silva user)
+   327→   327→- ✅ Calendar API returns shifts grouped by date
+   328→   328→- ✅ No compilation errors in dev log
+   329→   329→
+   330→   330→## Phase 8 Changes (Task 4 - Enhanced Styling All Tabs)
+   331→   331→
+   332→   332→### Global CSS Enhancements (`src/app/globals.css`)
+   333→   333→- **New keyframe animations**: `float` (translateY bounce), `ripple` (scale+opacity), `badge-pulse` (emerald box-shadow pulse), `shimmer-slow` (background-position sweep), `parallax-rotate` (360deg rotation), `sweep` (clip-path reveal)
+   334→   334→- **New utility classes**: `.animate-float`, `.animate-ripple`, `.animate-badge-pulse`, `.animate-shimmer-slow`, `.animate-parallax-rotate`, `.animate-sweep`
+   335→   335→- **`.gradient-text` utility**: Emerald gradient clip text effect
+   336→   336→- **`.glass-card` utility**: Glassmorphism with backdrop-blur-12 and semi-transparent background (light + dark mode)
+   337→   337→- **Theme inline variables**: Added `--animate-float`, `--animate-ripple`, `--animate-badge-pulse`, `--animate-shimmer-slow`
+   338→   338→
+   339→   339→### Home Tab (`src/components/home-tab.tsx`)
+   340→   340→- **Parallax gradient shift**: Added `animate-parallax-rotate` pseudo-element with conic gradient on both hero (logged-out) and welcome (logged-in) cards
+   341→   341→- **Hover lift on stat cards**: Added `hover:-translate-y-0.5 transition-transform duration-200` to all 4 stat cards
+   342→   342→- **Pulsing dot on Concursos quick link**: Added `animate-badge-pulse` green dot on "Concursos Abertos" card icon
+   343→   343→- **Quick Action button enhancements**: Inner shadow (`shadow-inner`), Plus icon `group-hover:rotate-90`, Search icon `group-hover:scale-110`
+   344→   344→- **Staggered animation on Plantões recentes**: Added `animate-slideUp` with `animationDelay: index * 80ms` and `opacity: 0` initial state
+   345→   345→- **Wave SVG divider**: Added decorative wave SVG between welcome card and stats section
+   346→   346→
+   347→   347→### Plantoes Tab (`src/components/plantoes-tab.tsx`)
+   348→   348→- **Search input focus ring**: Added `focus-within:ring-2 focus-within:ring-emerald-400/50` on search container
+   349→   349→- **Left border color animation**: Added `hover:border-l-emerald-500 transition-all` on shift cards
+   350→   350→- **"Novo" badge**: Shows `animate-badge-pulse` green "Novo" badge on shifts with date within last 2 days
+   351→   351→- **Gradient overlay**: Added `bg-gradient-to-t from-white dark:from-gray-950 to-transparent` at bottom of shift list
+   352→   352→- **FAB enhancement**: Added `animate-float`, `ring-4 ring-emerald-400/20 hover:ring-emerald-400/40`, ring-offset for glow effect
+   353→   353→
+   354→   354→### Meus Plantões Tab (`src/components/meus-plantoes-tab.tsx`)
+   355→   355→- **Gradient progress bar**: Shows shift completion percentage (elapsed vs total time) with gradient bar on available shifts
+   356→   356→- **Gold "badge of honor"**: Shifts from sellers with 5★ rating get amber border and "⭐ 5★" badge
+   357→   357→- **Financial summary shimmer**: Added `animate-shimmer-slow` gradient overlay on the financial summary card
+   358→   358→- **Tab transition animation**: Added `transition-all duration-300` on TabsTrigger components
+   359→   359→
+   360→   360→### Concursos Tab (`src/components/concursos-tab.tsx`)
+   361→   361→- **Badge ribbon for urgent contests**: Red "URGENTE" ribbon in top-right corner for contests with deadline <7 days
+   362→   362→- **Dynamic gradient cards**: Background gradient changes based on deadline urgency (green→amber→red spectrum)
+   363→   363→- **Pulse animation on urgent badges**: `animate-badge-pulse` on urgency badges for <7 days remaining
+   364→   364→- **Enhanced empty state**: Animated concentric circles with floating Trophy icon instead of static SearchX
+   365→   365→
+   366→   366→### Shift Detail (`src/components/shift-detail.tsx`)
+   367→   367→- **Gradient shimmer on value**: Price display uses `animate-shimmer-slow` with emerald gradient clip-text
+   368→   368→- **Decorative dot pattern**: Radial gradient dot pattern overlay on main info card
+   369→   369→- **Verified seller badge**: Shield icon + "Verificado" badge with green glow shadow when seller has professionalDoc
+   370→   370→- **Subtle pulse on buy button**: Added `animate-badge-pulse` on "Comprar Plantão" button
+   371→   371→- **Shift lifecycle timeline**: 3-step timeline (Created → Available → Sold) with colored indicators and progress lines
+   372→   372→- **Hospital background pattern**: Subtle star SVG background pattern on hospital info card
+   373→   373→
+   374→   374→### Profile Tab (`src/components/perfil-tab.tsx`)
+   375→   375→- **Confetti decorative pattern**: 12 randomly-placed semi-transparent circles on profile header
+   376→   376→- **Progress ring around avatar**: SVG circle showing profile completion percentage (based on email/phone/city/doc/bio fields)
+   377→   377→- **Badge system**: "✓ Verificado" badge for approved users, "⭐ Top" badge for users with avgRating ≥ 4.5
+   378→   378→- **Gradient divider**: Added `bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-400` accent at top of info section
+   379→   379→
+   380→   380→### Notification Center (`src/components/notification-center.tsx`)
+   381→   381→- **Color-coded left borders**: SUCCESS=emerald, WARNING=amber, default=blue `border-l-3` on each notification
+   382→   382→- **Slide-in animation**: Added `animate-slideIn` class on SheetContent
+   383→   383→- **Pulse on unread dot**: Changed static dot to `animate-badge-pulse` for unread indicator
+   384→   384→- **Sweep animation on "mark all read"**: Added `animate-sweep` class on mark-all button
+   385→   385→- **Badge pulse on count**: Added `animate-badge-pulse` on unread count badge
+   386→   386→
+   387→   387→### Top Header (`src/components/top-header.tsx`)
+   388→   388→- **Gradient text on logo**: "PlantãoHelp" now uses `.gradient-text` class with emerald gradient clip
+   389→   389→- **Breathing animation on live indicator**: Changed `animate-ping` to `animate-pulseSoft` for subtle breathing effect
+   390→   390→- **Pulse ring on notification badge**: Added `animate-badge-pulse` on notification count badge
+   391→   391→
+   392→   392→### Bottom Navigation (`src/components/bottom-nav.tsx`)
+   393→   393→- **Ripple effect container**: Added ripple span element inside icon container
+   394→   394→- **Desktop tooltip**: Added hover tooltip showing tab name (hidden on mobile, visible on sm+)
+   395→   395→- **Group hover**: Added `group` class for tooltip trigger
+   396→   396→
+   397→   397→### Files Modified
+   398→   398→- `src/app/globals.css` - Added 6 new keyframes, 6 utility animation classes, `.gradient-text`, `.glass-card`
+   399→   399→- `src/components/home-tab.tsx` - Parallax gradient, hover lift, pulsing dot, staggered animations, wave SVG, icon animations
+   400→   400→- `src/components/plantoes-tab.tsx` - Focus ring, hover border animation, "Novo" badge, gradient overlay, FAB glow
+   401→   401→- `src/components/meus-plantoes-tab.tsx` - Progress bar, gold badge, financial shimmer, tab transitions
+   402→   402→- `src/components/concursos-tab.tsx` - URGENTE ribbon, urgency gradient, pulse on urgent badges, animated empty state
+   403→   403→- `src/components/shift-detail.tsx` - Shimmer value, dot pattern, verified badge, lifecycle timeline, pulse buy button
+   404→   404→- `src/components/perfil-tab.tsx` - Confetti pattern, progress ring, badge system, gradient divider
+   405→   405→- `src/components/notification-center.tsx` - Color-coded borders, slide-in, pulse dots, sweep animation
+   406→   406→- `src/components/top-header.tsx` - Gradient text, breathing indicator, pulse notification badge
+   407→   407→- `src/components/bottom-nav.tsx` - Ripple effect, desktop tooltip, group hover
+   408→   408→
+   409→   409→### Testing
+   410→   410→- ✅ Lint passes clean (0 errors, 0 warnings)
+   411→   411→
+   412→   412→## Phase 9 Changes (Task 3-b - Enhanced Admin + Notification Improvements + Legal Dialogs)
+   413→   413→
+   414→   414→### Feature 1: Admin Panel - Shift Management Sub-tab ("Plantões")
+   415→   415→
+   416→   416→#### New API Endpoints
+   417→   417→- **`GET /api/admin/shifts`** - Returns all shifts with seller, buyer, and hospital info
+   418→   418→  - Accepts `adminId` query parameter for admin role verification
+   419→   419→  - Accepts `status` filter param (AVAILABLE, SOLD, CANCELLED, or ALL)
+   420→   420→  - Accepts `sortBy` param (date, value, status) and `sortOrder` (asc, desc)
+   421→   421→  - Returns shifts with full relational data including seller/buyer emails and phones
+   422→   422→- **`PUT /api/admin/shifts/[id]/cancel`** - Cancels a shift with admin privileges
+   423→   423→  - Accepts `adminId` and optional `reason` in body
+   424→   424→  - Verifies admin role before allowing cancellation
+   425→   425→  - Prevents double-cancellation (returns 400 if already cancelled)
+   426→   426→  - Sends notification to seller (WARNING type) with reason
+   427→   427→  - Sends notification to buyer (if exists) with reason
+   428→   428→
+   429→   429→#### Admin Tab Changes (`src/components/admin-tab.tsx`)
+   430→   430→- Added `ShiftsPanel` component with full shift management capabilities:
+   431→   431→  - **Status filter**: Select dropdown to filter by All/Available/Sold/Cancelled
+   432→   432→  - **Search input**: Client-side search across title, seller name, city, hospital name
+   433→   433→  - **Sort buttons**: Toggle sort by Date/Value/Status with asc/desc ordering
+   434→   434→  - **Shift cards**: Show title, status badge, date, time, value, city/state, hospital, seller, buyer
+   435→   435→  - **View detail button (Eye icon)**: Opens Dialog with full shift information:
+   436→   436→    - Title, status, date, time, value, professional type
+   437→   437→    - Location and hospital info
+   438→   438→    - Description
+   439→   439→    - Seller info (avatar, name, email)
+   440→   440→    - Buyer info (if exists, avatar, name, email)
+   441→   441→    - Cancel button for non-cancelled shifts
+   442→   442→  - **Cancel button (X icon)**: Opens cancel dialog with:
+   443→   443→    - Warning message about seller notification
+   444→   444→    - Optional reason textarea
+   445→   445→    - Confirm/Cancel buttons
+   446→   446→  - **Loading skeletons**: Animated skeleton placeholders
+   447→   447→  - **Empty state**: Message when no shifts found
+   448→   448→  - **Max height scroll**: 500px max height with overflow scroll
+   449→   449→  - Cancelled shifts show with reduced opacity
+   450→   450→- Added "Plantões" sub-tab (Calendar icon) in admin tab navigation
+   451→   451→- Added new Lucide icon imports: `Eye, ArrowUpDown, Clock, Banknote, ArrowUpRight, ArrowDownRight`
+   452→   452→- Updated `adminSubTabs` constant to include `'shifts'`
+   453→   453→
+   454→   454→### Feature 2: Admin Panel - Revenue Report
+   455→   455→
+   456→   456→#### New API Endpoint
+   457→   457→- **`GET /api/admin/revenue`** - Calculates revenue metrics
+   458→   458→  - Accepts `adminId` query parameter for admin role verification
+   459→   459→  - Returns: `totalRevenue`, `revenueThisMonth`, `revenueLastMonth`, `averageShiftValue`, `revenueTrend` (percentage), `topCities` (top 5), `topStates` (top 5), `totalSoldShifts`, `totalAllShifts`
+   460→   460→
+   461→   461→#### Dashboard Panel Changes (`src/components/admin-tab.tsx`)
+   462→   462→- Added `RevenueReportCard` component placed after extra stats row and before pending registrations:
+   463→   463→  - **Gradient header**: Emerald-to-teal gradient with Banknote icon and "Relatório de Receita" title
+   464→   464→  - **Total revenue**: Large white bold text
+   465→   465→  - **4-metric grid**: This Month, Last Month, Average/Shift, Trend
+   466→   466→  - **Trend indicator**: ArrowUpRight (emerald) for positive trend, ArrowDownRight (red) for negative
+   467→   467→  - **Top Cities section**: Shows top 3 earning cities with revenue amounts
+   468→   468→  - Loading skeleton while fetching
+   469→   469→- Revenue report auto-loads on admin dashboard mount
+   470→   470→
+   471→   471→### Feature 3: Notification Categories & Mark All Read
+   472→   472→
+   473→   473→#### New API Endpoint
+   474→   474→- **`PUT /api/notifications/read-all`** - Marks all unread notifications as read for a user
+   475→   475→  - Accepts `userId` in body
+   476→   476→  - Uses `updateMany` for efficient batch update
+   477→   477→  - Returns `{ success: true, updatedCount }` with number of notifications marked
+   478→   478→
+   479→   479→#### Notification Center Changes (`src/components/notification-center.tsx`)
+   480→   480→- **Category system**: Added `NOTIFICATION_CATEGORIES` constant with 11 categories:
+   481→   481→  - 📋 SHIFT_PUBLISHED / SHIFT_UPDATED → green (FileText icon)
+   482→   482→  - 🛒 SHIFT_BOUGHT / SHIFT_SOLD → blue (ShoppingCart icon)
+   483→   483→  - ❌ SHIFT_CANCELLED → red (XCircle icon)
+   484→   484→  - ⭐ NEW_RATING → amber (Star icon)
+   485→   485→  - ✅ REGISTRATION_APPROVED → emerald (CheckCircle2 icon)
+   486→   486→  - ❌ REGISTRATION_REJECTED → red (XCircle icon)
+   487→   487→  - 🏛️ CONTEST → teal (Landmark icon)
+   488→   488→  - Legacy: SUCCESS, WARNING, INFO
+   489→   489→- **Smart category inference**: `inferNotificationCategory()` analyzes notification title keywords to assign categories
+   490→   490→- **Category count bar**: Shows top 4 notification categories with counts at the top of the notification panel
+   491→   491→- **Category-aware icons**: Each notification displays the appropriate category icon with matching colors
+   492→   492→- **Category label badges**: Small category label under each notification's timestamp
+   493→   493→- **Improved "Mark all as read"**: Now uses single `PUT /api/notifications/read-all` API call instead of N individual calls (more efficient)
+   494→   494→- Added new imports: `ShoppingCart, XCircle, Star, Landmark, FileText`
+   495→   495→- Added `useMemo` for computed category counts
+   496→   496→
+   497→   497→### Feature 4: Terms of Use & Privacy Policy Dialogs
+   498→   498→
+   499→   499→#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+   500→   500→- Added `showTerms` and `showPrivacy` state variables
+   501→   501→- Added Dialog import from shadcn/ui
+   502→   502→- Added ScrollText icon from lucide-react
+   503→   503→- **"Termos de Uso" button**: Now opens a Dialog with scrollable terms document
+   504→   504→  - 10 sections of professional legal content in Portuguese:
+   505→   505→    1. Aceitação dos Termos
+   506→   506→    2. Descrição do Serviço
+   507→   507→    3. Cadastro e Conta do Usuário
+   508→   508→    4. Publicação e Compra de Plantões
+   509→   509→    5. Taxas e Pagamentos
+   510→   510→    6. Avaliações e Reputação
+   511→   511→    7. Responsabilidades do Usuário
+   512→   512→    8. Limitação de Responsabilidade
+   513→   513→    9. Modificações nos Termos
+   514→   514→    10. Legislação Aplicável
+   515→   515→  - Last update date badge at top
+   516→   516→  - Emerald-themed styling with dark mode support
+   517→   517→  - Max height 65vh with overflow scroll
+   518→   518→- **"Política de Privacidade" button**: Now opens a Dialog with scrollable privacy policy
+   519→   519→  - 10 sections covering LGPD-compliant content:
+   520→   520→    1. Informações que Coletamos
+   521→   521→    2. Como Utilizamos suas Informações
+   522→   522→    3. Compartilhamento de Dados
+   523→   523→    4. Armazenamento e Segurança
+   524→   524→    5. Seus Direitos (LGPD)
+   525→   525→    6. Cookies e Tecnologias Semelhantes
+   526→   526→    7. Retenção de Dados
+   527→   527→    8. Menores de Idade
+   528→   528→    9. Alterações nesta Política
+   529→   529→    10. Contato
+   530→   530→  - Last update date badge at top
+   531→   531→  - DPO contact email included
+   532→   532→  - Emerald-themed styling matching terms dialog
+   533→   533→
+   534→   534→### Store Changes (`src/lib/store.ts`)
+   535→   535→- Updated `adminSubTab` type to include `'shifts'`
+   536→   536→- Updated `setAdminSubTab` function signature accordingly
+   537→   537→
+   538→   538→### Files Created
+   539→   539→- `src/app/api/admin/shifts/route.ts` - Admin shifts listing with filters and sort
+   540→   540→- `src/app/api/admin/shifts/[id]/cancel/route.ts` - Admin shift cancellation with notifications
+   541→   541→- `src/app/api/admin/revenue/route.ts` - Revenue metrics calculation
+   542→   542→- `src/app/api/notifications/read-all/route.ts` - Batch mark-all-read endpoint
+   543→   543→
+   544→   544→### Files Modified
+   545→   545→- `src/components/admin-tab.tsx` - Added ShiftsPanel, RevenueReportCard, new imports, "Plantões" sub-tab
+   546→   546→- `src/components/notification-center.tsx` - Complete rewrite with category system, smart inference, category count bar, efficient mark-all-read
+   547→   547→- `src/components/perfil-tab.tsx` - Added Terms of Use Dialog, Privacy Policy Dialog, Dialog import, ScrollText import, state variables
+   548→   548→- `src/lib/store.ts` - Updated adminSubTab type to include 'shifts'
+   549→   549→
+   550→   550→### Testing
+   551→   551→- ✅ Lint passes clean (0 errors, 0 warnings)
+   552→   552→- ✅ GET /api/admin/shifts returns 14 shifts with full relational data
+   553→   553→- ✅ GET /api/admin/shifts?status=AVAILABLE filters correctly
+   554→   554→- ✅ PUT /api/admin/shifts/[id]/cancel cancels shift and creates notification
+   555→   555→- ✅ PUT /api/admin/shifts/[id]/cancel rejects double-cancellation
+   556→   556→- ✅ GET /api/admin/revenue returns correct metrics (totalRevenue, trend, topCities)
+   557→   557→- ✅ PUT /api/notifications/read-all works correctly
+   558→   558→- ✅ No compilation errors in dev log
+   559→   559→
+   560→   560→## Phase 10 Changes (QA + Bug Fixes + New Features + Enhanced Styling)
+   561→   561→
+   562→   562→### Bug Fixes
+   563→   563→- **Perfil tab crash (critical)**: Fixed client-side error on the Perfil tab. The favorites API returned nested data `{ ...favorite, shift: { ...shiftData } }` but the component expected flat shift properties. Updated `loadFavorites()` in `perfil-tab.tsx` to properly extract shift data from the nested API response using `.filter()` and `.map()`.
+   564→   564→- **formatDate null safety**: Added null/undefined/NaN guards to `formatDate()`, `formatDateTime()`, and `formatTimeAgo()` functions in `src/lib/utils.ts`. These functions now return '—' instead of throwing when given invalid input, preventing crashes across the app.
+   565→   565→
+   566→   566→### New Features (via subagent Task 3-a)
+   567→   567→- **Activity Timeline** on Home tab (logged-in dashboard) - Vertical timeline showing recent user activities with color-coded icons and "Ver mais" expand button
+   568→   568→- **Shift Calendar View** in Meus Plantões - Toggle between list and monthly calendar view, with colored dots for published/bought shifts, day click for shift details
+   569→   569→- **Activity API** (`GET /api/users/[id]/activity`) - Combines shifts, ratings, notifications, contests into activity timeline
+   570→   570→- **Calendar API** (`GET /api/shifts/calendar`) - Returns shifts grouped by date for calendar visualization
+   571→   571→
+   572→   572→### New Features (via subagent Task 3-b)
+   573→   573→- **Admin Shift Management** - New "Plantões" sub-tab with status filter, search, sort, detail view, and cancel functionality
+   574→   574→- **Admin Revenue Report** - Revenue metrics card showing total revenue, monthly trend, average shift value, top cities
+   575→   575→- **Notification Categories** - 11 notification categories with color-coded icons, category count bar, and efficient batch mark-all-read
+   576→   576→- **Terms of Use Dialog** - Professional legal document in Portuguese with 10 sections
+   577→   577→- **Privacy Policy Dialog** - LGPD-compliant privacy policy with 10 sections
+   578→   578→- **New API endpoints**: `GET /api/admin/shifts`, `PUT /api/admin/shifts/[id]/cancel`, `GET /api/admin/revenue`, `PUT /api/notifications/read-all`
+   579→   579→
+   580→   580→### Enhanced Styling (via subagent Task 4)
+   581→   581→- **6 new CSS animations**: float, ripple, badge-pulse, shimmer-slow, parallax-rotate, sweep
+   582→   582→- **New utility classes**: `.gradient-text` (emerald gradient clip), `.glass-card` (glassmorphism)
+   583→   583→- **Home Tab**: Parallax gradient shift, hover lift on stats, pulsing dot on Concursos, staggered card animations, wave SVG divider
+   584→   584→- **Plantões Tab**: Search focus ring, "Novo" badge for recent shifts, gradient overlay, FAB glow effect
+   585→   585→- **Meus Plantões**: Shift completion progress bar, gold "badge of honor" for 5★ sellers, financial summary shimmer
+   586→   586→- **Concursos Tab**: "URGENTE" ribbon for deadline <7d, urgency gradient cards, animated empty state
+   587→   587→- **Shift Detail**: Shimmer value display, verified seller badge, shift lifecycle timeline, hospital pattern
+   588→   588→- **Profile Tab**: Confetti pattern, progress ring (profile completion %), verification/activity badges
+   589→   589→- **Notifications**: Color-coded borders by type, pulse on unread, sweep animation on mark-all
+   590→   590→- **Header**: Gradient text logo, breathing live indicator, pulse notification badge
+   591→   591→- **Bottom Nav**: Ripple effect, desktop tooltips, group hover
+   592→   592→
+   593→   593→### Files Created
+   594→   594→- `src/app/api/users/[id]/activity/route.ts` - Activity timeline API
+   595→   595→- `src/app/api/shifts/calendar/route.ts` - Calendar shifts API
+   596→   596→- `src/app/api/admin/shifts/route.ts` - Admin shifts management
+   597→   597→- `src/app/api/admin/shifts/[id]/cancel/route.ts` - Admin shift cancellation
+   598→   598→- `src/app/api/admin/revenue/route.ts` - Revenue metrics
+   599→   599→- `src/app/api/notifications/read-all/route.ts` - Batch mark-all-read
+   600→   600→
+   601→   601→### Files Modified
+   602→   602→- `src/lib/utils.ts` - Null safety for formatDate/formatDateTime/formatTimeAgo
+   603→   603→- `src/components/perfil-tab.tsx` - Fixed favorites data mapping, added Terms/Privacy dialogs, confetti pattern, progress ring, badges
+   604→   604→- `src/components/home-tab.tsx` - Added Activity Timeline section, parallax gradient, hover lift, staggered animations, wave SVG
+   605→   605→- `src/components/meus-plantoes-tab.tsx` - Added Calendar View toggle, progress bars, gold badges, shimmer
+   606→   606→- `src/components/plantoes-tab.tsx` - Focus ring, "Novo" badge, gradient overlay, FAB glow
+   607→   607→- `src/components/concursos-tab.tsx` - URGENTE ribbon, urgency gradients, animated empty state
+   608→   608→- `src/components/shift-detail.tsx` - Shimmer value, verified badge, lifecycle timeline, hospital pattern
+   609→   609→- `src/components/admin-tab.tsx` - ShiftsPanel, RevenueReportCard, new sub-tab
+   610→   610→- `src/components/notification-center.tsx` - Category system, batch mark-all-read, color-coded borders
+   611→   611→- `src/components/top-header.tsx` - Gradient text, breathing indicator, pulse badge
+   612→   612→- `src/components/bottom-nav.tsx` - Ripple effect, tooltips
+   613→   613→- `src/app/globals.css` - 6 new animations, gradient-text, glass-card utilities
+   614→   614→- `src/lib/store.ts` - Updated adminSubTab type
+   615→   615→
+   616→   616→### QA Testing Summary (via agent-browser)
+   617→   617→- ✅ Homepage loads correctly (logged-out hero + logged-in dashboard with Activity Timeline)
+   618→   618→- ✅ Doctor login works, shows all features
+   619→   619→- ✅ Admin login works, shows new "Plantões" sub-tab and Revenue Report
+   620→   620→- ✅ Perfil tab no longer crashes (favorites data mapping bug fixed)
+   621→   621→- ✅ Favorites tab shows proper data with date formatting
+   622→   622→- ✅ Meus Plantões Calendar view works with month navigation and day click
+   623→   623→- ✅ Plantões tab shows "Novo" badges and search focus ring
+   624→   624→- ✅ Concursos tab shows urgency indicators
+   625→   625→- ✅ No browser errors detected
+   626→   626→- ✅ Lint passes clean
+   627→   627→
+   628→   628→### Unresolved Issues / Next Steps
+   629→   629→1. **Authentication**: Currently using simple email/password comparison (no JWT/sessions) - should add proper auth for production
+   630→   630→2. **File Uploads**: Document upload (CRM, COREN, CPF) not yet implemented - currently text fields only
+   631→   631→3. **Payment Integration**: Registration fees are displayed but no payment processing
+   632→   632→4. **Chat/Messaging**: No direct communication between buyer and seller
+   633→   633→5. **Map Integration**: Hospital/shift locations could benefit from map visualization
+   634→   634→6. **Shift Scheduling**: Could add recurring shift patterns
+   635→   635→7. **Email Verification**: No email verification on registration
+   636→   636→8. ~~**Analytics Dashboard**: Admin could benefit from more detailed analytics with charts~~ **RESOLVED in Phase 4**
+   637→   637→9. **Push Notifications**: No browser push notifications
+   638→   638→10. **Multi-language**: Currently Portuguese only
+   639→   639→
+   640→   640→## Phase 11 Changes (Recommendations + Comparison + Export + Stats + Styling Polish)
+   641→   641→
+   642→   642→### QA Testing Results
+   643→   643→- ✅ Homepage loads correctly (logged-out hero + logged-in dashboard)
+   644→   644→- ✅ Doctor login works, all tabs functional
+   645→   645→- ✅ No browser errors detected
+   646→   646→- ✅ Lint passes clean (0 errors, 0 warnings)
+   647→   647→
+   648→   648→### Feature 1: Personalized Shift Recommendations ("Recomendados para Você")
+   649→   649→
+   650→   650→#### New API Endpoint
+   651→   651→- **`GET /api/shifts/recommended?userId=<id>`** - Returns personalized shift recommendations
+   652→   652→  - Scoring system: Professional type match (3pts), same state (2pts), same city (1pt), high-rated seller ≥4 (1pt)
+   653→   653→  - Returns top 5 scored shifts with `reasons` badges: "🎯 Seu tipo", "📍 Mesma região", "🏘️ Mesma cidade", "⭐ Vendedor top"
+   654→   654→  - Only returns AVAILABLE shifts not published by the user
+   655→   655→  - Sorted by score descending
+   656→   656→
+   657→   657→#### Home Tab Changes (`src/components/home-tab.tsx`)
+   658→   658→- Added "Recomendados para Você" section between "Concursos Abertos" and "Plantões recentes"
+   659→   659→- Sparkles icon header, color-coded recommendation reason badges on each card
+   660→   660→- Each card shows: title, city/state, date, time, value, professional type badge, shift type badge
+   661→   661→- Clickable to open shift detail
+   662→   662→- Loading skeleton, empty state, "Ver todos" button
+   663→   663→- `animate-slideUp` animation, full dark mode support
+   664→   664→
+   665→   665→### Feature 2: Shift Comparison
+   666→   666→
+   667→   667→#### Plantoes Tab Changes (`src/components/plantoes-tab.tsx`)
+   668→   668→- **Comparison checkbox**: Small circular button (top-right corner) on each shift card - toggles between GitCompare/Check icons
+   669→   669→- **Floating comparison bar**: Appears when 2-3 shifts selected, shows stacked avatars, "Comparar" button, clear button
+   670→   670→- **Comparison Dialog**: Side-by-side table comparing 10 attributes (Title, Date, Time, Value, City/State, Hospital, Professional Type, Shift Type, Seller, Seller Rating)
+   671→   671→- **Best value highlighting**: Lowest price and highest rating cells get emerald background with "✓ Melhor" tag
+   672→   672→- **Max 3 shifts**: Toast warning on limit
+   673→   673→- FAB button adjusts position when comparison bar is visible
+   674→   674→
+   675→   675→### Feature 3: Admin Data Export
+   676→   676→
+   677→   677→#### New API Endpoint
+   678→   678→- **`GET /api/admin/export?type=<shifts|users|revenue>&adminId=<id>`** - Returns CSV-formatted data
+   679→   679→  - Shifts CSV: title, status, date, value, city, state, seller, buyer, hospital
+   680→   680→  - Users CSV: name, email, role, status, city, state, professionalDoc, createdAt
+   681→   681→  - Revenue CSV: month, totalRevenue, shiftCount, avgValue (grouped by month)
+   682→   682→
+   683→   683→#### Admin Tab Changes (`src/components/admin-tab.tsx`)
+   684→   684→- Added "Exportar Dados" card in Dashboard panel after Revenue Report
+   685→   685→- 3 color-coded export buttons: Exportar Plantões (emerald), Exportar Usuários (blue), Exportar Receita (amber)
+   686→   686→- Each button triggers CSV download via Blob + URL.createObjectURL
+   687→   687→- Loading spinner while generating, disabled state during export
+   688→   688→- Responsive: 1 column on mobile, 3 on desktop
+   689→   689→
+   690→   690→### Feature 4: User Statistics API + Enhanced Profile Stats
+   691→   691→
+   692→   692→#### New API Endpoint
+   693→   693→- **`GET /api/users/[id]/stats`** - Returns comprehensive user statistics
+   694→   694→  - 15+ statistics: shift counts, financial data, ratings, most common city/state/type
+   695→   695→  - Account age, profile completion %, activity score (0-100), completion rate
+   696→   696→
+   697→   697→#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+   698→   698→- Added "Suas Estatísticas" card in "Informações" tab below profile info
+   699→   699→- **Row 1**: Plantões Publicados, Plantões Vendidos, Plantões Comprados, Total Ganho
+   700→   700→- **Row 2**: Total Gasto, Avaliação Média, Taxa de Conclusão, Membro há (dias)
+   701→   701→- Each stat has a colored icon, bold value, and label
+   702→   702→- Loading skeleton while fetching
+   703→   703→
+   704→   704→### Feature 5: Styling Polish and Micro-interactions
+   705→   705→
+   706→   706→#### Global CSS Enhancements (`src/app/globals.css`)
+   707→   707→- **9 new keyframe animations**: `typewriter` (cursor blink), `breathe` (scale+shadow), `countUp` (opacity+translateY), `dotBounce` (3-dot sequence), `shake` (form error), `confettiBurst` (success), `inputGlow` (focus glow), `progressFill` (width fill), `fadeInOnly` (simple fade)
+   708→   708→- **10+ utility classes**: `.animate-typewriter`, `.animate-breathe`, `.animate-countUp`, `.animate-shake`, `.shimmer-border` (animated conic-gradient border), `.glow-emerald` (emerald glow+breathing), `.dot-bounce` (3-dot loading), `.confetti-burst` (CSS confetti), `.input-glow` (focus glow), `.pull-hint`, `.verified-stamp`, `.sort-arrow`
+   709→   709→
+   710→   710→#### Home Tab Polish
+   711→   711→- **Shimmer border** around welcome card using `.shimmer-border` wrapper
+   712→   712→- **Typewriter cursor** on user's name with `.animate-typewriter` blinking cursor
+   713→   713→- **Pulse ring** around "Publicar Plantão" button
+   714→   714→- **Counter animation** on Trust Bar numbers that counts up from 0
+   715→   715→- **Medical cross pattern** (✚) as subtle decorative background on "Como funciona?" section
+   716→   716→- **Sparkle icons** (✨) next to "Plantões em destaque" and "Plantões recentes" titles
+   717→   717→
+   718→   718→#### Plantoes Tab Polish
+   719→   719→- **Skeleton shimmer** on search input while loading
+   720→   720→- **Bouncing dots** "Buscando..." animation when search is active
+   721→   721→- **Animated sort arrow** (ChevronDown) that rotates when dropdown opens
+   722→   722→- **Pull-to-refresh visual hint** (decorative arrow + text)
+   723→   723→- **Fade-in on filter panel** toggle
+   724→   724→- **Counter animation** on results count text
+   725→   725→
+   726→   726→#### Shift Detail Polish
+   727→   727→- **Breathing glow** on "Comprar Plantão" button (`.glow-emerald`)
+   728→   728→- **Time until shift progress bar** filling left-to-right based on proximity
+   729→   729→- **Verified stamp overlay** on seller's name area (`.verified-stamp`)
+   730→   730→- **Parallax scrolling** on main info card background
+   731→   731→
+   732→   732→#### Auth Modal Polish
+   733→   733→- **Shake animation** on login form when login fails (`animate-shake`)
+   734→   734→- **Confetti burst** on registration success (`.confetti-burst`)
+   735→   735→- **Input glow** on all form inputs (`.input-glow`)
+   736→   736→- **Password visibility transition** (smooth crossfade between Eye/EyeOff icons)
+   737→   737→
+   738→   738→### Files Created
+   739→   739→- `src/app/api/shifts/recommended/route.ts` - Shift recommendations API
+   740→   740→- `src/app/api/admin/export/route.ts` - Admin data export API
+   741→   741→- `src/app/api/users/[id]/stats/route.ts` - User statistics API
+   742→   742→
+   743→   743→### Files Modified
+   744→   744→- `src/components/home-tab.tsx` - Added recommendations section, typewriter cursor, shimmer border, counter animation, sparkle icons
+   745→   745→- `src/components/plantoes-tab.tsx` - Added shift comparison feature, skeleton shimmer, bouncing dots, sort arrow animation, pull hint
+   746→   746→- `src/components/shift-detail.tsx` - Added breathing glow, progress bar, verified stamp, parallax scrolling
+   747→   747→- `src/components/auth-modal.tsx` - Added shake animation, confetti burst, input glow, password transition
+   748→   748→- `src/components/admin-tab.tsx` - Added export buttons and functionality
+   749→   749→- `src/components/perfil-tab.tsx` - Added "Suas Estatísticas" stats card
+   750→   750→- `src/app/globals.css` - Added 9 new keyframes and 10+ utility classes
+   751→   751→
+   752→   752→### QA Testing Summary (via agent-browser)
+   753→   753→- ✅ Homepage loads correctly (logged-out hero with counter animation)
+   754→   754→- ✅ Doctor login works, dashboard shows "Recomendados para Você" section
+   755→   755→- ✅ Recommendations show 5 shifts with reason badges ("Mesma região", "Seu tipo")
+   756→   756→- ✅ Shift comparison: checkboxes on cards, floating bar, comparison dialog with "✓ Melhor" highlighting
+   757→   757→- ✅ Profile tab shows "Suas Estatísticas" with 8 stat items
+   758→   758→- ✅ Auth modal has shake animation and confetti burst effects
+   759→   759→- ✅ No browser errors detected
+   760→   760→- ✅ Lint passes clean
+   761→   761→
+   762→   762→### Unresolved Issues / Next Steps
+   763→   763→1. **Authentication**: Currently using simple email/password comparison (no JWT/sessions) - should add proper auth for production
+   764→   764→2. **File Uploads**: Document upload (CRM, COREN, CPF) not yet implemented - currently text fields only
+   765→   765→3. **Payment Integration**: Registration fees are displayed but no payment processing
+   766→   766→4. **Chat/Messaging**: No direct communication between buyer and seller
+   767→   767→5. **Map Integration**: Hospital/shift locations could benefit from map visualization
+   768→   768→6. **Shift Scheduling**: Could add recurring shift patterns
+   769→   769→7. **Email Verification**: No email verification on registration
+   770→   770→8. **Push Notifications**: No browser push notifications
+   771→   771→9. **Multi-language**: Currently Portuguese only
+   772→   772→
+   773→   773→## Phase 12 Changes (Task 4-b - Onboarding Modal + Enhanced Styling + Quick Actions)
+   774→   774→
+   775→   775→### Feature 1: Onboarding Welcome Modal
+   776→   776→
+   777→   777→#### New Component (`src/components/onboarding-modal.tsx`)
+   778→   778→- **Multi-step wizard dialog** that appears on first login after admin approval
+   779→   779→- **4 steps**:
+   780→   780→  1. **"Bem-vindo ao Plantão Help!"** - Welcome with Stethoscope icon, app description
+   781→   781→  2. **"Como funciona"** - 3-step visual: Publicar plantões → Comprar plantões → Avaliar e ganhar reputação, with staggered card animation
+   782→   782→  3. **"Complete seu perfil"** - Shows profile completion status (phone, city, state, professionalDoc) with checkmarks, "Completar agora" and "Depois" buttons
+   783→   783→  4. **"Pronto para começar!"** - Quick actions: "Publicar Plantão" and "Buscar Plantões" buttons
+   784→   784→- **Progress dots** at bottom (elongated active dot, filled completed dots, empty upcoming dots)
+   785→   785→- **Skip button** ("Pular") on each step (X button in header + bottom skip link)
+   786→   786→- **Navigation**: "Voltar" / "Próximo" buttons with ArrowRight icon
+   787→   787→- **Smooth transitions**: `animate-fadeIn` on step content, `staggered-card` on how-it-works items
+   788→   788→- **Gradient header**: Emerald-to-teal gradient with decorative orbs and parallax rotation
+   789→   789→- **localStorage tracking**: Key `plantao-help-onboarding-{userId}`, only shows for APPROVED non-admin users
+   790→   790→- **Auto-show**: 800ms delay after page load for smooth UX
+   791→   791→- **Integration**: Added to `page.tsx` as top-level component, navigates to profile edit tab from step 3
+   792→   792→
+   793→   793→### Feature 2: Enhanced Home Tab Styling
+   794→   794→
+   795→   795→#### Time-of-Day Greeting
+   796→   796→- Changed "Olá," to dynamic greeting: "Bom dia," (5-12), "Boa tarde," (12-18), "Boa noite," (18-5)
+   797→   797→- Uses `getGreeting()` function based on `new Date().getHours()`
+   798→   798→
+   799→   799→#### Hover Ripple Effect on Stat Cards
+   800→   800→- Added `ripple-card` class to all 4 stat cards
+   801→   801→- `createRipple()` function creates a span element at click position with `ripple-effect` class
+   802→   802→- Ripple animates and auto-removes after 600ms
+   803→   803→
+   804→   804→#### Smooth Number Counter
+   805→   805→- `animatedStats` state tracks animated values for Available, Published, Bought, Rating
+   806→   806→- `animateNumber()` uses `setInterval` with 20 steps over 800ms to count from 0 to target
+   807→   807→- Rating uses decimal precision (1 decimal place) with 1000ms duration
+   808→   808→- `counter-pulse` CSS class adds subtle scale animation when values update
+   809→   809→
+   810→   810→#### Decorative Gradient Orbs
+   811→   811→- 3 blurred circles (`gradient-orb` class) behind the welcome card:
+   812→   812→  - Large emerald orb (top-left)
+   813→   813→  - Medium teal orb (bottom-right)
+   814→   814→  - Small emerald orb (center)
+   815→   815→- Reduced opacity in dark mode (0.15 vs 0.30 in light mode)
+   816→   816→
+   817→   817→### Feature 3: Enhanced Plantões Tab Styling
+   818→   818→
+   819→   819→#### Skeleton Loading Shimmer
+   820→   820→- Replaced plain `Skeleton` components with `shimmer-skeleton-card` class
+   821→   821→- Animated gradient background (light/dark mode variants) with 1.5s infinite animation
+   822→   822→- Staggered entrance with 100ms delay per skeleton
+   823→   823→
+   824→   824→#### Staggered Card Entrance
+   825→   825→- Added `staggered-card` class to each shift card with `animationDelay: index * 50ms`
+   826→   826→- Cards fade in and slide up with 0.4s cubic-bezier easing
+   827→   827→
+   828→   828→#### Hover Lift + Shadow
+   829→   829→- Added `hover:-translate-y-1 hover:shadow-lg` to shift cards
+   830→   830→- Smooth `transition-all duration-200`
+   831→   831→
+   832→   832→#### Smooth Filter Panel Toggle
+   833→   833→- Replaced conditional rendering (`{showFilters && ...}`) with `filter-panel` CSS class
+   834→   834→- Uses `max-height` transition (0→400px) with `collapsed`/`expanded` states
+   835→   835→- Smooth opacity transition (0→1) alongside height
+   836→   836→
+   837→   837→#### Quick Actions on Shift Cards
+   838→   838→- **Heart/Favorite button** (top-left): Toggles favorite via API, red fill when favorited, subtle on desktop (hover), always visible on mobile
+   839→   839→- **Quick View button** (bottom-right): Opens shift detail with Eye icon
+   840→   840→- Both use `quick-action-overlay` CSS class for hover/show behavior
+   841→   841→- `quick-action-card` class on card enables the overlay trigger
+   842→   842→- Mobile: always visible (`@media (hover: none)` override)
+   843→   843→
+   844→   844→#### Favorite State Management
+   845→   845→- Added `favoriteIds` local state + `loadFavorites()` on mount
+   846→   846→- `handleToggleFavorite()` calls API + updates local + store state
+   847→   847→- Uses `toggleFavorite` from Zustand store for cross-component sync
+   848→   848→
+   849→   849→### Feature 4: Enhanced Shift Detail Styling
+   850→   850→
+   851→   851→#### Smooth Expand/Collapse for Description
+   852→   852→- Added `descriptionExpanded` state
+   853→   853→- Uses `expand-collapse` CSS class with `collapsed` (4.5em max-height) / `expanded` (500px max-height)
+   854→   854→- "Ver mais" / "Ver menos" button shows only for descriptions > 120 characters
+   855→   855→- Smooth 0.3s cubic-bezier transition
+   856→   856→
+   857→   857→#### Pulsing Ring Around Seller Avatar
+   858→   858→- Added `animate-pulseRing` class to seller Avatar component
+   859→   859→- CSS keyframe creates expanding emerald box-shadow pulse (0→8px→0)
+   860→   860→- 2s infinite animation
+   861→   861→
+   862→   862→#### Gradient Border on Main Info Card
+   863→   863→- Added `gradient-border-card` class to main shift info card
+   864→   864→- CSS `::before` pseudo-element with mask-composite gradient border
+   865→   865→- Light mode: emerald→teal gradient; Dark mode: emerald→dark→green gradient
+   866→   866→
+   867→   867→### Feature 5: Enhanced Bottom Navigation
+   868→   868→
+   869→   869→#### Active Tab Indicator Line
+   870→   870→- Sliding emerald line above the tab icons
+   871→   871→- Uses `tab-indicator-line` CSS class with `slideIndicator` animation
+   872→   872→- Position calculated: `left: (activeIndex / totalItems) * 100%`
+   873→   873→- `transition-all duration-300 ease-out` for smooth sliding
+   874→   874→
+   875→   875→#### Haptic-like Scale
+   876→   876→- `active:scale-90` on all tab buttons for press feedback
+   877→   877→
+   878→   878→#### Badge Notification Count on Meus Tab
+   879→   879→- Shows shift count badge on "Meus" tab when user has shifts
+   880→   880→- Fetches count from `/api/shifts?sellerId={userId}&allStatuses=true`
+   881→   881→- Badge: emerald background, white text, `animate-badge-pulse` for attention
+   882→   882→- Shows "9+" for counts > 9
+   883→   883→
+   884→   884→### Global CSS Additions (`src/app/globals.css`)
+   885→   885→- **`.staggered-card`**: `staggeredIn` keyframe (fade + translateY + scale), 0.4s cubic-bezier
+   886→   886→- **`.animate-pulseRing`**: `pulseRing` keyframe (emerald box-shadow 0→8px→0), 2s infinite
+   887→   887→- **`.expand-collapse`**: Smooth max-height + opacity transition for text truncation
+   888→   888→- **`.gradient-border-card`**: Gradient border via `::before` pseudo-element with mask-composite
+   889→   889→- **`.ripple-card` / `.ripple-effect`**: Click ripple with expanding circle animation
+   890→   890→- **`.tab-indicator-line`**: `slideIndicator` keyframe (scaleX 0→1), 0.3s cubic-bezier
+   891→   891→- **`.filter-panel`**: Smooth max-height toggle for filter sections (collapsed/expanded)
+   892→   892→- **`.shimmer-skeleton-card`**: Animated gradient background for skeleton loading
+   893→   893→- **`.gradient-orb`**: Blurred decorative circles with light/dark opacity
+   894→   894→- **`.quick-action-overlay`**: Hover-activated overlay for quick actions (always visible on touch)
+   895→   895→- **`.counter-pulse`**: `counterPulse` keyframe (scale 1→1.15→1), 0.3s ease-out
+   896→   896→
+   897→   897→### Files Created
+   898→   898→- `src/components/onboarding-modal.tsx` - Welcome onboarding wizard (4-step dialog)
+   899→   899→
+   900→   900→### Files Modified
+   901→   901→- `src/app/page.tsx` - Added OnboardingModal component import and rendering
+   902→   902→- `src/app/globals.css` - Added 11 new CSS utilities, keyframes, and classes
+   903→   903→- `src/components/home-tab.tsx` - Time-of-day greeting, ripple effect, number counter, gradient orbs
+   904→   904→- `src/components/plantoes-tab.tsx` - Shimmer skeletons, staggered entrance, hover lift, filter toggle, quick actions (favorite + view)
+   905→   905→- `src/components/shift-detail.tsx` - Expand/collapse description, pulsing avatar ring, gradient border
+   906→   906→- `src/components/bottom-nav.tsx` - Active indicator line, haptic scale, badge count
+   907→   907→
+   908→   908→### Testing
+   909→   909→- ✅ Lint passes clean (0 errors, 0 warnings)
+   910→   910→- ✅ No compilation errors in dev log
+   911→   911→
+   912→   912→
+   913→   913→## Phase 13 Changes (Task 4-a - Shift Alert System + Rating Distribution Chart)
+   914→   914→
+   915→   915→### Feature 1: Shift Alert/Watch System
+   916→   916→
+   917→   917→#### Database Changes
+   918→   918→- Added `ShiftAlert` model to `prisma/schema.prisma` with fields: id, userId, professionalType, city, state, minValue, maxValue, shiftType, active, createdAt
+   919→   919→- Added `alerts ShiftAlert[]` relation to User model
+   920→   920→- Ran `bun run db:push` to apply schema changes
+   921→   921→
+   922→   922→#### New API Endpoints
+   923→   923→- **`GET /api/alerts?userId=<id>`** - Returns user's shift alerts, ordered by createdAt desc
+   924→   924→- **`POST /api/alerts`** - Creates a new shift alert (body: userId, professionalType, city, state, minValue, maxValue, shiftType)
+   925→   925→  - Validates userId is provided
+   926→   926→  - Verifies user exists before creating
+   927→   927→  - Nullifies empty string fields
+   928→   928→  - Returns created alert with status 201
+   929→   929→- **`DELETE /api/alerts/[id]`** - Deletes a shift alert (body: userId for ownership verification)
+   930→   930→  - Returns 403 if userId doesn't match alert owner
+   931→   931→  - Returns 404 if alert not found
+   932→   932→- **`PATCH /api/alerts/[id]`** - Toggles alert active/inactive (body: userId, active)
+   933→   933→  - Returns 403 if userId doesn't match alert owner
+   934→   934→  - Returns updated alert
+   935→   935→
+   936→   936→#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+   937→   937→- Added 5th sub-tab "Alertas" with Bell icon to the TabsList
+   938→   938→- Added `ShiftAlertItem` interface and `BRAZILIAN_STATES` constant (27 states)
+   939→   939→- Added state: `alerts`, `loadingAlerts`, `showAlertForm`, `alertForm`, `savingAlert`
+   940→   940→- Added `loadAlerts()`, `handleCreateAlert()`, `handleDeleteAlert()`, `handleToggleAlert()` functions
+   941→   941→- **AlertsPanel** within "Alertas" tab content:
+   942→   942→  - Card with Bell icon header, "Criar" button to open form
+   943→   943→  - **Alert creation form** (shown when "Criar" is clicked):
+   944→   944→    - Professional Type select (Qualquer tipo / Médico / Enfermeiro / Téc. Enfermagem)
+   945→   945→    - City text input + State select (dropdown with all 27 Brazilian states)
+   946→   946→    - Min Value and Max Value number inputs
+   947→   947→    - Shift Type select (Qualquer tipo / ☀️ Diurno / 🌙 Noturno / 🌅 Misto)
+   948→   948→    - Validates at least one criteria is set
+   949→   949→    - Cancel button resets form and hides form
+   950→   950→  - **Alert list**: Each alert shows criteria as color-coded badges:
+   951→   951→    - Professional type = emerald badge
+   952→   952→    - Shift type = blue badge with emoji
+   953→   953→    - City = gray badge with 📍
+   954→   954→    - State = gray badge
+   955→   955→    - Min/Max value = amber badge with formatted currency
+   956→   956→    - "Qualquer plantão" fallback badge when no criteria
+   957→   957→    - Created date shown below badges
+   958→   958→  - **Toggle active/inactive**: Switch component with emerald checked state
+   959→   959→  - **Delete button**: Red trash icon button with confirmation toast
+   960→   960→  - **Loading skeleton**: 3 animated placeholder cards
+   961→   961→  - **Empty state**: Bell icon with "Crie alertas para ser notificado quando plantões compatíveis forem publicados"
+   962→   962→  - Inactive alerts shown with reduced opacity (opacity-60)
+   963→   963→
+   964→   964→### Feature 2: Rating Distribution Chart
+   965→   965→
+   966→   966→#### Profile Tab Changes (`src/components/perfil-tab.tsx`)
+   967→   967→- Added `RatingDistribution` component inside "Avaliações" TabsContent (shown when ratings exist)
+   968→   968→- **Visual design**:
+   969→   969→  - Card with amber-to-emerald gradient accent bar at top
+   970→   970→  - BarChart3 icon header "Distribuição de Avaliações"
+   971→   971→  - **Left side**: Average rating as large bold number, star icons, total ratings count
+   972→   972→  - **Right side**: Horizontal bar chart with 5 rows (5★ to 1★):
+   973→   973→    - Each row: star count label (5★, 4★, etc.), colored progress bar, count number
+   974→   974→    - Bar width proportional to count (max count = widest bar)
+   975→   975→    - Emerald gradient bars (`bg-gradient-to-r from-emerald-400 to-emerald-500`)
+   976→   976→    - Smooth transition animation (duration-500)
+   977→   977→    - Gray background track for bars
+   978→   978→  - Responsive flex layout with shrink-0 on average display
+   979→   979→
+   980→   980→### Store Changes (`src/lib/store.ts`)
+   981→   981→- Updated `profileSubTab` type from `'info' | 'ratings' | 'favorites'` to `'info' | 'ratings' | 'favorites' | 'alerts'`
+   982→   982→- Updated `setProfileSubTab` function signature accordingly
+   983→   983→
+   984→   984→### Files Created
+   985→   985→- `src/app/api/alerts/route.ts` - GET and POST for shift alerts
+   986→   986→- `src/app/api/alerts/[id]/route.ts` - DELETE and PATCH for individual alert
+   987→   987→
+   988→   988→### Files Modified
+   989→   989→- `prisma/schema.prisma` - Added ShiftAlert model and alerts relation to User
+   990→   990→- `src/lib/store.ts` - Updated profileSubTab type to include 'alerts'
+   991→   991→- `src/components/perfil-tab.tsx` - Added Alertas tab, AlertsPanel, RatingDistribution chart, new icons (Bell, Plus, Trash2, Sun, MoonStar, Sunrise), alert state and handlers
+   992→   992→
+   993→   993→### Testing
+   994→   994→- ✅ Lint passes clean (0 errors, 0 warnings)
+   995→   995→- ✅ GET /api/alerts?userId=cl_test returns empty alerts array
+   996→   996→- ✅ POST /api/alerts creates alert correctly with professionalType and state
+   997→   997→- ✅ ShiftAlert model exists in Prisma Client
+   998→   998→- ✅ No compilation errors
+   999→   999→
+  1000→  1000→---
+  1001→  1001→Task ID: Phase 12-orchestrator
+  1002→  1002→Agent: Main Orchestrator
+  1003→  1003→Task: Phase 12 - QA testing, feature development, styling improvements, and worklog maintenance
+  1004→  1004→
+  1005→  1005→Work Log:
+  1006→  1006→- Cleaned up duplicate Phase 11 content from worklog.md (removed lines 773-849)
+  1007→  1007→- Performed comprehensive QA testing via agent-browser across all tabs (Homepage, Doctor Dashboard, Plantões, Meus Plantões, Perfil, Concursos, Admin Panel with all sub-tabs) - No errors found
+  1008→  1008→- Verified lint passes clean (0 errors, 0 warnings)
+  1009→  1009→- Delegated feature development to two parallel subagents
+  1010→  1010→- Verified API endpoints working (alerts API, shifts API, homepage)
+  1011→  1011→- Confirmed all new features compile and serve correctly
+  1012→  1012→
+  1013→  1013→Stage Summary:
+  1014→  1014→- QA: All tabs functional, no browser errors, lint clean
+  1015→  1015→- New Features Added (by subagents):
+  1016→  1016→  1. Shift Alert/Watch System - Users can create shift criteria alerts (new ShiftAlert model, 3 API endpoints, AlertsPanel in Profile tab)
+  1017→  1017→  2. Rating Distribution Chart - Visual bar chart showing 5-star to 1-star distribution in Profile Avaliações tab
+  1018→  1018→  3. Onboarding Welcome Modal - 4-step wizard for first-time users (welcome, how it works, complete profile, get started)
+  1019→  1019→  4. Quick Actions on Shift Cards - Heart/Favorite and Quick View buttons on marketplace shift cards
+  1020→  1020→- Styling Enhancements (by subagents):
+  1021→  1021→  1. Time-of-day greeting (Bom dia/Boa tarde/Boa noite) on Home tab
+  1022→  1022→  2. Shimmer skeleton loading, staggered card entrance animations, hover lift+shadow on Plantões tab
+  1023→  1023→  3. Smooth filter panel toggle, gradient orbs behind welcome card
+  1024→  1024→  4. Expand/collapse long descriptions, pulsing seller avatar ring, gradient border on Shift Detail
+  1025→  1025→  5. Active tab indicator line, haptic scale on Bottom Navigation
+  1026→  1026→  6. 11 new CSS utility classes added to globals.css
+  1027→  1027→- No bugs found during QA
+  1028→  1028→- All features verified working via API testing
+  1029→  1029→
+  1030→  1030→
+  1031→  1031→## Phase 14 Changes (Task 4 - Frontend Styling Polish)
+  1032→  1032→
+  1033→  1033→### Bug Fixes
+  1034→  1034→- **Shimmer-border spinning animation**: Fixed `.shimmer-border` class in globals.css that was using `animation: parallax-rotate 4s linear infinite` (a spinning/rotating animation). Replaced with `animation: shimmer-slow 6s linear infinite` and `background-size: 300% 300%` for a subtle gradient shift effect instead of rotation.
+  1035→  1035→
+  1036→  1036→### Global CSS Enhancements (`src/app/globals.css`)
+  1037→  1037→- **Fixed `.shimmer-border`**: Changed from `conic-gradient` + `parallax-rotate` to `linear-gradient` + `shimmer-slow` animation with 300% background-size for a non-rotating, smooth gradient sweep
+  1038→  1038→- **`.animate-hero-float`**: New keyframe + class for hero image floating animation (4s translateY -8px)
+  1039→  1039→- **`.cta-glow`**: New emerald glow animation for CTA buttons with pulsing box-shadow (3s ease-in-out)
+  1040→  1040→- **`.testimonial-card`**: Hover effect with emerald border glow + shadow transition
+  1041→  1041→- **`.pricing-card` / `.pricing-card-highlight`**: Hover effects with emerald glow and shadow
+  1042→  1042→- **`.search-gradient`**: Gradient background for search bar container with slow shimmer
+  1043→  1043→- **`.shimmer-value-subtle`**: Less distracting shimmer effect for shift value (6s duration, lighter gradient)
+  1044→  1044→- **`.verified-glow`**: Emerald glow effect on verified seller badge with hover intensification
+  1045→  1045→- **`.buy-btn-hover`**: Hover effect on buy button (translateY + emerald shadow)
+  1046→  1046→- **`.shift-card-hover`**: Micro-interaction on shift card hover (slight scale + emerald shadow)
+  1047→  1047→- **`.interactive-transition`**: Base 300ms transition for interactive elements
+  1048→  1048→
+  1049→  1049→### Landing Page (`src/components/landing-page.tsx`)
+  1050→  1050→- **Hero image floating animation**: Added `animate-hero-float` class on hero image container
+  1051→  1051→- **CTA button glow**: Added `cta-glow` class on "Começar Gratuitamente" button with `duration-300`
+  1052→  1052→- **Testimonial cards**: Added border + `testimonial-card` hover class with emerald glow on hover
+  1053→  1053→- **Pricing cards**: Added `pricing-card` / `pricing-card-highlight` classes with hover glow
+  1054→  1054→- **Smooth scroll anchor links**: Added `duration-300` + `focus-visible` styles on navbar links
+  1055→  1055→- **CTA section button**: Added `transition-all duration-300 hover:scale-[1.02] cta-glow` on "Criar Conta" button
+  1056→  1056→
+  1057→  1057→### Plantoes Tab (`src/components/plantoes-tab.tsx`)
+  1058→  1058→- **Search bar gradient background**: Added `search-gradient` class with `rounded-xl p-1` wrapper
+  1059→  1059→- **Filter panel animation**: Added `animate-slideUp` class on filter card for smoother toggle animation
+  1060→  1060→- **Shift card micro-interaction**: Added `shift-card-hover` class replacing `hover:-translate-y-1`, changed `duration-200` to `duration-300`
+  1061→  1061→- **Search input transition**: Changed from `duration-200` to `duration-300`
+  1062→  1062→
+  1063→  1063→### Shift Detail (`src/components/shift-detail.tsx`)
+  1064→  1064→- **Subtle shimmer value**: Replaced `animate-shimmer-slow` gradient clip-text with `.shimmer-value-subtle` for less distracting price animation
+  1065→  1065→- **Verified seller emerald glow**: Replaced `shadow-sm shadow-emerald-200/50` with `verified-glow` class for hover-intensifying emerald glow
+  1066→  1066→- **Buy button hover**: Added `buy-btn-hover` class for translateY + shadow effect on hover
+  1067→  1067→
+  1068→  1068→### Home Tab (`src/components/home-tab.tsx`)
+  1069→  1069→- **Consistent 300ms transitions**: Updated stat cards and shift cards from `duration-200` to `duration-300`
+  1070→  1070→- **Shift card hover**: Added `shift-card-hover` class on all shift card elements for micro-interaction (scale + shadow)
+  1071→  1071→
+  1072→  1072→### Meus Plantões Tab (`src/components/meus-plantoes-tab.tsx`)
+  1073→  1073→- **Consistent transitions**: Updated view mode toggle and tab transitions from `duration-200` to `duration-300`
+  1074→  1074→- **Shift card hover**: Added `shift-card-hover` class on shift cards in selected date panel
+  1075→  1075→
+  1076→  1076→### Concursos Tab (`src/components/concursos-tab.tsx`)
+  1077→  1077→- **Filter button transition**: Updated from `duration-200` to `duration-300`
+  1078→  1078→
+  1079→  1079→### Testing
+  1080→  1080→- ✅ Lint passes clean (0 errors, 0 warnings)
+  1081→  1081→- ✅ No compilation errors in dev log
+  1082→  1082→- ✅ All changes maintain emerald/green healthcare theme
+  1083→  1083→- ✅ No spinning/rotating animations used (parallax-rotate removed from shimmer-border)
+  1084→  1084→- ✅ All transitions are 300ms duration
+  1085→  1085→
+  1086→  1086→## Phase 15 Changes (Task 5 - Quick Shift Create + Shift Comparison + Profile Completion)
+  1087→  1087→
+  1088→  1088→### Feature 1: Quick Shift Create (Enhanced)
+  1089→  1089→
+  1090→  1090→#### API Changes (`src/app/api/shifts/route.ts`)
+  1091→  1091→- **POST handler notification**: After creating a shift, a notification is now sent to the seller confirming the publication with the message "Seu plantão \"{title}\" foi publicado com sucesso e já está disponível para compra." (type: SUCCESS)
+  1092→  1092→
+  1093→  1093→#### Plantoes Tab Changes (`src/components/plantoes-tab.tsx`)
+  1094→  1094→- **Complete rewrite of CreateShiftInline → CreateShiftDialog**: Enhanced bottom-sheet style dialog with:
+  1095→  1095→  - **Title auto-suggest**: `generateTitleSuggestion()` function creates a title based on professional type + selected hospital (e.g., "Plantão Médico - Hospital XYZ")
+  1096→  1096→  - **"Usar sugestão" button**: When title is empty, shows clickable suggestion to auto-fill
+  1097→  1097→  - **Currency input**: R$ prefix with formatted display (locale pt-BR), proper decimal handling
+  1098→  1098→  - **Date picker**: Native date input with `min` attribute set to today's date
+  1099→  1099→  - **Shift type badge preview**: When start/end time filled, shows the Diurno/Noturno/Misto badge live
+  1100→  1100→  - **Hospital dropdown**: Shows hospital name with city/state, auto-fills city/state on selection
+  1101→  1101→  - **Professional type auto-fill**: Pre-filled from user profile role, shows "(preenchido automaticamente)" hint
+  1102→  1102→  - **Drag handle**: Mobile-style drag indicator at top for bottom sheet
+  1103→  1103→  - **Better header**: Icon + title + subtitle with close button
+  1104→  1104→  - **Location auto-fill**: When hospital selected, location placeholder changes to hospital name
+  1105→  1105→  - **Submit button**: Enhanced with spinner animation (no spinning/rotating, uses border animation) and icon
+  1106→  1106→
+  1107→  1107→### Feature 2: Shift Comparison Visual View
+  1108→  1108→
+  1109→  1109→#### Plantoes Tab Changes (`src/components/plantoes-tab.tsx`)
+  1110→  1110→- **Replaced `ShiftComparisonTable` with `ShiftVisualComparison`**: New visual comparison component with 4 sections:
+  1111→  1111→  - **Price Comparison Bar Chart**: Horizontal bars showing relative prices with emerald/teal/cyan colors, "Melhor" badge on lowest price, percentage labels
+  1112→  1112→  - **Duration Comparison**: Horizontal bars comparing shift durations, time range display, "Mais longo" badge, cross-midnight handling
+  1113→  1113→  - **Location Comparison**: Side-by-side location cards with MapPin icons, city/state + hospital, "Mesma cidade" badge when applicable
+  1114→  1114→  - **Seller Rating Comparison**: Star ratings with gradient amber bars, "Melhor" badge on highest rated, "Sem avaliações" for unrated sellers
+  1115→  1115→  - **Detailed Table Comparison**: The original comparison table is still included at the bottom as "Tabela Detalhada"
+  1116→  1116→- **New helper functions**:
+  1117→  1117→  - `getDurationMinutes(startTime, endTime)`: Calculates duration in minutes, handles midnight crossing
+  1118→  1118→  - `formatDuration(mins)`: Formats as "Xh" or "XhYmin"
+  1119→  1119→- **Bar colors**: emerald-500, teal-500, cyan-500 for up to 3 shifts
+  1120→  1120→- **New icon imports**: `Calendar, DollarSign, Timer, BarChart3, Building2` from lucide-react
+  1121→  1121→
+  1122→  1122→### Feature 3: Profile Completion Nudges
+  1123→  1123→
+  1124→  1124→#### Perfil Tab Changes (`src/components/perfil-tab.tsx`)
+  1125→  1125→- **New `ProfileCompletionNudge` component**: Placed between Profile Header and Tabs
+  1126→  1126→- **Weighted completion calculation**: 7 fields with different importance weights:
+  1127→  1127→  - Name (15%), Email (15%), Phone (15%), City (12%), State (8%), Professional Doc (20%), Bio (15%)
+  1128→  1128→- **Visual elements**:
+  1129→  1129→  - **Progress bar**: Gradient-colored (red→amber for <50%, amber→emerald for 50-80%, emerald for ≥80%)
+  1130→  1130→  - **Percentage display**: Large bold number with color matching progress level
+  1131→  1131→  - **Field completion indicators**: Pill badges for each field showing ✓ or ⚠ with emerald/gray styling
+  1132→  1132→  - **Missing field suggestions**: Up to 3 clickable suggestions with icons and descriptive text
+  1133→  1133→  - **"Complete seu Perfil" / "Perfil Completo!" header**: Changes based on completion
+  1134→  1134→  - **Left border accent**: Amber for incomplete, emerald for complete
+  1135→  1135→- **Actionable suggestions** (Portuguese):
+  1136→  1136→  - "Adicione seu nome completo"
+  1137→  1137→  - "Adicione seu telefone para contato rápido"
+  1138→  1138→  - "Adicione sua cidade para receber recomendações melhores"
+  1139→  1139→  - "Adicione seu estado para ver plantões na sua região"
+  1140→  1140→  - "Adicione seu documento profissional para verificação"
+  1141→  1141→  - "Adicione uma bio para que outros conheçam você"
+  1142→  1142→- **Click-to-edit**: All suggestions are clickable and navigate to the profile edit form
+  1143→  1143→- **"+N mais sugestões" link**: When more than 3 fields are missing, shows count of remaining suggestions
+  1144→  1144→- **New icon imports**: `AlertCircle, CheckCircle2, ArrowRight` from lucide-react
+  1145→  1145→
+  1146→  1146→### Files Modified
+  1147→  1147→- `src/app/api/shifts/route.ts` - Added notification creation on POST shift
+  1148→  1148→- `src/components/plantoes-tab.tsx` - Complete rewrite: CreateShiftDialog, ShiftVisualComparison, enhanced comparison features
+  1149→  1149→- `src/components/perfil-tab.tsx` - Added ProfileCompletionNudge component, new icon imports
+  1150→  1150→
+  1151→  1151→### Testing
+  1152→  1152→- ✅ Lint passes clean (0 errors, 0 warnings)
+  1153→  1153→- ✅ No compilation errors in dev log
+  1154→  1154→- ✅ All new code in TypeScript
+  1155→  1155→- ✅ Emerald/green healthcare theme maintained
+  1156→  1156→- ✅ No spinning/rotating animations
+  1157→  1157→
+  1158→  1158→## Phase 13 Changes (Landing Page + Bug Fixes + Styling + Features)
+  1159→  1159→
+  1160→  1160→### Bug Fixes
+  1161→  1161→- **Spinning/rotating animation removed from all green cards**: The `animate-parallax-rotate` (360deg rotation) was causing the welcome card and other green gradient cards to visually spin. Replaced with subtle `shimmer-slow` animation on all instances:
+  1162→  1162→  - `home-tab.tsx` - Both hero section and logged-in welcome card
+  1163→  1163→  - `shift-detail.tsx` - Main info card gradient overlay
+  1164→  1164→  - `onboarding-modal.tsx` - Header gradient overlay
+  1165→  1165→- **shimmer-border CSS class fixed**: Changed from `animation: parallax-rotate 4s linear infinite` (spinning) to `animation: shimmer-slow 6s linear infinite` with `background-size: 300% 300%` for a subtle gradient sweep effect
+  1166→  1166→- **Dialog accessibility warnings fixed**: Added `aria-describedby={undefined}` to `DialogContent` in `onboarding-modal.tsx` and `create-shift-modal.tsx` to suppress Radix UI accessibility warnings
+  1167→  1167→
+  1168→  1168→### New Features
+  1169→  1169→
+  1170→  1170→#### 1. Beautiful Landing Page (`src/components/landing-page.tsx`)
+  1171→  1171→Complete landing page with the following sections:
+  1172→  1172→- **Fixed navbar**: Logo, navigation links (Recursos, Como Funciona, Depoimentos, Planos), Login/Register buttons
+  1173→  1173→- **Hero section**: Large heading with gradient text "Repasse de plantões com segurança e praticidade", AI-generated hero image with overlay card, trust indicators, CTA buttons
+  1174→  1174→- **Stats bar**: Animated counters showing active shifts, professionals, cities, average rating
+  1175→  1175→- **Features section**: 6 feature cards (Publique Plantões, Busque Oportunidades, Transações Seguras, Concursos & Editais, Sistema de Avaliação, Calendário Integrado)
+  1176→  1176→- **How it Works**: 4-step process with connector lines between steps
+  1177→  1177→- **Featured Shifts**: Dynamic cards loaded from API showing latest available shifts
+  1178→  1178→- **Testimonials**: 3 professional testimonials with star ratings
+  1179→  1179→- **Pricing**: 3 plans (Gratuito R$0, Profissional R$29, Institucional R$99) with highlighted professional plan
+  1180→  1180→- **CTA Section**: Green gradient background with action buttons
+  1181→  1181→- **Footer**: Brand, Platform links, Support links, Contact info
+  1182→  1182→- **Scroll animations**: IntersectionObserver-based section reveal animations
+  1183→  1183→- **AI-generated images**: `hero-medical.png` and `logo-icon.png` created with z-ai SDK
+  1184→  1184→
+  1185→  1185→#### 2. Landing Page Integration (`src/app/page.tsx`)
+  1186→  1186→- Landing page shows when user is NOT logged in
+  1187→  1187→- After login, automatically transitions to the app dashboard
+  1188→  1188→- Landing page has its own navigation (separate from app's top header/bottom nav)
+  1189→  1189→
+  1190→  1190→#### 3. Quick Shift Create (Enhanced in plantoes-tab.tsx)
+  1191→  1191→- Title auto-suggest based on professional type + hospital
+  1192→  1192→- Currency input with R$ prefix
+  1193→  1193→- Date picker with min date set to today
+  1194→  1194→- Shift type badge preview (Diurno/Noturno/Misto) when times entered
+  1195→  1195→- Hospital dropdown with city/state info, auto-fills location on selection
+  1196→  1196→- Professional type auto-filled from user profile
+  1197→  1197→- Notification sent to seller on publication
+  1198→  1198→
+  1199→  1199→#### 4. Visual Shift Comparison (plantoes-tab.tsx)
+  1200→  1200→- `ShiftVisualComparison` component with:
+  1201→  1201→  - Price comparison horizontal bar chart with percentage labels
+  1202→  1202→  - Duration comparison with time ranges
+  1203→  1203→  - Location comparison with "Mesma cidade" badge
+  1204→  1204→  - Seller rating comparison with star display
+  1205→  1205→  - "Melhor" badge on best value
+  1206→  1206→  - Detailed comparison table as collapsible section
+  1207→  1207→
+  1208→  1208→#### 5. Profile Completion Nudges (perfil-tab.tsx)
+  1209→  1209→- `ProfileCompletionNudge` component:
+  1210→  1210→  - Weighted progress bar with color coding (red→amber→emerald)
+  1211→  1211→  - 7 tracked fields: Name, Email, Phone, City, State, Professional Doc, Bio
+  1212→  1212→  - Field indicator badges (✓ filled / ⚠ missing)
+  1213→  1213→  - Up to 3 actionable suggestions with click-to-edit
+  1214→  1214→  - "Perfil Completo!" message when 100%
+  1215→  1215→
+  1216→  1216→### Enhanced Styling
+  1217→  1217→
+  1218→  1218→#### New CSS Utility Classes (globals.css)
+  1219→  1219→- `.animate-hero-float` - Subtle floating animation for hero image
+  1220→  1220→- `.cta-glow` - Pulsing emerald shadow on CTA buttons
+  1221→  1221→- `.testimonial-card` - Emerald border glow on hover for testimonial cards
+  1222→  1222→- `.pricing-card` / `.pricing-card-highlight` - Emerald glow on hover for pricing cards
+  1223→  1223→- `.search-gradient` - Animated gradient background for search bar container
+  1224→  1224→- `.shimmer-value-subtle` - Less distracting shimmer on price display (6s instead of 3s)
+  1225→  1225→- `.verified-glow` - Emerald glow that intensifies on hover for verified badges
+  1226→  1226→- `.buy-btn-hover` - translateY + emerald shadow on buy button hover
+  1227→  1227→- `.shift-card-hover` - Subtle scale + shadow on shift card hover
+  1228→  1228→- `.interactive-transition` - Consistent 300ms transition for interactive elements
+  1229→  1229→
+  1230→  1230→#### Component-Specific Enhancements
+  1231→  1231→- **Landing page**: Hero image floating animation, CTA button glow, testimonial card hover glow, pricing card hover effects, smooth scroll anchor links
+  1232→  1232→- **Plantoes tab**: Search bar with animated gradient container, filter panel slide-up animation, shift card micro-interactions (scale + shadow)
+  1233→  1233→- **Shift detail**: Subtle shimmer on value, verified seller emerald glow on hover, buy button hover with translateY
+  1234→  1234→- **All components**: Consistent 300ms transition durations, proper focus-visible states
+  1235→  1235→
+  1236→  1236→### Files Created
+  1237→  1237→- `src/components/landing-page.tsx` - Complete landing page component
+  1238→  1238→- `public/hero-medical.png` - AI-generated hero image
+  1239→  1239→- `public/logo-icon.png` - AI-generated logo icon
+  1240→  1240→
+  1241→  1241→### Files Modified
+  1242→  1242→- `src/app/page.tsx` - Landing page integration with conditional rendering
+  1243→  1243→- `src/components/home-tab.tsx` - Removed spinning animations, replaced with shimmer-slow
+  1244→  1244→- `src/components/shift-detail.tsx` - Removed spinning animation, added shimmer, glow effects
+  1245→  1245→- `src/components/onboarding-modal.tsx` - Removed spinning animation, added aria-describedby
+  1246→  1246→- `src/components/create-shift-modal.tsx` - Added aria-describedby
+  1247→  1247→- `src/components/plantoes-tab.tsx` - Search gradient container, visual comparison, quick create enhancements
+  1248→  1248→- `src/components/perfil-tab.tsx` - Profile completion nudges
+  1249→  1249→- `src/app/globals.css` - Fixed shimmer-border, added 10+ new utility classes
+  1250→  1250→
+  1251→  1251→### QA Testing Summary (via agent-browser)
+  1252→  1252→- ✅ Landing page loads correctly with all sections (Hero, Stats, Features, How It Works, Shifts, Testimonials, Pricing, CTA, Footer)
+  1253→  1253→- ✅ Login from landing page works - transitions to app dashboard
+  1254→  1254→- ✅ No spinning/rotating animations anywhere (confirmed zero spin/rotate in computed styles)
+  1255→  1255→- ✅ Welcome card shows time-appropriate greeting without spinning
+  1256→  1256→- ✅ Quick Shift Create form opens with all fields
+  1257→  1257→- ✅ Profile completion progress bar visible
+  1258→  1258→- ✅ Visual shift comparison with charts works
+  1259→  1259→- ✅ Search bar has gradient background
+  1260→  1260→- ✅ Dark mode works correctly across all pages
+  1261→  1261→- ✅ Lint passes clean (0 errors, 0 warnings)
+  1262→  1262→- ⚠️ Minor: Dialog accessibility warnings (DialogContent requires DialogTitle) - addressed with aria-describedby
+  1263→  1263→
+  1264→  1264→### Unresolved Issues
+  1265→  1265→- Search gradient may not be visible on some browsers due to CSS animation compatibility
+  1266→  1266→- Some dialogs still show accessibility warnings in development mode (non-blocking)
+  1267→  1267→
+  1268→  1268→
+  1269→  1269→## Phase 16 Changes (Button Size Fix + Green Tab Bug Fix)
+  1270→  1270→
+  1271→  1271→### Bug Fixes
+  1272→  1272→- **"Publicar Plantão" button size**: Made the "Publicar Plantão" button the same size as "Buscar Plantões" button by adding `w-full` class and removing the wrapper `<div className="relative">` that was causing inconsistent sizing.
+  1273→  1273→- **Green pulsing ring removed**: Removed the `animate-badge-pulse` pulsing green ring (`<span className="absolute inset-0 rounded-xl animate-badge-pulse pointer-events-none">`) that was behind the "Publicar Plantão" button. This was the "aba verde" (green tab) the user reported as spinning/moving on screen. Also removed the `shadow-inner shadow-emerald-800/10` and `relative z-10` classes that were only needed because of the pulsing ring overlay.
+  1274→  1274→
+  1275→  1275→### Files Modified
+  1276→  1276→- `src/components/home-tab.tsx` - Simplified Quick Actions section: removed relative wrapper div, removed pulse ring span, added `w-full` to both buttons, cleaned up shadow classes
+  1277→  1277→
+  1278→  1278→### Testing
+  1279→  1279→- ✅ Lint passes clean
+  1280→  1280→- ✅ Dev server running without errors
+  1281→  1281→
+  1282→  1282→## Phase 17 Changes (PWA Setup + Logo Replacement)
+  1283→  1283→
+  1284→  1284→### PWA Setup
+  1285→  1285→- **Web App Manifest** (`/public/manifest.json`) - Complete PWA manifest with:
+  1286→  1286→  - App name: "Plantão Help - Marketplace de Plantões"
+  1287→  1287→  - Short name: "PlantãoHelp"
+  1288→  1288→  - Standalone display mode, portrait orientation
+  1289→  1289→  - Theme color: #059669 (emerald-600)
+  1290→  1290→  - Background color: #ffffff
+  1291→  1291→  - Portuguese (pt-BR) language
+  1292→  1292→  - 192x192 and 512x512 icons (any + maskable purposes)
+  1293→  1293→  - Categories: medical, business
+  1294→  1294→
+  1295→  1295→- **Service Worker** (`/public/sw.js`) - Network-first caching strategy:
+  1296→  1296→  - Caches static assets on install (/, manifest, icons, logo)
+  1297→  1297→  - Network-first with cache fallback for pages
+  1298→  1298→  - API calls always go to network (no caching)
+  1299→  1299→  - Auto-activates with skipWaiting and clients.claim
+  1300→  1300→  - Cleans old caches on activate
+  1301→  1301→
+  1302→  1302→- **PWA Icons** (`/public/icons/`) - Generated from uploaded logo:
+  1303→  1303→  - icon-192x192.png (13KB)
+  1304→  1304→  - icon-512x512.png (70KB)
+  1305→  1305→  - apple-touch-icon.png (12KB, 180x180)
+  1306→  1306→  - favicon-32x32.png (1.4KB)
+  1307→  1307→  - favicon-16x16.png (697B)
+  1308→  1308→
+  1309→  1309→- **Layout Meta Tags** (`src/app/layout.tsx`) - Full PWA support:
+  1310→  1310→  - Link to manifest.json
+  1311→  1311→  - Apple touch icon, favicon links
+  1312→  1312→  - Apple mobile web app meta tags (capable, status bar, title)
+  1313→  1313→  - Mobile web app capable meta tag
+  1314→  1314→  - MS application tile color
+  1315→  1315→  - Open Graph tags (type, site name, title, description, image)
+  1316→  1316→  - Service worker registration script (inline)
+  1317→  1317→  - Format detection disabled for telephone
+  1318→  1318→
+  1319→  1319→### Logo Replacement
+  1320→  1320→- Uploaded logo (blue shield with white cross, "Plantão" in blue, "Help" in green, "ATENDIMENTO 24 HORAS" subtitle) replaced Stethoscope icon across all components:
+  1321→  1321→  - **Top Header**: Logo image (9x9, rounded-xl) replaces green Stethoscope icon
+  1322→  1322→  - **Landing Page Navbar**: Logo image replaces Stethoscope icon
+  1323→  1323→  - **Landing Page Footer**: Logo image replaces Stethoscope icon
+  1324→  1324→  - **Landing Page Hero**: Logo displayed as main hero image with rounded-2xl corners in gradient background
+  1325→  1325→  - **Landing Page Hero Overlay Card**: Logo image replaces Calendar icon
+  1326→  1326→  - **Home Tab Hero (logged-out)**: Logo image replaces Stethoscope icon
+  1327→  1327→  - Original `/hero-medical.png` (broken) replaced with actual logo
+  1328→  1328→
+  1329→  1329→### Files Created
+  1330→  1330→- `/public/manifest.json` - PWA manifest
+  1331→  1331→- `/public/sw.js` - Service worker
+  1332→  1332→- `/public/icons/icon-192x192.png` - PWA icon 192x192
+  1333→  1333→- `/public/icons/icon-512x512.png` - PWA icon 512x512
+  1334→  1334→- `/public/icons/apple-touch-icon.png` - Apple touch icon 180x180
+  1335→  1335→- `/public/icons/favicon-32x32.png` - Favicon 32x32
+  1336→  1336→- `/public/icons/favicon-16x16.png` - Favicon 16x16
+  1337→  1337→- `/public/logo.jpg` - Full logo image for in-app use
+  1338→  1338→
+  1339→  1339→### Files Modified
+  1340→  1340→- `src/app/layout.tsx` - Added PWA meta tags, manifest link, service worker registration, icon links
+  1341→  1341→- `src/components/top-header.tsx` - Replaced Stethoscope icon with logo image (rounded-xl)
+  1342→  1342→- `src/components/landing-page.tsx` - Replaced Stethoscope icon in navbar, footer, hero with logo image; replaced broken hero-medical.png with logo
+  1343→  1343→- `src/components/home-tab.tsx` - Replaced Stethoscope icon in logged-out hero with logo image
+  1344→  1344→
+  1345→  1345→### Testing
+  1346→  1346→- ✅ Lint passes clean
+  1347→  1347→- ✅ Dev server running without errors
+  1348→  1348→- ✅ All logo images have rounded corners (rounded-xl / rounded-2xl)
+  1349→  1349→- ✅ PWA manifest accessible at /manifest.json
+  1350→  1350→- ✅ Service worker will register on page load
+  1351→  1351→
+  1352→  1352→## Phase 14 Changes (Remove animate-badge-pulse Animation)
+  1353→  1353→
+  1354→  1354→### Bug Fix
+  1355→  1355→- **Removed `animate-badge-pulse` from ALL components** - The pulsing box-shadow animation (`0 0 0 8px`) was creating a large glowing overlay that blocked visibility of content behind it. User reported "nao consigo ver nada atrs" (can't see anything behind it).
+  1356→  1356→
+  1357→  1357→### Components Fixed
+  1358→  1358→- `src/components/home-tab.tsx` - Removed `animate-badge-pulse` from Concursos dot indicator
+  1359→  1359→- `src/components/bottom-nav.tsx` - Removed `animate-badge-pulse` from Meus tab badge count
+  1360→  1360→- `src/components/top-header.tsx` - Removed `animate-badge-pulse` from notification bell badge
+  1361→  1361→- `src/components/notification-center.tsx` - Removed `animate-badge-pulse` from unread count badge AND unread dot indicator
+  1362→  1362→- `src/components/plantoes-tab.tsx` - Removed `animate-badge-pulse` from "Novo" badge
+  1363→  1363→- `src/components/shift-detail.tsx` - Removed `animate-badge-pulse` from Available status indicator
+  1364→  1364→- `src/components/concursos-tab.tsx` - Replaced `animate-badge-pulse` with `ring-2 ring-red-400/50` for urgent badges
+  1365→  1365→
+  1366→  1366→### CSS Cleanup
+  1367→  1367→- Removed `--animate-badge-pulse` CSS variable from globals.css
+  1368→  1368→- Removed `@keyframes badge-pulse` from globals.css
+  1369→  1369→- Removed `.animate-badge-pulse` utility class from globals.css
+  1370→  1370→
+  1371→  1371→### Testing
+  1372→  1372→- ✅ Lint passes clean
+  1373→  1373→- ✅ No compilation errors in dev log
+  1374→  1374→
+  1375→  1375→### Cron Job
+  1376→  1376→- Created 15-minute review cycle (job ID: 163069)
+  1377→  1377→
+  1378→  1378→## Phase 15 Changes (Mobile App Routes: /mobile, /mobile/login, /mobile/register)
+  1379→  1379→
+  1380→  1380→### New Architecture
+  1381→  1381→- **`/`** — Landing page (always shown to logged-out visitors; auto-redirects to `/mobile` if already logged in)
+  1382→  1382→- **`/mobile/login`** — App-style login page (phone-frame on desktop, full-screen on mobile)
+  1383→  1383→- **`/mobile/register`** — App-style register page (phone-frame on desktop, full-screen on mobile)
+  1384→  1384→- **`/mobile`** — Main app shell (phone-frame on desktop, full-screen on mobile) with all tabs
+  1385→  1385→
+  1386→  1386→### New Files Created
+  1387→  1387→- **`src/app/mobile/page.tsx`** — Mobile app shell that reuses all existing tab components (HomeTab, PlantoesTab, ConcursosTab, MeusPlantoesTab, PerfilTab, AdminTab) inside a phone-frame container. Redirects to `/mobile/login` if not authenticated.
+  1388→  1388→- **`src/app/mobile/login/page.tsx`** — App-style login page with email/password fields, show/hide password toggle, demo credentials helper ("Preencher automaticamente" button), success animation, and redirect to `/mobile` on login.
+  1389→  1389→- **`src/app/mobile/register/page.tsx`** — App-style register page with role selection cards (Médico/Enfermeiro/Téc. Enfermagem/Empresa), all form fields (name, email, password with strength meter, professional doc, phone, city, state, company name for EMPRESA, bio), registration fee notice, and redirect to `/mobile` on success.
+  1390→  1390→- **`src/components/mobile-auth-shell.tsx`** — Shared phone-frame shell component used by login and register pages. Features:
+  1391→  1391→  - Phone-frame design on desktop (max-w-md, rounded-[2.5rem], shadow, border)
+  1392→  1392→  - Full-screen on mobile (min-h-screen)
+  1393→  1393→  - Back button (navigates to `/`)
+  1394→  1394→  - Dark mode toggle
+  1395→  1395→  - Centered logo with glow effect
+  1396→  1396→  - "PlantãoHelp" name + "Marketplace de plantões" subtitle with pulsing dot
+  1397→  1397→  - Scrollable content area
+  1398→  1398→  - Auto-redirects to `/mobile` if user is already logged in
+  1399→  1399→
+  1400→  1400→### Files Modified
+  1401→  1401→- **`src/app/page.tsx`** — Simplified to always show landing page. Auto-redirects to `/mobile` if user is logged in. Removed all the tab-based app shell code (now lives at `/mobile`).
+  1402→  1402→- **`src/components/landing-page.tsx`** — 
+  1403→  1403→  - Removed "PlantãoHelp" text name from navbar, kept ONLY the logo image (w-10 h-10 rounded-xl)
+  1404→  1404→  - Changed `handleLogin` and `handleSignup` to use `router.push('/mobile/login')` and `router.push('/mobile/register')` instead of opening the AuthModal
+  1405→  1405→  - Added `useRouter` import
+  1406→  1406→- **`src/components/top-header.tsx`** — Changed `fixed` to `absolute` positioning for header and gradient line (so they position correctly inside the phone-frame container's `relative` parent)
+  1407→  1407→- **`src/components/bottom-nav.tsx`** — Changed `fixed` to `absolute` positioning for the nav (so it sticks to the bottom of the phone-frame container, not the viewport)
+  1408→  1408→
+  1409→  1409→### User Flow
+  1410→  1410→1. User visits `/` → sees landing page (only logo in navbar, no name)
+  1411→  1411→2. User clicks "Entrar" → navigated to `/mobile/login`
+  1412→  1412→3. User clicks "Criar Conta" → navigated to `/mobile/register`
+  1413→  1413→4. After successful login/register → redirected to `/mobile` (app shell)
+  1414→  1414→5. If logged-in user visits `/` → auto-redirected to `/mobile`
+  1415→  1415→6. If logged-out user visits `/mobile` → auto-redirected to `/mobile/login`
+  1416→  1416→
+  1417→  1417→### Mobile App Shell Features
+  1418→  1418→- Reuses ALL existing components (TopHeader, BottomNav, all tabs, AuthModal, OnboardingModal)
+  1419→  1419→- Phone-frame container on desktop (448px wide, 92vh tall, rounded corners, shadow)
+  1420→  1420→- Full-screen on mobile
+  1421→  1421→- TopHeader is absolute-positioned at top of frame
+  1422→  1422→- BottomNav is absolute-positioned at bottom of frame
+  1423→  1423→- Main content area is scrollable between header and nav
+  1424→  1424→- Loading state shown while redirecting unauthenticated users
+  1425→  1425→
+  1426→  1426→### Auth Pages Design
+  1427→  1427→- **Login page**: Email + password fields with icons, show/hide password toggle, demo credentials box with "Preencher automaticamente" button, success animation with redirect
+  1428→  1428→- **Register page**: Role selection cards (4 options with icons), all form fields, password strength meter (5 bars), professional doc label changes based on role (CRM/COREN/CNPJ), company name field for EMPRESA, bio textarea, registration fee notice
+  1429→  1429→
+  1430→  1430→### QA Testing (via agent-browser)
+  1431→  1431→- ✅ Landing page (`/`) loads with only logo in navbar (no name text)
+  1432→  1432→- ✅ "Entrar" button navigates to `/mobile/login`
+  1433→  1433→- ✅ Login page renders with phone-frame on desktop, logo, form fields, demo helper
+  1434→  1434→- ✅ Login form submits successfully (tested with dr.silva@medico.com)
+  1435→  1435→- ✅ After login, redirects to `/mobile` app shell
+  1436→  1436→- ✅ Mobile app shows dashboard with stats, recommended shifts, activity timeline, FAQ
+  1437→  1437→- ✅ Tab navigation works (switched to Plantões tab, saw search/filters/shift listings)
+  1438→  1438→- ✅ Register page (`/mobile/register`) renders with all role cards and form fields
+  1439→  1439→- ✅ Visiting `/mobile` while logged out redirects to `/mobile/login`
+  1440→  1440→- ✅ Visiting `/mobile/register` while logged in redirects to `/mobile`
+  1441→  1441→- ✅ Visiting `/` while logged in redirects to `/mobile`
+  1442→  1442→- ✅ Lint passes clean (0 errors)
+  1443→  1443→- ✅ No runtime errors in dev log
+  1444→  1444→- ✅ Responsive: phone-frame on desktop (1280px), full-screen on mobile (390px)
+  1445→  1445→
+  1446→  1446→### Test Credentials (unchanged)
+  1447→  1447→- **Admin**: admin@plantaohelp.com / admin123
+  1448→  1448→- **Doctor**: dr.silva@medico.com / 123456
+  1449→  1449→- **Nurse**: maria@enfermeiro.com / 123456
+  1450→  1450→- **Technician**: lucas@tecnico.com / 123456
+  1451→  1451→
+  1452→  1452→---
+  1453→  1453→
+  1454→  1454→## Phase 16 Changes (Cron Review - Bug Fix + New Features + Styling Enhancements)
+  1455→  1455→
+  1456→  1456→**Task ID**: cron-review-202606231133
+  1457→  1457→**Agent**: Z.ai Code (cron-triggered review)
+  1458→  1458→**Task**: QA test, fix bugs, add new features, enhance styling
+  1459→  1459→
+  1460→  1460→### QA Assessment
+  1461→  1461→- ✅ Landing page loads correctly with only logo in navbar
+  1462→  1462→- ✅ /mobile/login renders with phone-frame on desktop, full-screen on mobile
+  1463→  1463→- ✅ /mobile/register renders with all form fields and role selection
+  1464→  1464→- ✅ /mobile app shell works with all tabs (Home, Plantões, Concursos, Meus, Perfil)
+  1465→  1465→- ✅ Login flow works (login → redirect to /mobile)
+  1466→  1466→- ✅ Logout works (Sair button → redirect to /mobile/login)
+  1467→  1467→- ✅ Tab navigation works (tested Plantões, Meus, Perfil)
+  1468→  1468→- ✅ Shift detail opens correctly
+  1469→  1469→- ✅ Lint passes clean, no runtime errors in dev log
+  1470→  1470→
+  1471→  1471→### Bug Found & Fixed
+  1472→  1472→1. **"Avaliação" stat showing "-" (dash) for users without ratings**
+  1473→  1473→   - **Issue**: The dashboard's 4th stat card showed "-" when a user had no ratings, which looked unfinished
+  1474→  1474→   - **Fix**: Now shows a green "Novo" badge (rounded pill) for users without ratings, and shows the rating with a filled star icon for users who have ratings
+  1475→  1475→   - **File**: `src/components/home-tab.tsx`
+  1476→  1476→
+  1477→  1477→### New Features Added
+  1478→  1478→
+  1479→  1479→#### 1. "Esqueci minha senha" (Forgot Password) Feature
+  1480→  1480→- **New API endpoint**: `POST /api/auth/forgot-password` (`src/app/api/auth/forgot-password/route.ts`)
+  1481→  1481→  - Accepts email in body
+  1482→  1482→  - Verifies user exists (but always returns success to prevent email enumeration)
+  1483→  1483→  - Returns success message
+  1484→  1484→- **Forgot Password Dialog** on login page:
+  1485→  1485→  - Beautiful gradient header with KeyRound icon
+  1486→  1486→  - Email input field with icon
+  1487→  1487→  - Cancelar/Enviar buttons
+  1488→  1488→  - Success state with green checkmark animation
+  1489→  1489→  - "Entendi" button to close
+  1490→  1490→- **"Esqueci minha senha" link** added next to password label on login page
+  1491→  1491→- **File modified**: `src/app/mobile/login/page.tsx`
+  1492→  1492→
+  1493→  1493→#### 2. "Manter conectado" (Remember Me) Checkbox
+  1494→  1494→- Added checkbox below password field on login page
+  1495→  1495→- Label: "Manter conectado neste dispositivo"
+  1496→  1496→- Default checked (true)
+  1497→  1497→- Uses shadcn/ui Checkbox component with emerald color theme
+  1498→  1498→- **File modified**: `src/app/mobile/login/page.tsx`
+  1499→  1499→
+  1500→  1500→#### 3. Profile Completion Progress Card
+  1501→  1501→- **New component**: `src/components/profile-completion-card.tsx`
+  1502→  1502→- Shows on dashboard when profile is incomplete (hides when 100% complete)
+  1503→  1503→- Features:
+  1504→  1504→  - Percentage display (e.g., "Perfil 60% completo")
+  1505→  1505→  - Motivational message that changes based on completion level
+  1506→  1506→  - Animated gradient progress bar (red→amber→emerald based on %)
+  1507→  1507→  - Shimmer overlay animation on progress bar
+  1508→  1508→  - Field checklist (2-column grid) showing filled/unfilled fields:
+  1509→  1509→    - 📞 Telefone
+  1510→  1510→    - 📍 Cidade
+  1511→  1511→    - 🗺️ Estado
+  1512→  1512→    - 🪪 Documento profissional
+  1513→  1513→    - 📝 Bio / Descrição
+  1514→  1514→  - "Completar perfil" button that navigates to perfil tab
+  1515→  1515→- **File modified**: `src/components/home-tab.tsx` (added import and component placement after pending approval warning)
+  1516→  1516→
+  1517→  1517→#### 4. Earnings Summary Widget
+  1518→  1518→- **New component**: `src/components/earnings-summary-widget.tsx`
+  1519→  1519→- Shows on dashboard below the Concursos quick link
+  1520→  1520→- Features:
+  1521→  1521→  - Gradient header "Resumo Financeiro" with "Ver tudo" link
+  1522→  1522→  - Net balance hero (Saldo líquido = ganhos - gastos) with red/green color based on sign
+  1523→  1523→  - "Este mês" section with two cards:
+  1524→  1524→    - Ganhou (emerald) - earnings this month
+  1525→  1525→    - Gastou (red) - expenses this month
+  1526→  1526→  - All-time stats grid:
+  1527→  1527→    - Total ganho (with Trophy icon)
+  1528→  1528→    - Total gasto (with Wallet icon)
+  1529→  1529→  - Empty state for users with no activity: "Comece a ganhar hoje" card
+  1530→  1530→  - Loading skeleton while data fetches
+  1531→  1531→  - Fetches data from existing `/api/shifts?sellerId=X&status=SOLD` and `/api/shifts?buyerId=X&status=SOLD` endpoints
+  1532→  1532→- **File modified**: `src/components/home-tab.tsx` (added import and component placement after Concursos card)
+  1533→  1533→
+  1534→  1534→#### 5. Enhanced Mobile Auth Shell
+  1535→  1535→- **File modified**: `src/components/mobile-auth-shell.tsx`
+  1536→  1536→- New features:
+  1537→  1537→  - **Phone status bar** (desktop only): Shows current time, Signal/Wifi/Battery icons - mimics a real phone
+  1538→  1538→  - **Online indicator badge**: Green pulsing dot with "Online" text in top app bar
+  1539→  1539→  - **Animated logo glow**: Pulsing gradient blur behind logo
+  1540→  1540→  - **Verified badge**: Small emerald checkmark badge on logo corner
+  1541→  1541→  - **Back button hover effect**: Arrow slides left on hover
+  1542→  1542→  - **Trust footer** (desktop only): Shows "100% Seguro", "Dados protegidos", "Suporte 24h" with icons at bottom of phone frame
+  1543→  1543→  - Live clock that updates every minute
+  1544→  1544→
+  1545→  1545→### Styling Enhancements
+  1546→  1546→- **Demo credentials box**: Added Sparkles icon, decorative blur blob, "active:scale-95" press feedback
+  1547→  1547→- **Rating display**: Now shows filled star icon next to rating number, or "Novo" badge for new users
+  1548→  1548→- **Progress bars**: Animated shimmer overlay on all progress bars
+  1549→  1549→- **Color-coded earnings**: Emerald for earnings, red for expenses, with subtle background tints
+  1550→  1550→- **Phone frame polish**: More realistic phone appearance with status bar and trust indicators
+  1551→  1551→
+  1552→  1552→### Files Created
+  1553→  1553→- `src/app/api/auth/forgot-password/route.ts` - Forgot password API endpoint
+  1554→  1554→- `src/components/profile-completion-card.tsx` - Profile completion progress card
+  1555→  1555→- `src/components/earnings-summary-widget.tsx` - Earnings summary widget
+  1556→  1556→
+  1557→  1557→### Files Modified
+  1558→  1558→- `src/components/home-tab.tsx` - Fixed rating display, added ProfileCompletionCard and EarningsSummaryWidget imports and placement
+  1559→  1559→- `src/app/mobile/login/page.tsx` - Added forgot password dialog, "Esqueci minha senha" link, "Manter conectado" checkbox
+  1560→  1560→- `src/components/mobile-auth-shell.tsx` - Enhanced with phone status bar, online indicator, trust footer, animated logo glow
+  1561→  1561→
+  1562→  1562→### Verification Results (via agent-browser)
+  1563→  1563→- ✅ Login page shows "Esqueci minha senha" link and "Manter conectado" checkbox
+  1564→  1564→- ✅ Forgot password dialog opens, accepts email, shows success message
+  1565→  1565→- ✅ Login flow still works correctly (tested with dr.silva demo account)
+  1566→  1566→- ✅ Dashboard shows "Novo" badge instead of "-" for rating
+  1567→  1567→- ✅ Earnings summary widget displays: "Resumo Financeiro", "Saldo líquido: -R$ 600,00", "Total ganho: R$ 1.600,00", "Total gasto: R$ 2.200,00"
+  1568→  1568→- ✅ Profile completion card correctly hides for users with 100% complete profile
+  1569→  1569→- ✅ Desktop view shows phone status bar with time (e.g., "03:46"), trust footer ("100% Seguro", "Dados protegidos", "Suporte 24h")
+  1570→  1570→- ✅ Online indicator badge shows in top app bar
+  1571→  1571→- ✅ Register page still renders correctly with all fields
+  1572→  1572→- ✅ Lint passes clean (0 errors)
+  1573→  1573→- ✅ No runtime errors in dev log
+  1574→  1574→
+  1575→  1575→### Unresolved Issues / Risks
+  1576→  1576→- None identified in this round. All features working as expected.
+  1577→  1577→
+  1578→  1578→### Recommended Next Steps
+  1579→  1579→1. **Password reset flow**: Implement actual password reset page (currently forgot-password just shows success message)
+  1580→  1580→2. **Email integration**: Connect forgot-password to real email sending service
+  1581→  1581→3. **Push notifications**: Add browser push notifications for new shifts matching user's profile
+  1582→  1582→4. **Shift reminders**: Add countdown reminders for upcoming shifts via notifications
+  1583→  1583→5. **Profile completion gamification**: Add badges/rewards for completing profile sections
+  1584→  1584→6. **Earnings chart**: Add a small sparkline chart showing earnings trend over time in the widget
+  1585→  1585→
+  1586→  1586→---
+  1587→  1587→Task ID: 17-b
+  1588→  1588→Agent: full-stack-developer
+  1589→  1589→Task: Create earnings trend sparkline chart for dashboard
+  1590→  1590→
+  1591→  1591→Work Log:
+  1592→  1592→- Read worklog.md (first 60 lines + last 200 lines) to understand previous agent work and project conventions (emerald theme, dark mode, recharts usage pattern in admin-tab.tsx, existing EarningsSummaryWidget).
+  1593→  1593→- Inspected existing artifacts for context: `src/components/earnings-summary-widget.tsx` (do-not-modify reference), `src/lib/utils.ts` (formatCurrency), `src/lib/store.ts` (user.id), `src/components/admin-tab.tsx` (recharts LineChart example), `src/components/home-tab.tsx` (EarningsSummaryWidget placement pattern).
+  1594→  1594→- Confirmed recharts v2.15.4 with AreaChart available in node_modules.
+  1595→  1595→- Created `src/components/earnings-trend-chart.tsx` with:
+  1596→  1596→  - `getLast6Months()` helper returning `{ key, label, fullLabel, year, month }` using Portuguese month arrays (Jan-Dez abbr, Janeiro-Dezembro full names).
+  1597→  1597→  - `ChartTooltip` custom tooltip component styled per spec (`bg-white dark:bg-gray-800 border ... rounded-lg shadow-md px-3 py-2 text-xs`) showing fullLabel + formatCurrency.
+  1598→  1598→  - `EarningsTrendChart` component (named + default export) that:
+  1599→  1599→    * Accepts `userId` prop.
+  1600→  1600→    * Fetches `/api/shifts?sellerId={userId}&status=SOLD` in useEffect with cancellation guard.
+  1601→  1601→    * Groups earnings by month for the last 6 months (sum of `value`), uses useMemo for chartData + stats.
+  1602→  1602→    * Renders emerald gradient AreaChart (stroke `#10b981`, fill gradient `#10b981` 45% -> transparent), height 140px, smooth monotone curve, dots + active dots, hidden Y-axis, custom tooltip, dashed emerald cursor.
+  1603→  1603→    * Header row: TrendingUp icon + "Tendência de Ganhos" title on left, "Últimos 6 meses" subtitle on right.
+  1604→  1604→    * Below chart: 3 mini-stats grid (`grid-cols-3 gap-2 mt-3`) with "Melhor mês" (value + best month name), "Média mensal", "Total 6 meses" — each in `p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-center` with `text-[10px] text-gray-500 uppercase tracking-wide` label and `text-sm font-bold text-emerald-600 dark:text-emerald-400` value.
+  1605→  1605→    * Loading state: full skeleton card (header pulses, chart skeleton box, 3 stat skeleton boxes) with animate-pulse.
+  1606→  1606→    * Empty state (no sold shifts in last 6 months): friendly "Sem dados suficientes" message with TrendingDown icon and "Comece a vender plantões para ver sua tendência de ganhos." subtext.
+  1607→  1607→    * Dark mode support throughout (lighter grid lines via dark:opacity-20, theme-aware tooltip and text colors).
+  1608→  1608→- Ran `bun run lint 2>&1 | tail -20` — clean (0 errors, 0 warnings).
+  1609→  1609→- Checked dev.log — no compilation errors.
+  1610→  1610→
+  1611→  1611→Stage Summary:
+  1612→  1612→- File created: `src/components/earnings-trend-chart.tsx` (new, standalone — did NOT modify earnings-summary-widget.tsx or home-tab.tsx).
+  1613→  1613→- Exports: `EarningsTrendChart` (named) + default export.
+  1614→  1614→- Accepts prop: `{ userId: string }`.
+  1615→  1615→- Integration note: To display on the dashboard, add to `src/components/home-tab.tsx` next to the existing `EarningsSummaryWidget` placement, e.g.:
+  1616→  1616→  ```tsx
+  1617→  1617→  import { EarningsTrendChart } from '@/components/earnings-trend-chart'
+  1618→  1618→  // ... after EarningsSummaryWidget:
+  1619→  1619→  <EarningsTrendChart userId={user.id} />
+  1620→  1620→  ```
+  1621→  1621→- Uses existing `/api/shifts?sellerId={userId}&status=SOLD` endpoint (no new API routes created).
+  1622→  1622→- All money values formatted via `formatCurrency` from `@/lib/utils`.
+  1623→  1623→- Theme: emerald/green healthcare, no indigo/blue. Dark mode supported.
+  1624→  1624→- Lint: clean. Dev log: no errors.
+  1625→  1625→
+  1626→  1626→---
+  1627→  1627→Task ID: 17-a
+  1628→  1628→Agent: full-stack-developer
+  1629→  1629→Task: Create Upcoming Shifts countdown widget for dashboard
+  1630→  1630→
+  1631→  1631→Work Log:
+  1632→  1632→- Read worklog.md (first 60 lines + last 200 lines) to understand project history: emerald/green healthcare theme, existing widgets (EarningsSummaryWidget, ProfileCompletionCard), existing utils (getShiftType/getShiftTypeColor/getShiftTypeIcon, formatDate), and the existing countdown pattern in shift-detail.tsx.
+  1633→  1633→- Reviewed `src/lib/store.ts` (useAppStore hook + user/activeTab/setSelectedShiftId API), `src/lib/utils.ts` (formatting helpers), `src/components/home-tab.tsx` (integration target — read only, not modified), and `src/components/earnings-summary-widget.tsx` (the pattern to mirror for clean orchestrator integration: props = { userId, onSeeAll }).
+  1634→  1634→- Created `src/components/upcoming-shifts-widget.tsx` exporting `UpcomingShiftsWidget`.
+  1635→  1635→  - Props: optional `userId`, `onSeeAll`, `onBrowse`. Falls back to `useAppStore.getState().user.id` and store navigation so the orchestrator can drop in `<UpcomingShiftsWidget />` with zero props.
+  1636→  1636→  - Fetches both `/api/shifts?sellerId={id}&allStatuses=true` (published) and `/api/shifts?buyerId={id}&status=SOLD` (bought) in parallel, dedupes by id, tags each as 'bought' (buyerId matches AND status=SOLD) or 'published'.
+  1637→  1637→  - Filters out CANCELLED shifts and shifts whose start datetime is in the past; sorts by closest start first; limits to 3.
+  1638→  1638→  - Live countdown ticks every 60s via a `now` state. Formats as "2d 5h 30min" / "5h 30min" / "30min" / "Em andamento".
+  1639→  1639→  - Urgency color coding: <24h = red text + `animate-pulse` + Timer icon; <3d = amber; >=3d = emerald. Each urgency has a matching ring/background style (bg-red-50/amber-50/emerald-50 with dark variants).
+  1640→  1640→  - Card content (per task spec): shift title (line-clamp-2), Comprado/Publicado badge (emerald/teal), live countdown pill, "12/05/2026 • 19:00 - 07:00" with CalendarClock, city/state with MapPin, hospital name with Hospital icon, shift type badge via getShiftType/getShiftTypeColor/getShiftTypeIcon.
+  1641→  1641→  - Loading state: 3 skeleton cards with `animate-pulse` matching card layout.
+  1642→  1642→  - Empty state: friendly "Nenhum plantão próximo" message in rounded container with CalendarClock icon and a "Buscar plantões" button that navigates to plantoes tab via store.
+  1643→  1643→  - Header: gradient emerald-to-teal icon container with AlarmClock, title "Próximos Plantões", subtitle, and "Ver todos" link that calls `useAppStore.getState().setActiveTab('meus-plantoes')` (or the provided `onSeeAll` prop).
+  1644→  1644→  - Framer Motion staggered entrance (opacity+y, 70ms delay per card, smooth [0.16,1,0.3,1] easing).
+  1645→  1645→  - Card hover: `hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`.
+  1646→  1646→  - Clicking a card calls `useAppStore.getState().setSelectedShiftId(shift.id)` so the existing shift-detail flow can open it.
+  1647→  1647→  - Container styling matches spec exactly: `bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4`, list uses `space-y-3`, each card uses the specified `p-3 rounded-xl border ... hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md transition-all duration-200`.
+  1648→  1648→  - Date parsing uses the same safe `split('T')[0]` pattern as shift-detail.tsx to avoid the NaN bug noted in Phase 6 worklog.
+  1649→  1649→  - Fully responsive and dark-mode aware throughout.
+  1650→  1650→- Ran `cd /home/z/my-project && bun run lint 2>&1 | tail -20` — lint passes clean (0 errors, 0 warnings). Also checked `dev.log` — no compile errors.
+  1651→  1651→
+  1652→  1652→Stage Summary:
+  1653→  1653→- Files created:
+  1654→  1654→  - `src/components/upcoming-shifts-widget.tsx` — new self-contained `UpcomingShiftsWidget` component (~290 lines, client component).
+  1655→  1655→- Files modified: none (per task constraints, `home-tab.tsx` was NOT modified).
+  1656→  1656→- Integration notes for orchestrator (Task 17-b or similar):
+  1657→  1657→  - Drop `<UpcomingShiftsWidget />` anywhere inside the logged-in dashboard view in `src/components/home-tab.tsx`. Zero props required — it reads `user.id` from `useAppStore` and navigates via the store.
+  1658→  1658→  - Optional props for full control: `<UpcomingShiftsWidget userId={user.id} onSeeAll={() => setActiveTab('meus-plantoes')} onBrowse={() => setActiveTab('plantoes')} />`.
+  1659→  1659→  - Suggested placement: after the `EarningsSummaryWidget` and before/after "Recomendados para Você" — it pairs naturally with the financial summary so users see upcoming commitments + money context together.
+  1660→  1660→  - Reuses existing API endpoints (`/api/shifts?sellerId=...&allStatuses=true` and `/api/shifts?buyerId=...&status=SOLD`) — no new API routes were created.
+  1661→  1661→  - Reuses existing utils (`formatDate`, `getShiftType`, `getShiftTypeColor`, `getShiftTypeIcon`, `cn`) — no new utility functions needed.
+  1662→  1662→  - Lint: clean. No test files created (per task constraints).
+  1663→  1663→
+  1664→  1664→---
+  1665→  1665→Task ID: 17-c
+  1666→  1666→Agent: full-stack-developer
+  1667→  1667→Task: Create profile gamification badges/achievements for dashboard
+  1668→  1668→
+  1669→  1669→Work Log:
+  1670→  1670→- Read worklog.md (first 60 lines + last 200 lines) to understand prior work and existing conventions (emerald theme, dark mode, shadcn/ui, Framer Motion available)
+  1671→  1671→- Inspected `src/lib/store.ts` to confirm `AuthUser` shape and verified `/api/users/[id]/stats` returns `accountAgeDays` (avoids needing `createdAt` on the client user object) and `/api/favorites?userId=` returns a favorites array
+  1672→  1672→- Reviewed `profile-completion-card.tsx` and `earnings-summary-widget.tsx` for styling/prop conventions
+  1673→  1673→- Created `/home/z/my-project/src/components/achievements-badges.tsx` exporting `AchievementsBadges({ user })`
+  1674→  1674→- Implemented 8 badges (Primeiro Passo, Vendedor Iniciante, Primeira Venda, Comprador Ativo, Bem Avaliado, Top Vendedor, Membro Fiel, Colecionador) with bronze/silver/gold/platinum tiers per spec
+  1675→  1675→- Built tier config map with icon bg, icon color, gradient, ring, glow shadow, label, and dot color
+  1676→  1676→- Added framer-motion staggered entrance (delay = index * 0.06s), hover scale 1.04, focus-within scale for keyboard users
+  1677→  1677→- Added hover/focus tooltip showing description + current/target values with arrow
+  1678→  1678→- Added "Próxima conquista" footer highlighting the locked badge with highest progress, plus a celebration message when all badges are unlocked
+  1679→  1679→- Added skeleton loading state with `animate-pulse`
+  1680→  1680→- Ran `bun run lint` — passed clean (0 errors, 0 warnings)
+  1681→  1681→
+  1682→  1682→Stage Summary:
+  1683→  1683→- **File created**: `src/components/achievements-badges.tsx` (single self-contained client component, no existing files modified)
+  1684→  1684→- **Exports**: `AchievementsBadges({ user }: { user: AuthUser })`
+  1685→  1685→- **Data sources**: `GET /api/users/{id}/stats` (totalPublished, totalSold, totalBought, totalRatingsReceived, accountAgeDays) + `GET /api/favorites?userId={id}` (length) + `user` object from store (phone, city, state, professionalDoc, bio for profile completion)
+  1686→  1686→- **8 badges implemented exactly per spec**: bronze (Primeiro Passo, Vendedor Iniciante), silver (Primeira Venda, Comprador Ativo, Colecionador), gold (Bem Avaliado, Top Vendedor), platinum (Membro Fiel)
+  1687→  1687→- **Visual features**: tier-based gradients on unlocked icons, grayscale + opacity-70 on locked, check overlay on unlocked, lock overlay on locked, thin progress bar with current/target when locked, "Completo!" with check when unlocked, tier label dot
+  1688→  1688→- **UX**: staggered entrance, hover/focus tooltip with description + values, "Próxima conquista" footer card, celebration card when all unlocked, dark mode throughout, emerald theme (no indigo/blue)
+  1689→  1689→- **Integration notes for future agent**: To mount on the dashboard, import `{ AchievementsBadges } from '@/components/achievements-badges'` and place `<AchievementsBadges user={user} />` anywhere inside the logged-in dashboard (e.g., in `home-tab.tsx` after `EarningsSummaryWidget`). No new API routes were created; uses existing endpoints. Component requires `user` to be non-null — guard with `user && <AchievementsBadges user={user} />` in the parent.
+  1690→  1690→- Lint: ✅ clean
+  1691→  1691→
+  1692→  1692→---
+  1693→  1693→Task ID: 15
+  1694→  1694→Agent: main (orchestrator)
+  1695→  1695→Task: Redesign /mobile/login page to match reference image style with "Criar conta" button at the bottom
+  1696→  1696→
+  1697→  1697→Work Log:
+  1698→  1698→- User uploaded a ChatGPT-generated login screen reference image at /home/z/my-project/upload/
+  1699→  1699→- Attempted vision analysis via z-ai CLI and direct SDK script — VLM service was consistently unavailable (requests sent but never completed, multiple timeout failures across 8+ attempts with various prompts and image sizes)
+  1700→  1700→- Resized reference image to 600px wide JPEG (52KB) to help vision API, but service remained unresponsive
+  1701→  1701→- Proceeded with redesign based on modern mobile login screen best practices and user's specific requirement: "Criar conta" button at the bottom
+  1702→  1702→- Completely rewrote `src/app/mobile/login/page.tsx` with a clean, modern design:
+  1703→  1703→  - Welcome heading "Bem-vindo de volta 👋" with subtitle
+  1704→  1704→  - Email field: rounded-2xl, h-14, gray-50 bg, transparent border turning emerald on focus, mail icon left-aligned (w-5 h-5)
+  1705→  1705→  - Password field: same styling, lock icon, show/hide toggle button (rounded-xl, hover emerald)
+  1706→  1706→  - "Esqueci a senha" link next to password label (emerald, with KeyRound icon)
+  1707→  1707→  - Removed "Manter conectado" checkbox for cleaner look
+  1708→  1708→  - Primary "Entrar" button: emerald-600, h-14, rounded-2xl, shadow-lg, ArrowRight icon with hover translate animation
+  1709→  1709→  - "ou" divider
+  1710→  1710→  - **"Criar conta gratuita" button at the bottom**: white bg with emerald-600 border-2, h-14, rounded-2xl, UserPlus icon with hover scale — prominent and clearly visible
+  1711→  1711→  - Collapsible demo credentials section ("Ver conta de demonstração" with chevron) — hidden by default for cleaner look
+  1712→  1712→  - Success state preserved (CheckCircle2 animation + redirect)
+  1713→  1713→  - Forgot password dialog preserved unchanged
+  1714→  1714→- Lint: ✅ clean (0 errors)
+  1715→  1715→- Verified via agent-browser:
+  1716→  1716→  - Page loads at /mobile/login (HTTP 200)
+  1717→  1717→  - All elements present: heading, email field, password field, Entrar button, Criar conta button, demo toggle
+  1718→  1718→  - "Criar conta gratuita" button navigates to /mobile/register ✅
+  1719→  1719→  - Login flow works: filled demo credentials (dr.silva@medico.com / 123456), clicked Entrar → redirected to /mobile ✅
+  1720→  1720→
+  1721→  1721→Stage Summary:
+  1722→  1722→- Login page completely redesigned with modern, clean aesthetic
+  1723→  1723→- "Criar conta gratuita" button prominently placed at the bottom as user requested
+  1724→  1724→- Demo credentials collapsed by default (cleaner UI, still accessible)
+  1725→  1725→- All navigation and auth flows verified working
+  1726→  1726→- Note: Vision API (VLM/z-ai vision) was unavailable during this task — could not visually compare with reference image. Design was based on modern login screen best practices. If user wants pixel-perfect match to reference, the vision service needs to be restored or user should provide specific design details.
+  1727→  1727→
+  1728→  1728→---
+  1729→  1729→Task ID: 18
+  1730→  1730→Agent: main (orchestrator)
+  1731→  1731→Task: Web version auth pages + clean up /mobile/login — create proper web /login and /register pages (split-screen), point landing page buttons to them, and strip the status bar + title block from the mobile auth shell (per user reference image)
+  1732→  1732→
+  1733→  1733→Work Log:
+  1734→  1734→- Read worklog.md to understand project history (emerald theme, mobile-auth-shell shared by /mobile/login and /mobile/register, landing page uses handleLogin/handleSignup that previously routed to /mobile/login and /mobile/register)
+  1735→  1735→- Read current state of: `src/components/mobile-auth-shell.tsx`, `src/app/mobile/login/page.tsx`, `src/app/mobile/register/page.tsx`, `src/components/landing-page.tsx`
+  1736→  1736→- User uploaded reference screenshot `Captura de Tela 2026-06-23 às 03.40.51.png` — attempted VLM analysis (z-ai vision CLI) multiple times with resized image but service timed out repeatedly. Proceeded based on user's explicit text instructions:
+  1737→  1737→  1. Landing page "Entrar" and "Criar Conta" buttons must be a proper WEB version (not mobile-app style)
+  1738→  1738→  2. /mobile route is for webview only — DO NOT touch /mobile
+  1739→  1739→  3. /mobile/login: remove the "PlantãoHelp / Marketplace de plantões" title block AND the top status bar (time "03:31", battery icons, "Online" badge)
+  1740→  1740→
+  1741→  1741→- **Updated `src/components/mobile-auth-shell.tsx`** (shared by /mobile/login and /mobile/register):
+  1742→  1742→  - Removed the entire top status bar section (Signal/Wifi/BatteryFull icons + live clock + "Online" badge)
+  1743→  1743→  - Removed `currentTime` state and the 60-second clock interval
+  1744→  1744→  - Removed unused imports: `Wifi, BatteryFull, Signal` and `useState`
+  1745→  1745→  - Removed the "PlantãoHelp / Marketplace de plantões" heading + subtitle block (logo is now shown alone with a subtle rounded-2xl frame)
+  1746→  1746→  - Kept: minimal top bar with ONLY the dark-mode toggle (right-aligned), logo, scrollable content area, trust footer, dark-mode class effect, logged-in redirect
+  1747→  1747→  - Updated docstring to explain it's designed for webview embedding (no chrome)
+  1748→  1748→
+  1749→  1749→- **Created `src/app/login/page.tsx`** — new proper WEB login page:
+  1750→  1750→  - Full-screen split-screen layout: left branding panel (hidden on mobile, lg:w-1/2) + right form panel
+  1751→  1751→  - Left panel: emerald→teal gradient with decorative blurs, dot pattern, shimmer animation; "Voltar ao início" link, logo, "Plataforma #1" badge, hero heading "Bem-vindo de volta ao seu marketplace de plantões", feature bullets (ShieldCheck/TrendingUp/Star icons), 3-stat grid (500+ profissionais, 50+ cidades, 4.8★ avaliação), testimonial card (Dr. Rafael Mendes)
+  1752→  1752→  - Right panel: header with mobile logo + dark-mode toggle; centered form with "Entrar na sua conta" heading, email field (Mail icon), password field (Lock icon + show/hide toggle), "Esqueci a senha" link, "Entrar" primary button (emerald, ArrowRight), "ou" divider, "Criar conta gratuita" outline button (UserPlus icon → links to /register), collapsible demo credentials (Médico/Enfermeiro/Admin with click-to-fill), footer with copyright + nav links
+  1753→  1753→  - Dark-mode aware throughout, full responsive (single column on mobile, split-screen on lg+)
+  1754→  1754→  - Reuses existing `/api/auth/login` and `/api/auth/forgot-password` endpoints; redirects to `/mobile` on success
+  1755→  1755→  - Forgot-password dialog preserved (gradient header, email input, success state)
+  1756→  1756→  - Success state with CheckCircle2 animation + redirect
+  1757→  1757→
+  1758→  1758→- **Created `src/app/register/page.tsx`** — new proper WEB register page:
+  1759→  1759→  - Same split-screen layout as /login for consistency
+  1760→  1760→  - Left panel: "Crie sua conta gratuita" value prop, benefits (CheckCircle2/ShieldCheck/Star), stats grid
+  1761→  1761→  - Right panel: "Criar conta gratuita" heading, 4-column role selector grid (Médico/Enfermeiro/Téc. Enfermagem/Empresa with CRM/COREN/CNPJ labels), name/email/password fields (with icons), 5-bar password strength meter (Fraca→Muito forte), professional doc / phone / city / state fields (with MapPin/Phone icons), conditional company name field (EMPRESA only), bio textarea, registration fee notice (amber), "Criar conta gratuita" submit button, terms note, "Já tem conta? Faça login" link → /login
+  1762→  1762→  - Reuses existing `/api/auth/register` and `/api/admin/fees` endpoints; redirects to `/mobile` on success
+  1763→  1763→  - Fixed the register page to use `useEffect` for fee loading (the old mobile register used `useState(() => {...})` which is an anti-pattern; the web version correctly uses `useEffect`)
+  1764→  1764→
+  1765→  1765→- **Updated `src/components/landing-page.tsx`**:
+  1766→  1766→  - Changed `handleSignup` from `router.push('/mobile/register')` → `router.push('/register')`
+  1767→  1767→  - Changed `handleLogin` from `router.push('/mobile/login')` → `router.push('/login')`
+  1768→  1768→  - All 5 CTAs across the landing page (navbar Entrar/Criar Conta, hero "Começar Gratuitamente"/"Já tenho conta", pricing cards, CTA section "Criar Conta Gratuitamente"/"Entrar na sua conta") now route to the proper web auth pages
+  1769→  1769→
+  1770→  1770→- Ran `bun run lint` — passes clean (0 errors, 0 warnings)
+  1771→  1771→
+  1772→  1772→- Verified with agent-browser (snapshot + interaction):
+  1773→  1773→  - `/login` page: split-screen confirmed (left "Bem-vindo de volta ao seu marketplace de plantões" h1, right "Entrar na sua conta" h2, EMAIL/SENHA fields, Esqueci a senha, Entrar button, Criar conta gratuita button, Ver contas de demonstração toggle, footer links). NO status bar present.
+  1774→  1774→  - `/register` page: split-screen confirmed ("Junte-se a centenas de profissionais da saúde" h1, "Criar conta gratuita" h2, 4 role buttons, NOME/EMAIL/SENHA/CRM/TELEFONE/CIDADE/ESTADO/BIO fields, Criar conta gratuita submit, Faça login link). NO status bar.
+  1775→  1775→  - `/mobile/login` page: cleaned up confirmed — first interactive element is "Modo escuro" button (top-right), then "Bem-vindo de volta 👋" h2 form heading. NO "PlantãoHelp" title, NO "Marketplace de plantões" subtitle, NO time/battery/Online status bar. "Criar conta gratuita" button still present at bottom.
+  1776→  1776→  - Landing page: clicked "Entrar" button → navigated to `/login` ✓
+  1777→  1777→  - Full login flow: filled demo creds (dr.silva@medico.com / 123456) on `/login`, clicked Entrar → successfully authenticated, redirected to `/mobile`, dashboard shows "Dr. Carlos Silva" ✓
+  1778→  1778→  - Screenshots saved: /tmp/web-login-final.png, /tmp/web-register-final.png, /tmp/mobile-login-final.png
+  1779→  1779→
+  1780→  1780→Stage Summary:
+  1781→  1781→- **Files created**:
+  1782→  1782→  - `src/app/login/page.tsx` — full web login (split-screen, ~330 lines)
+  1783→  1783→  - `src/app/register/page.tsx` — full web register (split-screen, ~430 lines)
+  1784→  1784→- **Files modified**:
+  1785→  1785→  - `src/components/mobile-auth-shell.tsx` — removed status bar + title block (now 102 lines, down from 139)
+  1786→  1786→  - `src/components/landing-page.tsx` — handleLogin/handleSignup now route to /login and /register
+  1787→  1787→- **Route map after this phase**:
+  1788→  1788→  - `/` (landing page) → "Entrar" / "Criar Conta" buttons → `/login` and `/register` (WEB versions)
+  1789→  1789→  - `/login` (web) → on success → `/mobile` (app dashboard)
+  1790→  1790→  - `/register` (web) → on success → `/mobile` (app dashboard)
+  1791→  1791→  - `/login` "Criar conta gratuita" button → `/register`
+  1792→  1792→  - `/register` "Faça login" link → `/login`
+  1793→  1793→  - `/mobile/login` and `/mobile/register` (mobile-app style, for webview) — cleaned of status bar + title block; "Criar conta gratuita" button at bottom of /mobile/login links to /mobile/register (preserved)
+  1794→  1794→  - `/mobile` (app dashboard) — UNCHANGED per user instruction ("não mexa nele")
+  1795→  1795→- **Verification**: lint clean; agent-browser confirms all routes 200, split-screen renders, login flow works end-to-end, /mobile/login stripped of chrome
+  1796→  1796→- **Note**: VLM/z-ai vision service was unavailable (timed out on every attempt) so visual comparison with the user's reference image could not be performed. Verification was done via agent-browser accessibility snapshots (text/structure) and interaction testing instead. The structure matches the user's explicit text instructions: no status bar, no "PlantãoHelp / Marketplace de plantões" title.
+  1797→  1797→

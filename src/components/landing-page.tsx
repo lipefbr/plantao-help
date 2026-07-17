@@ -8,22 +8,76 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Stethoscope, ArrowRight, Shield, Clock, Users, Star, MapPin,
-  Calendar, HeartPulse, CheckCircle2, ChevronDown, Sparkles,
-  TrendingUp, Search, Briefcase, MessageCircle, Phone, Mail
+  Calendar, HeartPulse, CheckCircle2, Sparkles, TrendingUp,
+  Search, Briefcase, MessageCircle, Phone, Mail, ChevronRight,
+  Zap, Award, Target, BarChart3, UserCheck, Building2,
+  Menu, X, Play, ExternalLink,
 } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+
+// ─── Animation keyframes (injected once) ──────────────────────────
+const animationStyles = `
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 4s ease-in-out infinite; }
+.animate-float-fast { animation: float-fast 3s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+.animate-slide-left { animation: slide-in-left 0.7s ease-out forwards; }
+.animate-slide-right { animation: slide-in-right 0.7s ease-out forwards; }
+.animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+`
 
 export function LandingPage() {
   const { user } = useAppStore()
   const router = useRouter()
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set())
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [stats, setStats] = useState({ shifts: 0, users: 0, cities: 0, rating: 0 })
-  const [featuredShifts, setFeaturedShifts] = useState<Array<{
-    id: string; title: string; city: string; state: string; value: number; professionalType: string; date: string
-  }>>([])
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map())
 
   // Intersection observer for scroll animations
+  useEffect(() => {
+    const styleEl = document.createElement('style')
+    styleEl.textContent = animationStyles
+    document.head.appendChild(styleEl)
+    return () => { styleEl.remove() }
+  }, [])
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -35,7 +89,6 @@ export function LandingPage() {
       },
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     )
-
     sectionRefs.current.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [])
@@ -44,274 +97,486 @@ export function LandingPage() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const res = await fetch('/api/shifts?status=AVAILABLE')
+        const res = await fetch('/api/admin/stats')
         if (res.ok) {
           const data = await res.json()
-          setStats(prev => ({ ...prev, shifts: data.length }))
-          setFeaturedShifts(data.slice(0, 3))
+          setStats({
+            shifts: data.totalShifts || 0,
+            users: data.totalUsers || 0,
+            cities: data.citiesCount || 50,
+            rating: data.averageRating || 4.8,
+          })
         }
-      } catch { /* */ }
+      } catch {
+        // Use defaults
+      }
     }
     loadStats()
   }, [])
 
-  // Animated counter
-  useEffect(() => {
-    if (stats.shifts === 0) return
-    const targets = { shifts: stats.shifts || 150, users: 500, cities: 50, rating: 4.8 }
-    const duration = 2000
-    const steps = 40
-    const timer = setInterval(() => {
-      setStats(prev => ({
-        shifts: Math.min(prev.shifts + (targets.shifts / steps), targets.shifts),
-        users: Math.min(prev.users + (targets.users / steps), targets.users),
-        cities: Math.min(prev.cities + (targets.cities / steps), targets.cities),
-        rating: Math.min(prev.rating + (targets.rating / steps), targets.rating),
-      }))
-    }, duration / steps)
-    return () => clearInterval(timer)
-  }, [stats.shifts > 0])
-
-  const setRef = (id: string) => (el: HTMLElement | null) => {
-    if (el) sectionRefs.current.set(id, el)
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    setMobileMenuOpen(false)
   }
+
+  // ─── Floating Card Data (representing real system features) ─────
+  const floatingCards = [
+    {
+      icon: Calendar,
+      title: 'Plantão Disponível',
+      subtitle: 'UTI - Noturno',
+      value: 'R$ 1.200',
+      badge: 'Noturno',
+      position: 'top-left',
+      delay: '0s',
+    },
+    {
+      icon: Stethoscope,
+      title: 'Dr. Rafael Mendes',
+      subtitle: 'Cardiologista — CRM 12345',
+      badge: 'Verificado',
+      position: 'top-right',
+      delay: '0.5s',
+    },
+    {
+      icon: Building2,
+      title: 'Hospital São Paulo',
+      subtitle: 'São Paulo, SP',
+      badge: '5.0 ★',
+      position: 'bottom-left',
+      delay: '1s',
+    },
+    {
+      icon: TrendingUp,
+      title: 'R$ 45.230',
+      subtitle: 'Volume este mês',
+      badge: '+23%',
+      position: 'bottom-right',
+      delay: '1.5s',
+    },
+  ]
+
+  const benefits = [
+    {
+      icon: Shield,
+      title: 'Segurança Garantida',
+      description: 'Profissionais verificados com CRM, COREN e documentos validados. Transações protegidas do início ao fim.',
+    },
+    {
+      icon: Zap,
+      title: 'Publicação Instantânea',
+      description: 'Publique seu plantão em segundos e encontre compradores interessados em tempo real.',
+    },
+    {
+      icon: Star,
+      title: 'Avaliações Confiáveis',
+      description: 'Sistema de reputação baseado em avaliações reais, garantindo confiança entre as partes.',
+    },
+    {
+      icon: MapPin,
+      title: 'Cobertura Nacional',
+      description: 'Plantões disponíveis em centenas de cidades em todo o Brasil. Encontre oportunidades perto de você.',
+    },
+    {
+      icon: Clock,
+      title: 'Gestão Completa',
+      description: 'Acompanhe seus plantões, ganhos e agenda em um único lugar, com notificações em tempo real.',
+    },
+    {
+      icon: Users,
+      title: 'Comunidade Ativa',
+      description: 'Milhares de profissionais de saúde conectados, criando a maior rede de repasse do Brasil.',
+    },
+  ]
+
+  const features = [
+    {
+      icon: Search,
+      title: 'Busca Inteligente',
+      description: 'Filtros avançados por cidade, estado, tipo de plantão, valor e profissional. Encontre exatamente o que precisa.',
+    },
+    {
+      icon: HeartPulse,
+      title: 'Multi-Profissional',
+      description: 'Suporte para Médicos, Enfermeiros e Técnicos de Enfermagem. Cada tipo com funcionalidades específicas.',
+    },
+    {
+      icon: BarChart3,
+      title: 'Dashboard de Ganhos',
+      description: 'Acompanhe seus ganhos, tendências e estatísticas em um painel visual completo e intuitivo.',
+    },
+    {
+      icon: UserCheck,
+      title: 'Verificação de Perfil',
+      description: 'Processo de verificação de documentos que garante a segurança de todas as transações.',
+    },
+    {
+      icon: Briefcase,
+      title: 'Concursos e Editais',
+      description: 'Acompanhe concursos públicos e editais na área da saúde em todo o Brasil em tempo real.',
+    },
+    {
+      icon: Award,
+      title: 'Sistema de Conquistas',
+      description: 'Desbloqueie conquistas e badges conforme utiliza a plataforma. Quanto mais participa, mais destaque.',
+    },
+  ]
+
+  const howItWorks = [
+    {
+      step: '01',
+      title: 'Crie sua conta',
+      description: 'Cadastre-se gratuitamente e escolha seu perfil profissional. Verifique seus documentos para acesso completo.',
+      icon: UserCheck,
+    },
+    {
+      step: '02',
+      title: 'Explore ou Publique',
+      description: 'Busque plantões disponíveis ou publique os seus. Defina valor, horário e local com facilidade.',
+      icon: Search,
+    },
+    {
+      step: '03',
+      title: 'Conecte-se',
+      description: 'Encontre o profissional ideal ou o plantão perfeito. Negocie com segurança pela plataforma.',
+      icon: Users,
+    },
+    {
+      step: '04',
+      title: 'Realize e Avalie',
+      description: 'Conclua o plantão, registre a experiência e avalie. Sua reputação cresce a cada transação.',
+      icon: Star,
+    },
+  ]
+
+  const differentials = [
+    'Plataforma exclusiva para profissionais da saúde',
+    'Verificação obrigatória de CRM/COREN',
+    'Sem taxas ocultas — transparência total',
+    'Suporte humanizado e especializado',
+    'Notificações em tempo real',
+    'Aplicativo responsivo para qualquer dispositivo',
+  ]
+
+  const testimonials = [
+    {
+      name: 'Dr. Rafael Mendes',
+      role: 'Cardiologista — SP',
+      text: 'Em minutos consigo publicar e encontrar compradores interessados. A verificação de documentos me dá total segurança.',
+      avatar: '🩺',
+      rating: 5,
+    },
+    {
+      name: 'Enf. Maria Santos',
+      role: 'Enfermeira — RJ',
+      text: 'Finalmente uma plataforma feita pra gente! Encontro plantões noturnos perto de casa e o processo é super simples.',
+      avatar: '💊',
+      rating: 5,
+    },
+    {
+      name: 'Téc. Carlos Lima',
+      role: 'Téc. Enfermagem — MG',
+      text: 'Já completei mais de 30 plantões pela plataforma. O dashboard de ganhos me ajuda a planejar minha agenda.',
+      avatar: '🏥',
+      rating: 5,
+    },
+  ]
 
   const isVisible = (id: string) => visibleSections.has(id)
 
-  const handleSignup = () => {
-    router.push('/register')
-  }
-
-  const handleLogin = () => {
-    router.push('/login')
-  }
-
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
-      {/* ===== NAVBAR ===== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-20 px-4 sm:px-6">
-          <div className="flex items-center">
-            <img
-              src="/logo.jpg"
-              alt="Plantão Help"
-              className="w-16 h-16 sm:w-20 sm:h-20 object-cover"
-            />
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-400">
-            <a href="#features" className="hover:text-emerald-600 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 rounded-sm">Recursos</a>
-            <a href="#how-it-works" className="hover:text-emerald-600 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 rounded-sm">Como Funciona</a>
-            <a href="#testimonials" className="hover:text-emerald-600 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 rounded-sm">Depoimentos</a>
-            <a href="#pricing" className="hover:text-emerald-600 transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 rounded-sm">Planos</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleLogin} className="text-gray-600 dark:text-gray-400 hover:text-emerald-600">
-              Entrar
-            </Button>
-            <Button size="sm" onClick={handleSignup} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30">
-              Criar Conta
-            </Button>
+    <div className="min-h-screen bg-white overflow-x-hidden">
+      {/* ═══════════ NAVIGATION ═══════════ */}
+      <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/70 backdrop-blur-xl border-b border-emerald-100/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5">
+              <img src="/logo.jpg" alt="Plantão Help" className="w-9 h-9 rounded-xl object-cover ring-2 ring-emerald-100" />
+              <span className="text-lg font-extrabold text-gray-900">
+                Plantão<span className="text-emerald-600">Help</span>
+              </span>
+            </div>
+
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-8">
+              {[
+                { label: 'Benefícios', id: 'benefits' },
+                { label: 'Funcionalidades', id: 'features' },
+                { label: 'Como funciona', id: 'how-it-works' },
+                { label: 'Depoimentos', id: 'testimonials' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors relative group"
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 group-hover:w-full transition-all duration-300" />
+                </button>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="hidden md:flex items-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/login')}
+                className="text-sm font-medium text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl"
+              >
+                Entrar
+              </Button>
+              <Button
+                onClick={() => router.push('/register')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 h-10 text-sm font-semibold shadow-lg shadow-emerald-200/50 group"
+              >
+                Começar Grátis
+                <ArrowRight className="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-0.5" />
+              </Button>
+            </div>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-gray-600 hover:bg-emerald-50 transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-emerald-100/50 animate-fade-in">
+            <div className="px-4 py-4 space-y-2">
+              {[
+                { label: 'Benefícios', id: 'benefits' },
+                { label: 'Funcionalidades', id: 'features' },
+                { label: 'Como funciona', id: 'how-it-works' },
+                { label: 'Depoimentos', id: 'testimonials' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <div className="pt-2 space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/login')}
+                  className="w-full rounded-xl h-11 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                >
+                  Entrar
+                </Button>
+                <Button
+                  onClick={() => router.push('/register')}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 shadow-lg shadow-emerald-200/50"
+                >
+                  Começar Grátis
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-20 overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/80 via-white to-white dark:from-emerald-950/30 dark:via-gray-950 dark:to-gray-950" />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-10 w-96 h-96 bg-teal-200/15 rounded-full blur-3xl" />
+      {/* ═══════════ HERO SECTION ═══════════ */}
+      <section className="relative pt-28 pb-20 sm:pt-36 sm:pb-28 lg:pt-44 lg:pb-36 overflow-hidden">
+        {/* Background gradient + grid */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'linear-gradient(#059669 1px, transparent 1px), linear-gradient(90deg, #059669 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+        {/* Decorative blobs */}
+        <div className="absolute top-20 left-1/4 w-72 h-72 bg-emerald-200/30 rounded-full blur-3xl animate-pulse-soft" />
+        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl animate-pulse-soft" style={{ animationDelay: '1.5s' }} />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Text */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            {/* Left: Hero Text */}
             <div className="text-center lg:text-left">
-              <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0 px-3 py-1">
-                <Sparkles className="w-3 h-3 mr-1" />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-semibold text-emerald-700 mb-6 animate-fade-in-up">
+                <Sparkles className="w-3.5 h-3.5" />
                 Plataforma #1 para plantões médicos
-              </Badge>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
-                Repasse de{' '}
-                <span className="gradient-text">plantões</span>{' '}
-                com segurança e{' '}
-                <span className="text-emerald-600 dark:text-emerald-400">praticidade</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.1] animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                Seus plantões.
+                <br />
+                <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                  Sua agenda.
+                </span>
+                <br />
+                Sua escolha.
               </h1>
-              <p className="mt-6 text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Marketplace para compra e venda de plantões médicos, de enfermagem e técnico de enfermagem.
-                Conectamos profissionais da saúde a oportunidades em todo o Brasil.
+
+              <p className="mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                O marketplace que conecta profissionais de saúde a oportunidades de plantões em todo o Brasil. Compre, venda e gerencie com segurança.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-8 justify-center lg:justify-start animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <Button
-                  size="lg"
-                  onClick={handleSignup}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-13 px-8 text-base rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30 hover:shadow-xl transition-all duration-300 cta-glow"
+                  onClick={() => router.push('/register')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 h-14 text-base font-bold shadow-xl shadow-emerald-200/50 group"
                 >
-                  Começar Gratuitamente
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  Começar Grátis
+                  <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
-                  onClick={handleLogin}
-                  className="h-13 px-8 text-base rounded-xl border-gray-200 dark:border-gray-700 hover:border-emerald-300 hover:text-emerald-600"
+                  onClick={() => scrollToSection('how-it-works')}
+                  className="bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-emerald-300 rounded-2xl px-8 h-14 text-base font-semibold group"
                 >
-                  Já tenho conta
+                  <Play className="w-4 h-4 mr-2 text-emerald-600" />
+                  Como funciona
                 </Button>
               </div>
-              {/* Trust indicators */}
-              <div className="mt-8 flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-500 dark:text-gray-400">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  Cadastro gratuito
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  Sem cartão de crédito
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  100% seguro
-                </div>
+
+              {/* Trust stats */}
+              <div className="flex items-center gap-6 sm:gap-8 mt-10 justify-center lg:justify-start animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                {[
+                  { value: `${stats.users}+`, label: 'Profissionais' },
+                  { value: `${stats.shifts}+`, label: 'Plantões' },
+                  { value: `${stats.rating}`, label: 'Avaliação' },
+                ].map((stat, i) => (
+                  <div key={i} className="text-center lg:text-left">
+                    <p className="text-2xl font-extrabold text-gray-900">{stat.value}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Right - Hero Image / Visual */}
-            <div className="relative animate-hero-float">
-              <div className="relative flex items-center justify-center p-4 sm:p-8 min-h-[320px]">
-                <img
-                  src="/logo.jpg"
-                  alt="Plantão Help - Logo"
-                  className="w-full max-w-md object-cover shadow-2xl shadow-emerald-200/40 dark:shadow-emerald-900/30"
-                />
-                {/* Overlay card */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src="/logo.jpg"
-                      alt="Plantão Help"
-                      className="w-10 h-10 rounded-xl object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">Plantão UTI Adulto - Noturno</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">São Paulo, SP • R$ 1.200,00</p>
-                    </div>
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 shrink-0">Novo</Badge>
+            {/* Right: Floating Cards */}
+            <div className="relative hidden lg:block min-h-[520px]">
+              {floatingCards.map((card, i) => {
+                const positionClasses = {
+                  'top-left': 'top-4 left-0',
+                  'top-right': 'top-4 right-0',
+                  'bottom-left': 'bottom-4 left-0',
+                  'bottom-right': 'bottom-4 right-0',
+                }[card.position]
+
+                const floatClass = i % 2 === 0 ? 'animate-float-slow' : 'animate-float-medium'
+                const Icon = card.icon
+
+                return (
+                  <div
+                    key={i}
+                    className={`absolute ${positionClasses} ${floatClass}`}
+                    style={{ animationDelay: card.delay }}
+                  >
+                    <Card className="bg-white/90 backdrop-blur-lg border border-gray-100 shadow-xl shadow-gray-200/50 rounded-2xl w-64 overflow-hidden hover:shadow-2xl hover:shadow-emerald-100/50 transition-shadow duration-300">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-200/40">
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-gray-900 truncate">{card.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{card.subtitle}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                          {card.value && (
+                            <span className="text-lg font-extrabold text-emerald-600">{card.value}</span>
+                          )}
+                          <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
+                            {card.badge}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                </div>
-              </div>
-              {/* Floating badge top-right */}
-              <div className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 rounded-xl px-3 py-2 shadow-lg border border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {['🩺', '💊', '🏥'].map((emoji, i) => (
-                    <div key={i} className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs border-2 border-white dark:border-gray-800">
-                      {emoji}
+                )
+              })}
+
+              {/* Center floating card (appointment style) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-float-medium" style={{ animationDelay: '0.8s' }}>
+                <Card className="bg-gradient-to-br from-emerald-600 to-teal-600 border-0 shadow-2xl shadow-emerald-300/30 rounded-2xl w-56 overflow-hidden">
+                  <CardContent className="p-4 text-white">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                        <Calendar className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold">Próximo Plantão</p>
+                        <p className="text-[10px] text-emerald-200">UTI — Noturno</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">+500 profissionais</span>
+                    <div className="flex gap-1.5 mb-3">
+                      <Badge className="bg-white/20 text-white border-0 text-[9px]">Diurno</Badge>
+                      <Badge className="bg-white/20 text-white border-0 text-[9px]">R$1.200</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-100">
+                      <Clock className="w-3 h-3" />
+                      <span className="text-[10px]">19:00 — 07:00, 15 Mar</span>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-5 h-5 text-emerald-400" />
-        </div>
       </section>
 
-      {/* ===== STATS BAR ===== */}
-      <section className="relative py-12 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600">
-        <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { icon: Calendar, value: `${Math.round(stats.shifts)}+`, label: 'Plantões Ativos' },
-              { icon: Users, value: `${Math.round(stats.users)}+`, label: 'Profissionais' },
-              { icon: MapPin, value: `${Math.round(stats.cities)}+`, label: 'Cidades' },
-              { icon: Star, value: stats.rating.toFixed(1), label: 'Avaliação Média' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center text-white">
-                <stat.icon className="w-6 h-6 mx-auto mb-2 text-emerald-200" />
-                <p className="text-3xl font-extrabold">{stat.value}</p>
-                <p className="text-emerald-200 text-sm mt-1">{stat.label}</p>
+      {/* ═══════════ TRUST BADGES ═══════════ */}
+      <section className="relative py-12 border-y border-gray-100 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">Confiado por profissionais em todo o Brasil</p>
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-60">
+            {['Hospital Albert Einstein', 'Hospital Sírio-Libanês', 'Hospital das Clínicas', 'Santa Casa', 'Hospital Moinhos', 'Hospital Alemão'].map((name, i) => (
+              <div key={i} className="flex items-center gap-2 text-gray-400">
+                <Building2 className="w-5 h-5" />
+                <span className="text-sm font-medium whitespace-nowrap">{name}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
-      <section id="features" ref={setRef('features')} className={`py-20 sm:py-28 transition-all duration-700 ${isVisible('features') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-              Recursos
+      {/* ═══════════ BENEFITS ═══════════ */}
+      <section
+        id="benefits"
+        ref={(el) => { if (el) sectionRefs.current.set('benefits', el) }}
+        className="py-20 sm:py-28 relative"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`text-center max-w-3xl mx-auto mb-16 ${isVisible('benefits') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4 px-4 py-1 rounded-full">
+              Por que escolher
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-              Tudo que você precisa em um só lugar
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+              Benefícios que fazem a diferença
             </h2>
-            <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-              Ferramentas completas para gerenciar seus plantões com eficiência e segurança
+            <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+              Tudo que você precisa para gerenciar plantões com segurança e eficiência
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Calendar,
-                title: 'Publique Plantões',
-                desc: 'Anuncie seus plantões disponíveis em segundos. Defina valor, horário e local.',
-                color: 'emerald',
-              },
-              {
-                icon: Search,
-                title: 'Busque Oportunidades',
-                desc: 'Encontre plantões por cidade, estado, tipo profissional e faixa de preço.',
-                color: 'teal',
-              },
-              {
-                icon: Shield,
-                title: 'Transações Seguras',
-                desc: 'Profissionais verificados com CRM/COREN. Sistema de avaliação confiável.',
-                color: 'blue',
-              },
-              {
-                icon: TrendingUp,
-                title: 'Concursos & Editais',
-                desc: 'Acompanhe concursos públicos da sua região com alertas de prazo.',
-                color: 'amber',
-              },
-              {
-                icon: Star,
-                title: 'Sistema de Avaliação',
-                desc: 'Avalie e seja avaliado. Construa sua reputação na plataforma.',
-                color: 'purple',
-              },
-              {
-                icon: Clock,
-                title: 'Calendário Integrado',
-                desc: 'Visualize seus plantões em calendário. Nunca perca um compromisso.',
-                color: 'rose',
-              },
-            ].map((feature, i) => {
-              const colorClasses: Record<string, { bg: string; text: string; iconBg: string }> = {
-                emerald: { bg: 'from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-900', text: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30' },
-                teal: { bg: 'from-teal-50 to-white dark:from-teal-950/30 dark:to-gray-900', text: 'text-teal-600 dark:text-teal-400', iconBg: 'bg-teal-100 dark:bg-teal-900/30' },
-                blue: { bg: 'from-sky-50 to-white dark:from-sky-950/30 dark:to-gray-900', text: 'text-sky-600 dark:text-sky-400', iconBg: 'bg-sky-100 dark:bg-sky-900/30' },
-                amber: { bg: 'from-amber-50 to-white dark:from-amber-950/30 dark:to-gray-900', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-100 dark:bg-amber-900/30' },
-                purple: { bg: 'from-purple-50 to-white dark:from-purple-950/30 dark:to-gray-900', text: 'text-purple-600 dark:text-purple-400', iconBg: 'bg-purple-100 dark:bg-purple-900/30' },
-                rose: { bg: 'from-rose-50 to-white dark:from-rose-950/30 dark:to-gray-900', text: 'text-rose-600 dark:text-rose-400', iconBg: 'bg-rose-100 dark:bg-rose-900/30' },
-              }
-              const c = colorClasses[feature.color]
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {benefits.map((benefit, i) => {
+              const Icon = benefit.icon
               return (
-                <Card key={i} className={`rounded-2xl border-0 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br ${c.bg} group`}>
+                <Card
+                  key={i}
+                  className={`bg-white border border-gray-100 rounded-2xl hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-50 transition-all duration-300 group ${isVisible('benefits') ? 'animate-fade-in-up' : 'opacity-0'}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
                   <CardContent className="p-6">
-                    <div className={`w-12 h-12 ${c.iconBg} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                      <feature.icon className={`w-6 h-6 ${c.text}`} />
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-6 h-6 text-emerald-600" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{feature.desc}</p>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{benefit.title}</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">{benefit.description}</p>
                   </CardContent>
                 </Card>
               )
@@ -320,221 +585,194 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ===== HOW IT WORKS ===== */}
-      <section id="how-it-works" ref={setRef('how-it-works')} className={`py-20 sm:py-28 bg-gray-50 dark:bg-gray-900/50 transition-all duration-700 ${isVisible('how-it-works') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-              Como Funciona
+      {/* ═══════════ FEATURES ═══════════ */}
+      <section
+        id="features"
+        ref={(el) => { if (el) sectionRefs.current.set('features', el) }}
+        className="py-20 sm:py-28 bg-gradient-to-b from-gray-50 to-white relative"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`text-center max-w-3xl mx-auto mb-16 ${isVisible('features') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4 px-4 py-1 rounded-full">
+              Funcionalidades
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-              Simples, rápido e seguro
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+              Ferramentas poderosas para profissionais
             </h2>
-            <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-              Em apenas 4 passos você já está pronto para comprar ou vender plantões
+            <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+              Recursos pensados para facilitar sua rotina e maximizar suas oportunidades
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { step: '01', icon: '📋', title: 'Cadastre-se', desc: 'Crie sua conta gratuita com CRM/COREN e aguarde a verificação' },
-              { step: '02', icon: '📅', title: 'Publique ou Busque', desc: 'Anuncie seus plantões ou encontre oportunidades na sua região' },
-              { step: '03', icon: '🤝', title: 'Feche o Negócio', desc: 'Compre ou venda plantões com segurança pela plataforma' },
-              { step: '04', icon: '⭐', title: 'Avalie', desc: 'Avalie a experiência e fortaleça a comunidade de profissionais' },
-            ].map((item, i) => (
-              <div key={i} className="relative text-center group">
-                {/* Connector line */}
-                {i < 3 && (
-                  <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-emerald-300 to-emerald-100 dark:from-emerald-700 dark:to-emerald-900" />
-                )}
-                <div className="relative z-10">
-                  <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700">
-                    <span className="text-3xl">{item.icon}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {features.map((feature, i) => {
+              const Icon = feature.icon
+              const isEven = i % 2 === 0
+              return (
+                <div
+                  key={i}
+                  className={`flex gap-5 p-6 rounded-2xl hover:bg-emerald-50/50 transition-colors duration-300 group ${isVisible('features') ? (isEven ? 'animate-slide-left' : 'animate-slide-right') : 'opacity-0'}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-200/30 group-hover:scale-105 transition-transform duration-300">
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{item.step}</span>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-1">{item.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">{item.desc}</p>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1.5">{feature.title}</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* ===== FEATURED SHIFTS ===== */}
-      {featuredShifts.length > 0 && (
-        <section className="py-20 sm:py-28">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-                <Sparkles className="w-3 h-3 mr-1" />
-                Destaques
+      {/* ═══════════ HOW IT WORKS ═══════════ */}
+      <section
+        id="how-it-works"
+        ref={(el) => { if (el) sectionRefs.current.set('how-it-works', el) }}
+        className="py-20 sm:py-28 relative"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`text-center max-w-3xl mx-auto mb-16 ${isVisible('how-it-works') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4 px-4 py-1 rounded-full">
+              Passo a passo
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+              Simples de começar, poderoso no dia a dia
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+              Em poucos passos você está conectado a centenas de oportunidades
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {howItWorks.map((step, i) => {
+              const Icon = step.icon
+              return (
+                <div
+                  key={i}
+                  className={`relative text-center ${isVisible('how-it-works') ? 'animate-fade-in-up' : 'opacity-0'}`}
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                >
+                  {/* Connector line */}
+                  {i < howItWorks.length - 1 && (
+                    <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-px bg-gradient-to-r from-emerald-300 to-transparent" />
+                  )}
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto shadow-xl shadow-emerald-200/30 mb-5">
+                      <Icon className="w-9 h-9 text-white" />
+                    </div>
+                    <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shadow-lg sm:left-auto sm:right-auto sm:top-0 sm:-right-2">
+                      {step.step}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{step.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ DIFFERENTIALS ═══════════ */}
+      <section
+        id="differentials"
+        ref={(el) => { if (el) sectionRefs.current.set('differentials', el) }}
+        className="py-20 sm:py-28 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 relative overflow-hidden"
+      >
+        {/* Background texture */}
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute top-0 left-1/3 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-teal-400/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`grid lg:grid-cols-2 gap-16 items-center ${isVisible('differentials') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            <div>
+              <Badge className="bg-white/15 text-white border border-white/20 mb-4 px-4 py-1 rounded-full">
+                Diferenciais
               </Badge>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-                Plantões em destaque
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Por que somos a referência em repasse de plantões
               </h2>
-              <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-                Confira as oportunidades mais recentes na plataforma
+              <p className="mt-4 text-lg text-emerald-100 leading-relaxed">
+                Construímos a plataforma que a área da saúde precisava: segura, transparente e feita por quem entende.
               </p>
+              <Button
+                onClick={() => router.push('/register')}
+                className="mt-8 bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-8 h-14 text-base font-bold shadow-xl group"
+              >
+                Criar Conta Grátis
+                <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+              </Button>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredShifts.map((shift) => (
-                <Card key={shift.id} className="rounded-2xl border-0 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-white dark:bg-gray-900 group cursor-pointer" onClick={handleSignup}>
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-xs">
-                        {shift.professionalType === 'MEDICO' ? '🩺 Médico' : shift.professionalType === 'ENFERMEIRO' ? '💊 Enfermeiro' : '🏥 Téc. Enfermagem'}
-                      </Badge>
-                      <span className="text-xs text-gray-400">{shift.date}</span>
-                    </div>
-                    <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{shift.title}</h4>
-                    <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      <MapPin className="w-3.5 h-3.5" />
-                      {shift.city}, {shift.state}
-                    </div>
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{formatCurrency(shift.value)}</span>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30">
-                        Ver detalhes
-                        <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-4">
+              {differentials.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.08] backdrop-blur-sm border border-white/[0.1] hover:bg-white/[0.12] transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+                  </div>
+                  <span className="text-sm font-medium text-white">{item}</span>
+                </div>
               ))}
             </div>
           </div>
-        </section>
-      )}
-
-      {/* ===== TESTIMONIALS ===== */}
-      <section id="testimonials" ref={setRef('testimonials')} className={`py-20 sm:py-28 bg-gray-50 dark:bg-gray-900/50 transition-all duration-700 ${isVisible('testimonials') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-              Depoimentos
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-              O que dizem os profissionais
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                name: 'Dr. Rafael Mendes',
-                role: 'Médico Cardiologista',
-                quote: 'O PlantãoHelp revolucionou como faço repasse de plantões. Em minutos consigo publicar e encontrar compradores interessados.',
-                rating: 5,
-                avatar: '🩺',
-              },
-              {
-                name: 'Enf. Juliana Costa',
-                role: 'Enfermeira UTI',
-                quote: 'Como enfermeira, encontrar plantões extras era difícil. Agora com o PlantãoHelp consigo visualizar todas as oportunidades da minha região.',
-                rating: 5,
-                avatar: '💊',
-              },
-              {
-                name: 'Téc. Pedro Santos',
-                role: 'Téc. Enfermagem',
-                quote: 'Sistema seguro e confiável. As avaliações me ajudam a escolher os melhores plantões e o suporte é excelente.',
-                rating: 5,
-                avatar: '🏥',
-              },
-            ].map((testimonial, i) => (
-              <Card key={i} className="rounded-2xl shadow-sm bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 testimonial-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(testimonial.rating)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm mb-4">&ldquo;{testimonial.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-lg">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-gray-900 dark:text-white">{testimonial.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* ===== PRICING ===== */}
-      <section id="pricing" ref={setRef('pricing')} className={`py-20 sm:py-28 transition-all duration-700 ${isVisible('pricing') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <Badge variant="secondary" className="mb-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-              Planos
+      {/* ═══════════ TESTIMONIALS ═══════════ */}
+      <section
+        id="testimonials"
+        ref={(el) => { if (el) sectionRefs.current.set('testimonials', el) }}
+        className="py-20 sm:py-28 relative"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`text-center max-w-3xl mx-auto mb-16 ${isVisible('testimonials') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 mb-4 px-4 py-1 rounded-full">
+              Depoimentos
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-              Comece gratuitamente
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+              O que dizem os profissionais
             </h2>
-            <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">
-              Escolha o plano ideal para o seu momento profissional
+            <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+              Milhares de profissionais de saúde já confiam no Plantão Help
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              {
-                name: 'Gratuito',
-                price: 'R$ 0',
-                period: '/mês',
-                desc: 'Para começar a explorar a plataforma',
-                features: ['Publicar até 3 plantões/mês', 'Busca de plantões ilimitada', 'Perfil básico', 'Notificações por e-mail'],
-                cta: 'Criar Conta Grátis',
-                highlighted: false,
-              },
-              {
-                name: 'Profissional',
-                price: 'R$ 29',
-                period: '/mês',
-                desc: 'Para profissionais que querem se destacar',
-                features: ['Plantões ilimitados', 'Destaque nos resultados', 'Badge verificado', 'Recomendações personalizadas', 'Calendário integrado', 'Suporte prioritário'],
-                cta: 'Começar Agora',
-                highlighted: true,
-              },
-              {
-                name: 'Institucional',
-                price: 'R$ 99',
-                period: '/mês',
-                desc: 'Para hospitais e clínicas',
-                features: ['Múltiplos usuários', 'Painel administrativo', 'Relatórios avançados', 'API de integração', 'Gerente de conta dedicado', 'SLA garantido'],
-                cta: 'Falar com Vendas',
-                highlighted: false,
-              },
-            ].map((plan, i) => (
-              <Card key={i} className={`rounded-2xl border-0 shadow-sm transition-all duration-300 hover:-translate-y-1 ${plan.highlighted ? 'bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-xl shadow-emerald-200/30 dark:shadow-emerald-900/20 scale-[1.02] pricing-card-highlight' : 'bg-white dark:bg-gray-900 hover:shadow-lg pricing-card'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, i) => (
+              <Card
+                key={i}
+                className={`bg-white border border-gray-100 rounded-2xl hover:shadow-xl hover:shadow-emerald-50 transition-all duration-300 group ${isVisible('testimonials') ? 'animate-fade-in-up' : 'opacity-0'}`}
+                style={{ animationDelay: `${i * 0.15}s` }}
+              >
                 <CardContent className="p-6">
-                  <h3 className={`text-lg font-bold ${plan.highlighted ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{plan.name}</h3>
-                  <p className={`text-sm mt-1 ${plan.highlighted ? 'text-emerald-100' : 'text-gray-500 dark:text-gray-400'}`}>{plan.desc}</p>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className={`text-4xl font-extrabold ${plan.highlighted ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{plan.price}</span>
-                    <span className={`text-sm ${plan.highlighted ? 'text-emerald-100' : 'text-gray-500'}`}>{plan.period}</span>
-                  </div>
-                  <ul className="mt-6 space-y-3">
-                    {plan.features.map((feature, j) => (
-                      <li key={j} className="flex items-center gap-2 text-sm">
-                        <CheckCircle2 className={`w-4 h-4 shrink-0 ${plan.highlighted ? 'text-emerald-200' : 'text-emerald-500'}`} />
-                        <span className={plan.highlighted ? 'text-emerald-50' : 'text-gray-700 dark:text-gray-300'}>{feature}</span>
-                      </li>
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4">
+                    {Array.from({ length: testimonial.rating }).map((_, j) => (
+                      <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
                     ))}
-                  </ul>
-                  <Button
-                    className={`w-full mt-6 rounded-xl h-11 ${plan.highlighted ? 'bg-white text-emerald-700 hover:bg-emerald-50 shadow-lg' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'}`}
-                    onClick={handleSignup}
-                  >
-                    {plan.cta}
-                  </Button>
+                  </div>
+
+                  <p className="text-sm text-gray-700 leading-relaxed mb-6 italic">
+                    &ldquo;{testimonial.text}&rdquo;
+                  </p>
+
+                  <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+                    <div className="w-11 h-11 rounded-full bg-emerald-50 flex items-center justify-center text-xl">
+                      {testimonial.avatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{testimonial.name}</p>
+                      <p className="text-xs text-gray-500">{testimonial.role}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -542,99 +780,120 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ===== CTA SECTION ===== */}
-      <section className="py-20 sm:py-28 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-32 -translate-x-32" />
+      {/* ═══════════ FINAL CTA ═══════════ */}
+      <section
+        id="cta"
+        ref={(el) => { if (el) sectionRefs.current.set('cta', el) }}
+        className="py-20 sm:py-28 relative"
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 p-10 sm:p-16 text-center ${isVisible('cta') ? 'animate-fade-in-up' : 'opacity-0'}`}>
+            {/* Background decoration */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+            <div className="absolute -top-20 -right-20 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-teal-400/10 rounded-full blur-3xl" />
 
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-            Pronto para começar?
-          </h2>
-          <p className="text-emerald-100 text-lg mb-8 max-w-xl mx-auto">
-            Junte-se a centenas de profissionais da saúde que já usam o PlantãoHelp para gerenciar seus plantões.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              size="lg"
-              onClick={handleSignup}
-              className="bg-white text-emerald-700 hover:bg-emerald-50 h-13 px-8 text-base rounded-xl shadow-xl font-semibold transition-all duration-300 hover:scale-[1.02] cta-glow"
-            >
-              Criar Conta Gratuitamente
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button
-              size="lg"
-              onClick={handleLogin}
-              className="h-13 px-8 text-base rounded-xl bg-white/15 text-white border border-white/25 hover:bg-white/25 hover:border-white/40 transition-all duration-300 backdrop-blur-sm font-semibold"
-            >
-              Entrar na sua conta
-            </Button>
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Pronto para transformar seus plantões?
+              </h2>
+              <p className="mt-4 text-lg text-emerald-100 leading-relaxed max-w-2xl mx-auto">
+                Junte-se a milhares de profissionais que já estão usando o Plantão Help para encontrar as melhores oportunidades.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 mt-8 justify-center">
+                <Button
+                  onClick={() => router.push('/register')}
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-8 h-14 text-base font-bold shadow-xl group"
+                >
+                  Criar Conta Grátis
+                  <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/login')}
+                  className="bg-transparent text-white border-2 border-white/30 hover:bg-white/10 hover:border-white/50 rounded-2xl px-8 h-14 text-base font-semibold"
+                >
+                  Já tenho conta
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="bg-gray-950 text-gray-400 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Brand */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <img
-                  src="/logo.jpg"
-                  alt="Plantão Help"
-                  className="w-14 h-14 object-cover"
-                />
-                <span className="text-xl font-bold text-white">
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <img src="/logo.jpg" alt="Plantão Help" className="w-9 h-9 rounded-xl object-cover" />
+                <span className="text-lg font-extrabold text-white">
                   Plantão<span className="text-emerald-400">Help</span>
                 </span>
               </div>
-              <p className="text-sm leading-relaxed">
-                Marketplace para compra e venda de plantões médicos, de enfermagem e técnico de enfermagem.
+              <p className="text-sm text-gray-500 leading-relaxed">
+                O marketplace de plantões médicos mais confiável do Brasil.
               </p>
             </div>
 
-            {/* Links */}
+            {/* Product */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Plataforma</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Como Funciona</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Recursos</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Planos</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Depoimentos</a></li>
+              <h4 className="text-sm font-semibold text-white mb-4">Produto</h4>
+              <ul className="space-y-2">
+                {['Funcionalidades', 'Como funciona', 'Preços', 'Para empresas'].map((item, i) => (
+                  <li key={i}>
+                    <button onClick={() => scrollToSection('features')} className="text-sm text-gray-500 hover:text-emerald-400 transition-colors">
+                      {item}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Support */}
+            {/* Company */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Suporte</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Termos de Uso</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Política de Privacidade</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">FAQ</a></li>
+              <h4 className="text-sm font-semibold text-white mb-4">Empresa</h4>
+              <ul className="space-y-2">
+                {['Sobre nós', 'Blog', 'Carreiras', 'Contato'].map((item, i) => (
+                  <li key={i}>
+                    <span className="text-sm text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer">
+                      {item}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Contact */}
+            {/* Legal */}
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Contato</h4>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> contato@plantaohelp.com</li>
-                <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> (11) 9999-9999</li>
-                <li className="flex items-center gap-2"><MessageCircle className="w-4 h-4" /> WhatsApp</li>
+              <h4 className="text-sm font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-2">
+                {['Termos de uso', 'Privacidade', 'Cookies', 'LGPD'].map((item, i) => (
+                  <li key={i}>
+                    <span className="text-sm text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer">
+                      {item}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
+          {/* Bottom */}
           <div className="pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm">&copy; 2025 PlantãoHelp. Todos os direitos reservados.</p>
-            <div className="flex items-center gap-4 text-sm">
-              <a href="#" className="hover:text-emerald-400 transition-colors">Termos</a>
-              <a href="#" className="hover:text-emerald-400 transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-emerald-400 transition-colors">Cookies</a>
+            <p className="text-xs text-gray-600">&copy; 2025 PlantãoHelp. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-4">
+              <a href="#" className="text-gray-600 hover:text-emerald-400 transition-colors">
+                <MessageCircle className="w-4 h-4" />
+              </a>
+              <a href="#" className="text-gray-600 hover:text-emerald-400 transition-colors">
+                <Mail className="w-4 h-4" />
+              </a>
+              <a href="#" className="text-gray-600 hover:text-emerald-400 transition-colors">
+                <Phone className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </div>

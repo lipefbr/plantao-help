@@ -1,0 +1,945 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useAppStore } from '@/lib/store'
+     5→import { formatCurrency, formatDate, formatTimeAgo, renderStars, getRoleLabel, getProfessionalTypeColor, getShiftType, getShiftTypeColor, getShiftTypeIcon, cn } from '@/lib/utils'
+     6→import { Button } from '@/components/ui/button'
+     7→import { Card, CardContent } from '@/components/ui/card'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Skeleton } from '@/components/ui/skeleton'
+    10→import { Stethoscope, Calendar, TrendingUp, Plus, Search, ArrowRight, Star, MapPin, Clock, AlertCircle, CheckCircle2, Users, DollarSign, Briefcase, Activity, Sparkles } from 'lucide-react'
+    11→import { FaqHelpSection } from '@/components/faq-help-section'
+    12→import { ProfileCompletionCard } from '@/components/profile-completion-card'
+    13→import { EarningsSummaryWidget } from '@/components/earnings-summary-widget'
+    14→import { UpcomingShiftsWidget } from '@/components/upcoming-shifts-widget'
+    15→import { EarningsTrendChart } from '@/components/earnings-trend-chart'
+    16→import { AchievementsBadges } from '@/components/achievements-badges'
+    17→
+    18→interface ShiftItem {
+    19→  id: string
+    20→  title: string
+    21→  description: string | null
+    22→  date: string
+    23→  startTime: string
+    24→  endTime: string
+    25→  value: number
+    26→  location: string
+    27→  city: string
+    28→  state: string
+    29→  status: string
+    30→  professionalType: string
+    31→  sellerId: string
+    32→  seller: {
+    33→    id: string
+    34→    name: string
+    35→    role: string
+    36→    professionalDoc: string | null
+    37→    avgRating: number
+    38→    totalRatings: number
+    39→  }
+    40→  hospital: { id: string; name: string } | null
+    41→}
+    42→
+    43→interface ActivityItem {
+    44→  id: string
+    45→  type: string
+    46→  title: string
+    47→  description: string
+    48→  createdAt: string
+    49→  icon: string
+    50→}
+    51→
+    52→interface RecommendedShiftItem extends ShiftItem {
+    53→  score: number
+    54→  reasons: string[]
+    55→}
+    56→
+    57→export function HomeTab() {
+    58→  const { user, setActiveTab, setShowAuthModal, setAuthMode, setSelectedShiftId, setProfileSubTab } = useAppStore()
+    59→  const [shifts, setShifts] = useState<ShiftItem[]>([])
+    60→  const [loading, setLoading] = useState(true)
+    61→  const [userRating, setUserRating] = useState<number>(0)
+    62→  const [myShiftsCount, setMyShiftsCount] = useState(0)
+    63→  const [boughtShiftsCount, setBoughtShiftsCount] = useState(0)
+    64→  const [activities, setActivities] = useState<ActivityItem[]>([])
+    65→  const [activitiesLoading, setActivitiesLoading] = useState(false)
+    66→  const [showAllActivities, setShowAllActivities] = useState(false)
+    67→  const [recommendedShifts, setRecommendedShifts] = useState<RecommendedShiftItem[]>([])
+    68→  const [recommendedLoading, setRecommendedLoading] = useState(false)
+    69→  const [trustCounts, setTrustCounts] = useState({ shifts: 0, verified: 0 })
+    70→  const [animatedStats, setAnimatedStats] = useState({ available: 0, published: 0, bought: 0, rating: 0 })
+    71→
+    72→  // Time-of-day greeting
+    73→  const getGreeting = () => {
+    74→    const hour = new Date().getHours()
+    75→    if (hour >= 5 && hour < 12) return 'Bom dia,'
+    76→    if (hour >= 12 && hour < 18) return 'Boa tarde,'
+    77→    return 'Boa noite,'
+    78→  }
+    79→
+    80→  // Ripple effect on click
+    81→  const createRipple = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    82→    const card = e.currentTarget
+    83→    const rect = card.getBoundingClientRect()
+    84→    const x = e.clientX - rect.left
+    85→    const y = e.clientY - rect.top
+    86→    const ripple = document.createElement('span')
+    87→    ripple.className = 'ripple-effect'
+    88→    ripple.style.left = `${x}px`
+    89→    ripple.style.top = `${y}px`
+    90→    ripple.style.width = ripple.style.height = `${Math.max(rect.width, rect.height)}px`
+    91→    card.appendChild(ripple)
+    92→    setTimeout(() => ripple.remove(), 600)
+    93→  }, [])
+    94→
+    95→  // Smooth number counter for logged-in stats
+    96→  const animateNumber = useCallback((target: number, setter: (v: number) => void, duration = 800) => {
+    97→    const steps = 20
+    98→    const increment = target / steps
+    99→    let current = 0
+   100→    const timer = setInterval(() => {
+   101→      current += increment
+   102→      if (current >= target) {
+   103→        setter(target)
+   104→        clearInterval(timer)
+   105→      } else {
+   106→        setter(Math.round(current * 10) / 10)
+   107→      }
+   108→    }, duration / steps)
+   109→    return () => clearInterval(timer)
+   110→  }, [])
+   111→
+   112→  useEffect(() => {
+   113→    loadFeaturedShifts()
+   114→  }, [])
+   115→
+   116→  useEffect(() => {
+   117→    if (user) {
+   118→      loadUserRating()
+   119→      loadMyShiftsCount()
+   120→      loadBoughtShiftsCount()
+   121→      loadActivities()
+   122→      loadRecommendedShifts()
+   123→    }
+   124→  }, [user])
+   125→
+   126→  // Animate stats when they load
+   127→  useEffect(() => {
+   128→    if (!user || loading) return
+   129→    const cleanups: (() => void)[] = []
+   130→    cleanups.push(animateNumber(shifts.length, v => setAnimatedStats(prev => ({ ...prev, available: v }))))
+   131→    cleanups.push(animateNumber(myShiftsCount, v => setAnimatedStats(prev => ({ ...prev, published: v }))))
+   132→    cleanups.push(animateNumber(boughtShiftsCount, v => setAnimatedStats(prev => ({ ...prev, bought: v }))))
+   133→    if (userRating > 0) {
+   134→      cleanups.push(animateNumber(userRating, v => setAnimatedStats(prev => ({ ...prev, rating: v })), 1000))
+   135→    }
+   136→    return () => cleanups.forEach(c => c())
+   137→  }, [user, loading, shifts.length, myShiftsCount, boughtShiftsCount, userRating, animateNumber])
+   138→
+   139→  // Counter animation for Trust Bar (logged-out page)
+   140→  useEffect(() => {
+   141→    if (loading || user) return
+   142→    const target = shifts.length
+   143→    const duration = 1200
+   144→    const steps = 30
+   145→    const increment = target / steps
+   146→    let current = 0
+   147→    const timer = setInterval(() => {
+   148→      current += increment
+   149→      if (current >= target) {
+   150→        setTrustCounts({ shifts: target, verified: 100 })
+   151→        clearInterval(timer)
+   152→      } else {
+   153→        setTrustCounts(prev => ({ ...prev, shifts: Math.round(current) }))
+   154→      }
+   155→    }, duration / steps)
+   156→    return () => clearInterval(timer)
+   157→  }, [loading, shifts.length, user])
+   158→
+   159→  const loadFeaturedShifts = async () => {
+   160→    try {
+   161→      const res = await fetch('/api/shifts?status=AVAILABLE')
+   162→      if (res.ok) {
+   163→        const data = await res.json()
+   164→        setShifts(data.slice(0, 4))
+   165→      }
+   166→    } catch {
+   167→      // silently fail
+   168→    } finally {
+   169→      setLoading(false)
+   170→    }
+   171→  }
+   172→
+   173→  const loadUserRating = async () => {
+   174→    if (!user) return
+   175→    try {
+   176→      const res = await fetch(`/api/users/${user.id}/ratings`)
+   177→      if (res.ok) {
+   178→        const data = await res.json()
+   179→        setUserRating(data.avgRating || 0)
+   180→      }
+   181→    } catch {
+   182→      // silently fail
+   183→    }
+   184→  }
+   185→
+   186→  const loadMyShiftsCount = async () => {
+   187→    if (!user) return
+   188→    try {
+   189→      const res = await fetch(`/api/shifts?sellerId=${user.id}&allStatuses=true`)
+   190→      if (res.ok) {
+   191→        const data = await res.json()
+   192→        setMyShiftsCount(data.length)
+   193→      }
+   194→    } catch {
+   195→      // silently fail
+   196→    }
+   197→  }
+   198→
+   199→  const loadBoughtShiftsCount = async () => {
+   200→    if (!user) return
+   201→    try {
+   202→      const res = await fetch(`/api/shifts?buyerId=${user.id}&status=SOLD`)
+   203→      if (res.ok) {
+   204→        const data = await res.json()
+   205→        setBoughtShiftsCount(data.length)
+   206→      }
+   207→    } catch {
+   208→      // silently fail
+   209→    }
+   210→  }
+   211→
+   212→  const loadActivities = async () => {
+   213→    if (!user) return
+   214→    setActivitiesLoading(true)
+   215→    try {
+   216→      const res = await fetch(`/api/users/${user.id}/activity`)
+   217→      if (res.ok) {
+   218→        const data = await res.json()
+   219→        setActivities(data)
+   220→      }
+   221→    } catch {
+   222→      // silently fail
+   223→    } finally {
+   224→      setActivitiesLoading(false)
+   225→    }
+   226→  }
+   227→
+   228→  const loadRecommendedShifts = async () => {
+   229→    if (!user) return
+   230→    setRecommendedLoading(true)
+   231→    try {
+   232→      const res = await fetch(`/api/shifts/recommended?userId=${user.id}`)
+   233→      if (res.ok) {
+   234→        const data = await res.json()
+   235→        setRecommendedShifts(data)
+   236→      }
+   237→    } catch {
+   238→      // silently fail
+   239→    } finally {
+   240→      setRecommendedLoading(false)
+   241→    }
+   242→  }
+   243→
+   244→  const handleShiftClick = (shiftId: string) => {
+   245→    setSelectedShiftId(shiftId)
+   246→    setActiveTab('plantoes')
+   247→  }
+   248→
+   249→  // Not logged in - hero section
+   250→  if (!user) {
+   251→    return (
+   252→      <div className="space-y-6">
+   253→        {/* Hero Section */}
+   254→        <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden">
+   255→          {/* Subtle shimmer gradient overlay */}
+   256→          <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
+   257→          {/* Shimmer overlay */}
+   258→          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full [animation:shimmer_3s_infinite]" />
+   259→          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
+   260→          <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
+   261→          <div className="absolute top-1/2 right-4 w-20 h-20 bg-white/5 rounded-full" />
+   262→          {/* Decorative dots pattern */}
+   263→          <div className="absolute bottom-4 right-4 grid grid-cols-4 gap-1.5 opacity-20">
+   264→            {[...Array(16)].map((_, i) => (
+   265→              <div key={i} className="w-1.5 h-1.5 bg-white rounded-full" />
+   266→            ))}
+   267→          </div>
+   268→          <div className="relative z-10">
+   269→            <div className="flex items-center gap-2 mb-3">
+   270→              <img
+   271→                src="/logo.jpg"
+   272→                alt="Plantão Help"
+   273→                className="w-10 h-10 rounded-xl object-cover shadow-sm"
+   274→              />
+   275→            </div>
+   276→            <h2 className="text-2xl font-bold mb-2">Plantão Help</h2>
+   277→            <p className="text-emerald-100 text-sm leading-relaxed mb-4">
+   278→              Marketplace para compra e venda de plantões médicos, de enfermagem e técnico de enfermagem.
+   279→              Repasse de plantões com segurança e praticidade.
+   280→            </p>
+   281→            <Button
+   282→              onClick={() => {
+   283→                setAuthMode('login')
+   284→                setShowAuthModal(true)
+   285→              }}
+   286→              className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold rounded-lg h-12 text-base shadow-xl"
+   287→            >
+   288→              Entrar agora
+   289→              <ArrowRight className="w-4 h-4 ml-2" />
+   290→            </Button>
+   291→          </div>
+   292→        </div>
+   293→
+   294→        {/* Professional Types */}
+   295→        <div>
+   296→          <h3 className="text-base font-semibold text-gray-800 mb-3">Para profissionais da saúde</h3>
+   297→          <div className="grid grid-cols-3 gap-2">
+   298→            <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white">
+   299→              <CardContent className="p-3 text-center">
+   300→                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   301→                  <span className="text-base">🩺</span>
+   302→                </div>
+   303→                <p className="text-xs font-semibold text-blue-800">Médicos</p>
+   304→              </CardContent>
+   305→            </Card>
+   306→            <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white">
+   307→              <CardContent className="p-3 text-center">
+   308→                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   309→                  <span className="text-base">💊</span>
+   310→                </div>
+   311→                <p className="text-xs font-semibold text-purple-800">Enfermeiros</p>
+   312→              </CardContent>
+   313→            </Card>
+   314→            <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-orange-50 to-white">
+   315→              <CardContent className="p-3 text-center">
+   316→                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+   317→                  <span className="text-base">🏥</span>
+   318→                </div>
+   319→                <p className="text-xs font-semibold text-orange-800">Téc. Enf.</p>
+   320→              </CardContent>
+   321→            </Card>
+   322→          </div>
+   323→        </div>
+   324→
+   325→        {/* How it Works */}
+   326→        <div className="relative">
+   327→          {/* Decorative medical cross pattern background */}
+   328→          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]" aria-hidden="true">
+   329→            <span className="absolute top-0 left-4 text-2xl">✚</span>
+   330→            <span className="absolute top-2 right-8 text-lg">✚</span>
+   331→            <span className="absolute top-0 left-1/3 text-xl">✚</span>
+   332→            <span className="absolute top-1 right-1/4 text-2xl">✚</span>
+   333→            <span className="absolute top-3 left-2/3 text-lg">✚</span>
+   334→          </div>
+   335→          <h3 className="text-base font-semibold text-gray-800 mb-3">Como funciona?</h3>
+   336→          <div className="space-y-3">
+   337→            {[
+   338→              { step: '1', icon: '📋', title: 'Cadastre-se', desc: 'Crie sua conta com CRM/COREN e aguarde aprovação', color: 'from-emerald-50 to-white' },
+   339→              { step: '2', icon: '📅', title: 'Publique ou Busque', desc: 'Anuncie seus plantões ou encontre oportunidades', color: 'from-teal-50 to-white' },
+   340→              { step: '3', icon: '🤝', title: 'Feche o Negócio', desc: 'Compre ou venda plantões com segurança', color: 'from-amber-50 to-white' },
+   341→              { step: '4', icon: '⭐', title: 'Avalie', desc: 'Avalie a experiência e fortaleça a comunidade', color: 'from-purple-50 to-white' },
+   342→            ].map((item) => (
+   343→              <Card key={item.step} className={`rounded-xl border-0 shadow-sm bg-gradient-to-r ${item.color}`}>
+   344→                <CardContent className="p-4 flex items-center gap-3">
+   345→                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+   346→                    <span className="text-lg">{item.icon}</span>
+   347→                  </div>
+   348→                  <div className="flex-1 min-w-0">
+   349→                    <p className="text-sm font-semibold text-gray-800">{item.title}</p>
+   350→                    <p className="text-xs text-gray-500">{item.desc}</p>
+   351→                  </div>
+   352→                  <span className="text-2xl font-black text-emerald-200">{item.step}</span>
+   353→                </CardContent>
+   354→              </Card>
+   355→            ))}
+   356→          </div>
+   357→        </div>
+   358→
+   359→        {/* Features Grid */}
+   360→        <div className="grid grid-cols-2 gap-3">
+   361→          <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-white">
+   362→            <CardContent className="p-4 text-center">
+   363→              <Calendar className="w-7 h-7 mx-auto text-emerald-600 mb-2" />
+   364→              <p className="text-sm font-medium text-gray-800">Publique Plantões</p>
+   365→              <p className="text-xs text-gray-500 mt-1">Repasse seus horários facilmente</p>
+   366→            </CardContent>
+   367→          </Card>
+   368→          <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-amber-50 to-white">
+   369→            <CardContent className="p-4 text-center">
+   370→              <Search className="w-7 h-7 mx-auto text-amber-600 mb-2" />
+   371→              <p className="text-sm font-medium text-gray-800">Encontre Vagas</p>
+   372→              <p className="text-xs text-gray-500 mt-1">Busque plantões disponíveis</p>
+   373→            </CardContent>
+   374→          </Card>
+   375→          <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-blue-50 to-white">
+   376→            <CardContent className="p-4 text-center">
+   377→              <TrendingUp className="w-7 h-7 mx-auto text-blue-600 mb-2" />
+   378→              <p className="text-sm font-medium text-gray-800">Concursos</p>
+   379→              <p className="text-xs text-gray-500 mt-1">Acompanhe editais e concursos</p>
+   380→            </CardContent>
+   381→          </Card>
+   382→          <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-br from-purple-50 to-white">
+   383→            <CardContent className="p-4 text-center">
+   384→              <Star className="w-7 h-7 mx-auto text-purple-600 mb-2" />
+   385→              <p className="text-sm font-medium text-gray-800">Avaliações</p>
+   386→              <p className="text-xs text-gray-500 mt-1">Sistema de reputação confiável</p>
+   387→            </CardContent>
+   388→          </Card>
+   389→        </div>
+   390→
+   391→        {/* Trust Bar */}
+   392→        <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+   393→          <CardContent className="p-4">
+   394→            <div className="grid grid-cols-3 gap-4 text-center">
+   395→              <div>
+   396→                <p className="text-xl font-bold animate-countUp">{trustCounts.shifts > 0 ? `${trustCounts.shifts}+` : `${shifts.length}+`}</p>
+   397→                <p className="text-[10px] text-emerald-100">Plantões Ativos</p>
+   398→              </div>
+   399→              <div>
+   400→                <p className="text-xl font-bold animate-countUp" style={{ animationDelay: '0.1s' }}>100%</p>
+   401→                <p className="text-[10px] text-emerald-100">Verificados</p>
+   402→              </div>
+   403→              <div>
+   404→                <p className="text-xl font-bold animate-countUp" style={{ animationDelay: '0.2s' }}>24h</p>
+   405→                <p className="text-[10px] text-emerald-100">Suporte</p>
+   406→              </div>
+   407→            </div>
+   408→          </CardContent>
+   409→        </Card>
+   410→
+   411→        {/* Recent shifts preview */}
+   412→        <div>
+   413→          <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-1.5">Plantões em destaque <Sparkles className="w-4 h-4 text-amber-400" /></h3>
+   414→          {loading ? (
+   415→            <div className="space-y-3">
+   416→              {[1, 2, 3].map(i => (
+   417→                <Skeleton key={i} className="h-24 rounded-xl animate-pulse" />
+   418→              ))}
+   419→            </div>
+   420→          ) : shifts.length === 0 ? (
+   421→            <Card className="rounded-2xl bg-gray-50 border-0">
+   422→              <CardContent className="p-8 text-center">
+   423→                <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
+   424→                <p className="text-sm text-gray-500">Nenhum plantão disponível no momento</p>
+   425→                <p className="text-xs text-gray-400 mt-1">Novos plantões são adicionados frequentemente!</p>
+   426→              </CardContent>
+   427→            </Card>
+   428→          ) : (
+   429→            <div className="space-y-3">
+   430→              {shifts.map((shift) => (
+   431→                <Card
+   432→                  key={shift.id}
+   433→                  className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 shift-card-hover"
+   434→                  onClick={() => handleShiftClick(shift.id)}
+   435→                >
+   436→                  <CardContent className="p-4">
+   437→                    <div className="flex items-start justify-between">
+   438→                      <div className="flex-1 min-w-0">
+   439→                        <h4 className="font-semibold text-sm text-gray-800 truncate">{shift.title}</h4>
+   440→                        <div className="flex items-center gap-2 mt-1">
+   441→                          <MapPin className="w-3 h-3 text-gray-400" />
+   442→                          <span className="text-xs text-gray-500">{shift.city}/{shift.state}</span>
+   443→                        </div>
+   444→                        <div className="flex items-center gap-2 mt-1">
+   445→                          <Clock className="w-3 h-3 text-gray-400" />
+   446→                          <span className="text-xs text-gray-500">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+   447→                        </div>
+   448→                      </div>
+   449→                      <div className="text-right ml-3">
+   450→                        <p className="text-emerald-700 font-bold text-sm">{formatCurrency(shift.value)}</p>
+   451→                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
+   452→                          {getRoleLabel(shift.professionalType)}
+   453→                        </span>
+   454→                        <div className="mt-1">
+   455→                          <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+   456→                            {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+   457→                          </span>
+   458→                        </div>
+   459→                      </div>
+   460→                    </div>
+   461→                  </CardContent>
+   462→                </Card>
+   463→              ))}
+   464→            </div>
+   465→          )}
+   466→          <Button
+   467→            variant="outline"
+   468→            className="w-full mt-3 rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+   469→            onClick={() => setActiveTab('plantoes')}
+   470→          >
+   471→            Ver todos os plantões
+   472→            <ArrowRight className="w-4 h-4 ml-1" />
+   473→          </Button>
+   474→        </div>
+   475→
+   476→        {/* FAQ & Help */}
+   477→        <FaqHelpSection />
+   478→      </div>
+   479→    )
+   480→  }
+   481→
+   482→  // Logged in - dashboard
+   483→  return (
+   484→    <div className="space-y-5">
+   485→      {/* Welcome card with gradient border & decorative elements */}
+   486→      <div className="gradient-border-card relative">
+   487→      <div className="bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 rounded-xl p-5 text-white relative overflow-hidden">
+   488→        {/* Subtle animated gradient shimmer overlay */}
+   489→        <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)', backgroundSize: '200% 200%', animation: 'shimmer-slow 4s linear infinite' }} />
+   490→        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+   491→        <div className="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
+   492→        <div className="relative z-10">
+   493→          <p className="text-emerald-100 text-sm">{getGreeting()}</p>
+   494→          <h2 className="text-xl font-bold animate-typewriter inline-block pr-1">{user.name}</h2>
+   495→          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+   496→            <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full">{getRoleLabel(user.role)}</span>
+   497→            {user.registrationStatus === 'PENDING' && (
+   498→              <span className="text-xs bg-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+   499→                <AlertCircle className="w-3 h-3" />
+   500→                Aguardando aprovação
+   501→              </span>
+   502→            )}
+   503→            {user.registrationStatus === 'APPROVED' && (
+   504→              <span className="text-xs bg-emerald-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+   505→                <CheckCircle2 className="w-3 h-3" />
+   506→                Aprovado
+   507→              </span>
+   508→            )}
+   509→            {user.registrationStatus === 'REJECTED' && (
+   510→              <span className="text-xs bg-red-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+   511→                <AlertCircle className="w-3 h-3" />
+   512→                Cadastro rejeitado
+   513→              </span>
+   514→            )}
+   515→          </div>
+   516→          {user.city && user.state && (
+   517→            <p className="text-emerald-200 text-xs mt-1.5">
+   518→              <MapPin className="w-3 h-3 inline mr-0.5" />
+   519→              {user.city}, {user.state}
+   520→            </p>
+   521→          )}
+   522→        </div>
+   523→      </div>
+   524→      </div>
+   525→
+   526→      {/* Pending approval warning */}
+   527→      {user.registrationStatus === 'PENDING' && (
+   528→        <Card className="rounded-xl border-amber-200 bg-amber-50">
+   529→          <CardContent className="p-4">
+   530→            <div className="flex items-start gap-3">
+   531→              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+   532→              <div>
+   533→                <p className="text-sm font-medium text-amber-800">Cadastro pendente de aprovação</p>
+   534→                <p className="text-xs text-amber-600 mt-1">
+   535→                  Seu cadastro está sendo analisado pela equipe administrativa. Você poderá publicar e comprar plantões após a aprovação.
+   536→                </p>
+   537→              </div>
+   538→            </div>
+   539→          </CardContent>
+   540→        </Card>
+   541→      )}
+   542→
+   543→      {/* Profile completion progress bar */}
+   544→      <ProfileCompletionCard user={user} onEdit={() => {
+   545→        setActiveTab('perfil')
+   546→        setProfileSubTab('info')
+   547→      }} />
+   548→
+   549→      {/* Wave SVG Divider */}
+   550→      <div className="-mt-2">
+   551→        <svg viewBox="0 0 400 30" className="w-full h-6 fill-emerald-600/5 dark:fill-emerald-900/20" preserveAspectRatio="none">
+   552→          <path d="M0,15 C100,30 200,0 300,15 C350,22 380,18 400,15 L400,30 L0,30 Z" />
+   553→        </svg>
+   554→      </div>
+   555→
+   556→      {/* Stats with ripple effect and animated counters */}
+   557→      <div className="grid grid-cols-4 gap-2">
+   558→        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
+   559→          <CardContent className="p-2.5 text-center">
+   560→            <div className="w-7 h-7 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+   561→              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+   562→            </div>
+   563→            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.available || shifts.length}</p>
+   564→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Disponíveis</p>
+   565→          </CardContent>
+   566→        </Card>
+   567→        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
+   568→          <CardContent className="p-2.5 text-center">
+   569→            <div className="w-7 h-7 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+   570→              <Briefcase className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+   571→            </div>
+   572→            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.published || myShiftsCount}</p>
+   573→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Publicados</p>
+   574→          </CardContent>
+   575→        </Card>
+   576→        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
+   577→          <CardContent className="p-2.5 text-center">
+   578→            <div className="w-7 h-7 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+   579→              <DollarSign className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+   580→            </div>
+   581→            <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse">{animatedStats.bought || boughtShiftsCount}</p>
+   582→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Comprados</p>
+   583→          </CardContent>
+   584→        </Card>
+   585→        <Card className="rounded-xl border-0 shadow-sm hover:-translate-y-0.5 transition-transform duration-300 ripple-card cursor-pointer" onClick={createRipple}>
+   586→          <CardContent className="p-2.5 text-center">
+   587→            <div className="w-7 h-7 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mx-auto mb-1">
+   588→              <Star className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+   589→            </div>
+   590→            {animatedStats.rating > 0 || userRating > 0 ? (
+   591→              <p className="text-base font-bold text-gray-800 dark:text-gray-200 counter-pulse flex items-center justify-center gap-0.5">
+   592→                {(animatedStats.rating > 0 ? animatedStats.rating : userRating).toFixed(1)}
+   593→                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+   594→              </p>
+   595→            ) : (
+   596→              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-full px-2 py-0.5 inline-block">Novo</p>
+   597→            )}
+   598→            <p className="text-[9px] text-gray-500 dark:text-gray-400">Avaliação</p>
+   599→          </CardContent>
+   600→        </Card>
+   601→      </div>
+   602→
+   603→      {/* Quick Actions */}
+   604→      {user.registrationStatus === 'APPROVED' && user.role !== 'ADMIN' && (
+   605→        <div className="grid grid-cols-2 gap-3">
+   606→          <Button
+   607→            onClick={() => setActiveTab('plantoes')}
+   608→            className="h-16 w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex flex-col gap-1 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30 group"
+   609→          >
+   610→            <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+   611→            <span className="text-xs font-medium">Publicar Plantão</span>
+   612→          </Button>
+   613→          <Button
+   614→            onClick={() => setActiveTab('plantoes')}
+   615→            variant="outline"
+   616→            className="h-16 w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-xl flex flex-col gap-1 shadow-sm group"
+   617→          >
+   618→            <Search className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+   619→            <span className="text-xs font-medium">Buscar Plantões</span>
+   620→          </Button>
+   621→        </div>
+   622→      )}
+   623→
+   624→      {/* Concursos quick link */}
+   625→      <Card className="rounded-xl border-0 shadow-sm bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/30 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('concursos')}>
+   626→        <CardContent className="p-4">
+   627→          <div className="flex items-center justify-between">
+   628→            <div className="flex items-center gap-3">
+   629→              <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/40 rounded-xl flex items-center justify-center relative">
+   630→                <TrendingUp className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+   631→                {/* Dot indicator */}
+   632→                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full" />
+   633→              </div>
+   634→              <div>
+   635→                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Concursos Abertos</p>
+   636→                <p className="text-xs text-gray-500 dark:text-gray-400">Confira os editais da sua região</p>
+   637→              </div>
+   638→            </div>
+   639→            <ArrowRight className="w-5 h-5 text-gray-400" />
+   640→          </div>
+   641→        </CardContent>
+   642→      </Card>
+   643→
+   644→      {/* Earnings summary widget */}
+   645→      <EarningsSummaryWidget userId={user.id} onSeeAll={() => setActiveTab('meus-plantoes')} />
+   646→
+   647→      {/* Upcoming shifts countdown widget */}
+   648→      <UpcomingShiftsWidget />
+   649→
+   650→      {/* Earnings trend chart (6-month sparkline) */}
+   651→      <EarningsTrendChart userId={user.id} />
+   652→
+   653→      {/* Recommended Shifts */}
+   654→      <div className="animate-slideUp">
+   655→        <div className="flex items-center gap-2 mb-3">
+   656→          <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+   657→            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+   658→          </div>
+   659→          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">Recomendados para Você</h3>
+   660→        </div>
+   661→        {recommendedLoading ? (
+   662→          <div className="space-y-3">
+   663→            {[1, 2, 3].map(i => (
+   664→              <Skeleton key={i} className="h-28 rounded-xl animate-pulse" />
+   665→            ))}
+   666→          </div>
+   667→        ) : recommendedShifts.length === 0 ? (
+   668→          <Card className="rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-0">
+   669→            <CardContent className="p-6 text-center">
+   670→              <Sparkles className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+   671→              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma recomendação no momento</p>
+   672→              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Complete seu perfil para receber recomendações personalizadas</p>
+   673→            </CardContent>
+   674→          </Card>
+   675→        ) : (
+   676→          <div className="space-y-3">
+   677→            {recommendedShifts.map((shift, index) => (
+   678→              <Card
+   679→                key={shift.id}
+   680→                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 hover:border-l-emerald-500 shift-card-hover"
+   681→                style={{ animationDelay: `${index * 80}ms`, opacity: 0, animation: 'slideUp 0.4s ease forwards', animationDelay: `${index * 80}ms` }}
+   682→                onClick={() => handleShiftClick(shift.id)}
+   683→              >
+   684→                <CardContent className="p-4">
+   685→                  <div className="flex items-start justify-between gap-3">
+   686→                    <div className="flex-1 min-w-0">
+   687→                      <div className="flex items-center gap-2 flex-wrap">
+   688→                        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{shift.title}</h4>
+   689→                      </div>
+   690→                      <div className="flex items-center gap-2 mt-1">
+   691→                        <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+   692→                        <span className="text-xs text-gray-500 dark:text-gray-400">{shift.city}/{shift.state}</span>
+   693→                      </div>
+   694→                      <div className="flex items-center gap-2 mt-1">
+   695→                        <Clock className="w-3 h-3 text-gray-400 shrink-0" />
+   696→                        <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+   697→                      </div>
+   698→                      <div className="flex items-center gap-1.5 mt-1.5">
+   699→                        <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+   700→                          <span className="text-[7px] font-bold text-emerald-700 dark:text-emerald-400">{shift.seller.name.charAt(0)}</span>
+   701→                        </div>
+   702→                        <span className="text-xs text-gray-500 dark:text-gray-400">{shift.seller.name}</span>
+   703→                        {shift.seller.avgRating > 0 && (
+   704→                          <span className="text-xs text-amber-500 flex items-center gap-0.5 shrink-0">
+   705→                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+   706→                            {shift.seller.avgRating.toFixed(1)}
+   707→                          </span>
+   708→                        )}
+   709→                      </div>
+   710→                    </div>
+   711→                    <div className="text-right shrink-0">
+   712→                      <p className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">{formatCurrency(shift.value)}</p>
+   713→                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
+   714→                        {getRoleLabel(shift.professionalType)}
+   715→                      </span>
+   716→                      <div className="mt-1">
+   717→                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+   718→                          {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+   719→                        </span>
+   720→                      </div>
+   721→                    </div>
+   722→                  </div>
+   723→                  {/* Reason badges */}
+   724→                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+   725→                    {shift.reasons.map((reason) => (
+   726→                      <Badge
+   727→                        key={reason}
+   728→                        variant="secondary"
+   729→                        className={cn(
+   730→                          'text-[10px] px-2 py-0 h-5 font-medium',
+   731→                          reason === 'Seu tipo' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+   732→                          reason === 'Mesma região' && 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+   733→                          reason === 'Mesma cidade' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+   734→                          reason === 'Vendedor top' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+   735→                        )}
+   736→                      >
+   737→                        {reason === 'Seu tipo' && '🎯 '}{reason === 'Mesma região' && '📍 '}{reason === 'Mesma cidade' && '🏘️ '}{reason === 'Vendedor top' && '⭐ '}
+   738→                        {reason}
+   739→                      </Badge>
+   740→                    ))}
+   741→                  </div>
+   742→                </CardContent>
+   743→              </Card>
+   744→            ))}
+   745→          </div>
+   746→        )}
+   747→        <Button
+   748→          variant="outline"
+   749→          size="sm"
+   750→          className="w-full mt-3 rounded-lg border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+   751→          onClick={() => setActiveTab('plantoes')}
+   752→        >
+   753→          Ver todos
+   754→          <ArrowRight className="w-3.5 h-3.5 ml-1" />
+   755→        </Button>
+   756→      </div>
+   757→
+   758→      {/* Recent shifts */}
+   759→      <div>
+   760→        <div className="flex items-center justify-between mb-3">
+   761→          <h3 className="text-base font-semibold text-gray-800 flex items-center gap-1.5">Plantões recentes <Sparkles className="w-3.5 h-3.5 text-amber-400" /></h3>
+   762→          <button
+   763→            onClick={() => setActiveTab('plantoes')}
+   764→            className="text-xs text-emerald-600 font-medium hover:underline"
+   765→          >
+   766→            Ver todos
+   767→          </button>
+   768→        </div>
+   769→        {loading ? (
+   770→          <div className="space-y-3">
+   771→            {[1, 2, 3].map(i => (
+   772→              <Skeleton key={i} className="h-24 rounded-xl animate-pulse" />
+   773→            ))}
+   774→          </div>
+   775→        ) : shifts.length === 0 ? (
+   776→          <Card className="rounded-2xl bg-gray-50 border-0">
+   777→            <CardContent className="p-8 text-center">
+   778→              <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2 animate-pulse" />
+   779→              <p className="text-sm text-gray-500">Nenhum plantão disponível</p>
+   780→              <p className="text-xs text-gray-400 mt-1">Novos plantões aparecem em breve!</p>
+   781→            </CardContent>
+   782→          </Card>
+   783→        ) : (
+   784→          <div className="space-y-3">
+   785→            {shifts.map((shift, index) => (
+   786→              <Card
+   787→                key={shift.id}
+   788→                className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer active:scale-[0.98] border-l-4 border-l-emerald-400 animate-slideUp shift-card-hover"
+   789→                style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
+   790→                onClick={() => handleShiftClick(shift.id)}
+   791→              >
+   792→                <CardContent className="p-4">
+   793→                  <div className="flex items-start justify-between">
+   794→                    <div className="flex-1 min-w-0">
+   795→                      <h4 className="font-semibold text-sm text-gray-800 truncate">{shift.title}</h4>
+   796→                      <div className="flex items-center gap-2 mt-1">
+   797→                        <MapPin className="w-3 h-3 text-gray-400" />
+   798→                        <span className="text-xs text-gray-500">{shift.city}/{shift.state}</span>
+   799→                      </div>
+   800→                      <div className="flex items-center gap-2 mt-1">
+   801→                        <Clock className="w-3 h-3 text-gray-400" />
+   802→                        <span className="text-xs text-gray-500">{formatDate(shift.date)} • {shift.startTime}-{shift.endTime}</span>
+   803→                      </div>
+   804→                      {shift.seller && (
+   805→                        <div className="flex items-center gap-1.5 mt-1.5">
+   806→                          <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
+   807→                            <span className="text-[7px] font-bold text-emerald-700">{shift.seller.name.charAt(0)}</span>
+   808→                          </div>
+   809→                          <span className="text-xs text-gray-500">{shift.seller.name}</span>
+   810→                          {shift.seller.avgRating > 0 && (
+   811→                            <span className="text-xs text-amber-500 flex items-center gap-0.5">
+   812→                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+   813→                              {shift.seller.avgRating.toFixed(1)}
+   814→                            </span>
+   815→                          )}
+   816→                        </div>
+   817→                      )}
+   818→                    </div>
+   819→                    <div className="text-right ml-3">
+   820→                      <p className="text-emerald-700 font-bold text-sm">{formatCurrency(shift.value)}</p>
+   821→                      <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getProfessionalTypeColor(shift.professionalType))}>
+   822→                        {getRoleLabel(shift.professionalType)}
+   823→                      </span>
+   824→                      <div className="mt-1">
+   825→                        <span className={cn('text-[11px] px-2 py-0.5 rounded-full font-medium border border-current/20', getShiftTypeColor(getShiftType(shift.startTime, shift.endTime)))}>
+   826→                          {getShiftTypeIcon(getShiftType(shift.startTime, shift.endTime))} {getShiftType(shift.startTime, shift.endTime)}
+   827→                        </span>
+   828→                      </div>
+   829→                    </div>
+   830→                  </div>
+   831→                </CardContent>
+   832→              </Card>
+   833→            ))}
+   834→          </div>
+   835→        )}
+   836→      </div>
+   837→
+   838→      {/* Recent Activity Timeline */}
+   839→      <div>
+   840→        <div className="flex items-center justify-between mb-3">
+   841→          <div className="flex items-center gap-2">
+   842→            <Activity className="w-4 h-4 text-emerald-600" />
+   843→            <h3 className="text-base font-semibold text-gray-800">Atividade Recente</h3>
+   844→          </div>
+   845→        </div>
+   846→        {activitiesLoading ? (
+   847→          <div className="space-y-3">
+   848→            {[1, 2, 3, 4, 5].map(i => (
+   849→              <div key={i} className="flex items-start gap-3">
+   850→                <Skeleton className="w-9 h-9 rounded-full shrink-0 animate-pulse" />
+   851→                <div className="flex-1 space-y-1.5">
+   852→                  <Skeleton className="h-4 w-3/4 rounded animate-pulse" />
+   853→                  <Skeleton className="h-3 w-1/2 rounded animate-pulse" />
+   854→                </div>
+   855→              </div>
+   856→            ))}
+   857→          </div>
+   858→        ) : activities.length === 0 ? (
+   859→          <Card className="rounded-2xl bg-gray-50 border-0">
+   860→            <CardContent className="p-8 text-center">
+   861→              <Activity className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+   862→              <p className="text-sm text-gray-500">Nenhuma atividade recente</p>
+   863→              <p className="text-xs text-gray-400 mt-1">Suas atividades aparecerão aqui</p>
+   864→            </CardContent>
+   865→          </Card>
+   866→        ) : (
+   867→          <Card className="rounded-xl border-0 shadow-sm">
+   868→            <CardContent className="p-4">
+   869→              <div className="relative">
+   870→                {activities.slice(0, showAllActivities ? 10 : 5).map((activity, index) => {
+   871→                  const isLast = index === (showAllActivities ? Math.min(10, activities.length) : Math.min(5, activities.length)) - 1
+   872→                  const typeColors: Record<string, string> = {
+   873→                    shift_published: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+   874→                    shift_bought: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+   875→                    shift_cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+   876→                    new_rating: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+   877→                    registration_approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+   878→                    contest_opening: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+   879→                  }
+   880→                  const colorClass = typeColors[activity.type] || 'bg-gray-100 text-gray-700'
+   881→
+   882→                  return (
+   883→                    <div
+   884→                      key={activity.id}
+   885→                      className="animate-slideUp"
+   886→                      style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}
+   887→                    >
+   888→                      <div className="flex items-start gap-3 relative">
+   889→                        {/* Timeline line */}
+   890→                        {!isLast && (
+   891→                          <div className="absolute left-[17px] top-9 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+   892→                        )}
+   893→                        {/* Icon circle */}
+   894→                        <div className={cn(
+   895→                          'w-9 h-9 rounded-full flex items-center justify-center shrink-0 z-10 text-sm',
+   896→                          colorClass
+   897→                        )}>
+   898→                          {activity.icon}
+   899→                        </div>
+   900→                        {/* Content */}
+   901→                        <div className="flex-1 min-w-0 pb-4">
+   902→                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{activity.title}</p>
+   903→                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{activity.description}</p>
+   904→                          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatTimeAgo(activity.createdAt)}</p>
+   905→                        </div>
+   906→                      </div>
+   907→                    </div>
+   908→                  )
+   909→                })}
+   910→              </div>
+   911→              {activities.length > 5 && !showAllActivities && (
+   912→                <Button
+   913→                  variant="ghost"
+   914→                  size="sm"
+   915→                  className="w-full mt-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+   916→                  onClick={() => setShowAllActivities(true)}
+   917→                >
+   918→                  Ver mais
+   919→                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+   920→                </Button>
+   921→              )}
+   922→              {showAllActivities && activities.length > 5 && (
+   923→                <Button
+   924→                  variant="ghost"
+   925→                  size="sm"
+   926→                  className="w-full mt-1 text-gray-500 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+   927→                  onClick={() => setShowAllActivities(false)}
+   928→                >
+   929→                  Ver menos
+   930→                </Button>
+   931→              )}
+   932→            </CardContent>
+   933→          </Card>
+   934→        )}
+   935→      </div>
+   936→
+   937→      {/* Achievements & Badges (gamification) */}
+   938→      <AchievementsBadges user={user} />
+   939→
+   940→      {/* FAQ & Help */}
+   941→      <FaqHelpSection />
+   942→    </div>
+   943→  )
+   944→}
+   945→
