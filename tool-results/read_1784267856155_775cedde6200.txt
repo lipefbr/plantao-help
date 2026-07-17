@@ -1,0 +1,1145 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useRouter } from 'next/navigation'
+     5→import { useAppStore, type UserRole } from '@/lib/store'
+     6→import { formatCurrency, formatDate, getRoleLabel, getProfessionalTypeColor, getStatusColor, getStatusLabel, cn } from '@/lib/utils'
+     7→import { Button } from '@/components/ui/button'
+     8→import { Card, CardContent } from '@/components/ui/card'
+     9→import { Input } from '@/components/ui/input'
+    10→import { Label } from '@/components/ui/label'
+    11→import { Textarea } from '@/components/ui/textarea'
+    12→import { Badge } from '@/components/ui/badge'
+    13→import { Skeleton } from '@/components/ui/skeleton'
+    14→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    15→import {
+    16→  Select,
+    17→  SelectContent,
+    18→  SelectItem,
+    19→  SelectTrigger,
+    20→  SelectValue,
+    21→} from '@/components/ui/select'
+    22→import {
+    23→  Dialog,
+    24→  DialogContent,
+    25→  DialogHeader,
+    26→  DialogTitle,
+    27→} from '@/components/ui/dialog'
+    28→import {
+    29→  Shield, Users, Building2, Trophy, MapPin, DollarSign,
+    30→  Check, X, Plus, Edit, Trash2, Loader2, Search, TrendingUp,
+    31→  Calendar, Star, BarChart3, Eye, ArrowUpDown, Clock, Banknote,
+    32→  ArrowUpRight, ArrowDownRight, Download, LogOut, Settings,
+    33→  LayoutDashboard, UserCheck, UserX, Activity, CreditCard,
+    34→  ChevronRight, Stethoscope, HeartPulse,
+    35→} from 'lucide-react'
+    36→import { toast } from 'sonner'
+    37→import {
+    38→  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+    39→  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    40→  ResponsiveContainer,
+    41→} from 'recharts'
+    42→
+    43→type AdminSubTab = 'dashboard' | 'users' | 'shifts' | 'hospitals' | 'contests' | 'locations' | 'fees'
+    44→
+    45→const navItems: { key: AdminSubTab; label: string; icon: typeof Shield }[] = [
+    46→  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    47→  { key: 'users', label: 'Usuários', icon: Users },
+    48→  { key: 'shifts', label: 'Plantões', icon: Calendar },
+    49→  { key: 'hospitals', label: 'Hospitais', icon: Building2 },
+    50→  { key: 'contests', label: 'Concursos', icon: Trophy },
+    51→  { key: 'locations', label: 'Localizações', icon: MapPin },
+    52→  { key: 'fees', label: 'Taxas', icon: CreditCard },
+    53→]
+    54→
+    55→const COLORS = ['#10b981', '#059669', '#0d9488', '#14b8a6', '#34d399', '#6ee7b7', '#a7f3d0']
+    56→
+    57→export default function AdminPanelPage() {
+    58→  const { user, setUser } = useAppStore()
+    59→  const router = useRouter()
+    60→  const [activeTab, setActiveTab] = useState<AdminSubTab>('dashboard')
+    61→  const [sidebarOpen, setSidebarOpen] = useState(false)
+    62→
+    63→  // Analytics data
+    64→  const [stats, setStats] = useState<any>(null)
+    65→  const [revenue, setRevenue] = useState<any[]>([])
+    66→  const [users, setUsers] = useState<any[]>([])
+    67→  const [shifts, setShifts] = useState<any[]>([])
+    68→  const [hospitals, setHospitals] = useState<any[]>([])
+    69→  const [contests, setContests] = useState<any[]>([])
+    70→  const [locations, setLocations] = useState<any[]>([])
+    71→  const [fees, setFees] = useState<any[]>([])
+    72→  const [loading, setLoading] = useState(true)
+    73→
+    74→  // Search
+    75→  const [userSearch, setUserSearch] = useState('')
+    76→  const [shiftSearch, setShiftSearch] = useState('')
+    77→
+    78→  // Edit dialogs
+    79→  const [editingUser, setEditingUser] = useState<any>(null)
+    80→  const [editingHospital, setEditingHospital] = useState<any>(null)
+    81→  const [editingContest, setEditingContest] = useState<any>(null)
+    82→  const [editingFee, setEditingFee] = useState<any>(null)
+    83→
+    84→  // New item dialogs
+    85→  const [showNewHospital, setShowNewHospital] = useState(false)
+    86→  const [showNewContest, setShowNewContest] = useState(false)
+    87→  const [showNewLocation, setShowNewLocation] = useState(false)
+    88→
+    89→  // Form states
+    90→  const [hospitalForm, setHospitalForm] = useState({ name: '', address: '', city: '', state: '', phone: '' })
+    91→  const [contestForm, setContestForm] = useState({ title: '', description: '', professionalType: 'MEDICO', city: '', state: '', deadline: '', link: '' })
+    92→  const [locationForm, setLocationForm] = useState({ city: '', state: '' })
+    93→
+    94→  // Redirect if not admin
+    95→  useEffect(() => {
+    96→    if (!user) {
+    97→      router.replace('/admin/login')
+    98→    } else if (user.role !== 'ADMIN') {
+    99→      router.replace('/admin/login')
+   100→    }
+   101→  }, [user, router])
+   102→
+   103→  const loadDashboardData = useCallback(async () => {
+   104→    setLoading(true)
+   105→    try {
+   106→      const [statsRes, revenueRes] = await Promise.all([
+   107→        fetch('/api/admin/stats'),
+   108→        fetch('/api/admin/revenue'),
+   109→      ])
+   110→      if (statsRes.ok) setStats(await statsRes.json())
+   111→      if (revenueRes.ok) setRevenue((await revenueRes.json()).monthly || [])
+   112→    } catch (e) {
+   113→      console.error('Failed to load dashboard data', e)
+   114→    } finally {
+   115→      setLoading(false)
+   116→    }
+   117→  }, [])
+   118→
+   119→  const loadUsers = useCallback(async () => {
+   120→    try {
+   121→      const res = await fetch('/api/admin/users')
+   122→      if (res.ok) setUsers(await res.json())
+   123→    } catch (e) {
+   124→      console.error('Failed to load users', e)
+   125→    }
+   126→  }, [])
+   127→
+   128→  const loadShifts = useCallback(async () => {
+   129→    try {
+   130→      const res = await fetch('/api/admin/shifts')
+   131→      if (res.ok) setShifts(await res.json())
+   132→    } catch (e) {
+   133→      console.error('Failed to load shifts', e)
+   134→    }
+   135→  }, [])
+   136→
+   137→  const loadHospitals = useCallback(async () => {
+   138→    try {
+   139→      const res = await fetch('/api/hospitals')
+   140→      if (res.ok) setHospitals(await res.json())
+   141→    } catch (e) {
+   142→      console.error('Failed to load hospitals', e)
+   143→    }
+   144→  }, [])
+   145→
+   146→  const loadContests = useCallback(async () => {
+   147→    try {
+   148→      const res = await fetch('/api/contests')
+   149→      if (res.ok) setContests(await res.json())
+   150→    } catch (e) {
+   151→      console.error('Failed to load contests', e)
+   152→    }
+   153→  }, [])
+   154→
+   155→  const loadLocations = useCallback(async () => {
+   156→    try {
+   157→      const res = await fetch('/api/admin/locations')
+   158→      if (res.ok) setLocations(await res.json())
+   159→    } catch (e) {
+   160→      console.error('Failed to load locations', e)
+   161→    }
+   162→  }, [])
+   163→
+   164→  const loadFees = useCallback(async () => {
+   165→    try {
+   166→      const res = await fetch('/api/admin/fees')
+   167→      if (res.ok) setFees(await res.json())
+   168→    } catch (e) {
+   169→      console.error('Failed to load fees', e)
+   170→    }
+   171→  }, [])
+   172→
+   173→  // Load data when tab changes
+   174→  useEffect(() => {
+   175→    if (user?.role !== 'ADMIN') return
+   176→    switch (activeTab) {
+   177→      case 'dashboard': loadDashboardData(); break
+   178→      case 'users': loadUsers(); break
+   179→      case 'shifts': loadShifts(); break
+   180→      case 'hospitals': loadHospitals(); break
+   181→      case 'contests': loadContests(); break
+   182→      case 'locations': loadLocations(); break
+   183→      case 'fees': loadFees(); break
+   184→    }
+   185→  }, [activeTab, user, loadDashboardData, loadUsers, loadShifts, loadHospitals, loadContests, loadLocations, loadFees])
+   186→
+   187→  const handleLogout = () => {
+   188→    setUser(null)
+   189→    router.replace('/admin/login')
+   190→  }
+   191→
+   192→  // User actions
+   193→  const approveUser = async (userId: string) => {
+   194→    try {
+   195→      const res = await fetch(`/api/admin/users/${userId}/approve`, { method: 'PATCH' })
+   196→      if (res.ok) {
+   197→        toast.success('Usuário aprovado!')
+   198→        loadUsers()
+   199→      }
+   200→    } catch { toast.error('Erro ao aprovar usuário') }
+   201→  }
+   202→
+   203→  const deleteUser = async (userId: string) => {
+   204→    if (!confirm('Tem certeza que deseja excluir este usuário?')) return
+   205→    try {
+   206→      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
+   207→      if (res.ok) {
+   208→        toast.success('Usuário excluído!')
+   209→        loadUsers()
+   210→      }
+   211→    } catch { toast.error('Erro ao excluir usuário') }
+   212→  }
+   213→
+   214→  const cancelShift = async (shiftId: string) => {
+   215→    if (!confirm('Tem certeza que deseja cancelar este plantão?')) return
+   216→    try {
+   217→      const res = await fetch(`/api/admin/shifts/${shiftId}/cancel`, { method: 'PATCH' })
+   218→      if (res.ok) {
+   219→        toast.success('Plantão cancelado!')
+   220→        loadShifts()
+   221→      }
+   222→    } catch { toast.error('Erro ao cancelar plantão') }
+   223→  }
+   224→
+   225→  const deleteShift = async (shiftId: string) => {
+   226→    if (!confirm('Tem certeza que deseja excluir este plantão?')) return
+   227→    try {
+   228→      const res = await fetch(`/api/admin/shifts/${shiftId}`, { method: 'DELETE' })
+   229→      if (res.ok) {
+   230→        toast.success('Plantão excluído!')
+   231→        loadShifts()
+   232→      }
+   233→    } catch { toast.error('Erro ao excluir plantão') }
+   234→  }
+   235→
+   236→  // Hospital CRUD
+   237→  const saveHospital = async () => {
+   238→    try {
+   239→      const url = editingHospital ? `/api/hospitals/${editingHospital.id}` : '/api/hospitals'
+   240→      const method = editingHospital ? 'PUT' : 'POST'
+   241→      const res = await fetch(url, {
+   242→        method,
+   243→        headers: { 'Content-Type': 'application/json' },
+   244→        body: JSON.stringify(hospitalForm),
+   245→      })
+   246→      if (res.ok) {
+   247→        toast.success(editingHospital ? 'Hospital atualizado!' : 'Hospital criado!')
+   248→        setEditingHospital(null)
+   249→        setShowNewHospital(false)
+   250→        setHospitalForm({ name: '', address: '', city: '', state: '', phone: '' })
+   251→        loadHospitals()
+   252→      }
+   253→    } catch { toast.error('Erro ao salvar hospital') }
+   254→  }
+   255→
+   256→  const deleteHospital = async (id: string) => {
+   257→    if (!confirm('Excluir hospital?')) return
+   258→    try {
+   259→      const res = await fetch(`/api/hospitals/${id}`, { method: 'DELETE' })
+   260→      if (res.ok) { toast.success('Hospital excluído!'); loadHospitals() }
+   261→    } catch { toast.error('Erro ao excluir') }
+   262→  }
+   263→
+   264→  // Contest CRUD
+   265→  const saveContest = async () => {
+   266→    try {
+   267→      const url = editingContest ? `/api/contests/${editingContest.id}` : '/api/contests'
+   268→      const method = editingContest ? 'PUT' : 'POST'
+   269→      const res = await fetch(url, {
+   270→        method,
+   271→        headers: { 'Content-Type': 'application/json' },
+   272→        body: JSON.stringify(contestForm),
+   273→      })
+   274→      if (res.ok) {
+   275→        toast.success(editingContest ? 'Concurso atualizado!' : 'Concurso criado!')
+   276→        setEditingContest(null)
+   277→        setShowNewContest(false)
+   278→        setContestForm({ title: '', description: '', professionalType: 'MEDICO', city: '', state: '', deadline: '', link: '' })
+   279→        loadContests()
+   280→      }
+   281→    } catch { toast.error('Erro ao salvar concurso') }
+   282→  }
+   283→
+   284→  const deleteContest = async (id: string) => {
+   285→    if (!confirm('Excluir concurso?')) return
+   286→    try {
+   287→      const res = await fetch(`/api/contests/${id}`, { method: 'DELETE' })
+   288→      if (res.ok) { toast.success('Concurso excluído!'); loadContests() }
+   289→    } catch { toast.error('Erro ao excluir') }
+   290→  }
+   291→
+   292→  // Location CRUD
+   293→  const saveLocation = async () => {
+   294→    try {
+   295→      const res = await fetch('/api/admin/locations', {
+   296→        method: 'POST',
+   297→        headers: { 'Content-Type': 'application/json' },
+   298→        body: JSON.stringify(locationForm),
+   299→      })
+   300→      if (res.ok) {
+   301→        toast.success('Localização criada!')
+   302→        setShowNewLocation(false)
+   303→        setLocationForm({ city: '', state: '' })
+   304→        loadLocations()
+   305→      }
+   306→    } catch { toast.error('Erro ao criar localização') }
+   307→  }
+   308→
+   309→  const deleteLocation = async (id: string) => {
+   310→    if (!confirm('Excluir localização?')) return
+   311→    try {
+   312→      const res = await fetch(`/api/admin/locations/${id}`, { method: 'DELETE' })
+   313→      if (res.ok) { toast.success('Localização excluída!'); loadLocations() }
+   314→    } catch { toast.error('Erro ao excluir') }
+   315→  }
+   316→
+   317→  // Fee CRUD
+   318→  const saveFee = async () => {
+   319→    if (!editingFee) return
+   320→    try {
+   321→      const res = await fetch(`/api/admin/fees`, {
+   322→        method: 'PUT',
+   323→        headers: { 'Content-Type': 'application/json' },
+   324→        body: JSON.stringify(editingFee),
+   325→      })
+   326→      if (res.ok) {
+   327→        toast.success('Taxa atualizada!')
+   328→        setEditingFee(null)
+   329→        loadFees()
+   330→      }
+   331→    } catch { toast.error('Erro ao atualizar taxa') }
+   332→  }
+   333→
+   334→  const exportData = async (type: string) => {
+   335→    try {
+   336→      const res = await fetch(`/api/admin/export?type=${type}`)
+   337→      if (res.ok) {
+   338→        const blob = await res.blob()
+   339→        const url = URL.createObjectURL(blob)
+   340→        const a = document.createElement('a')
+   341→        a.href = url
+   342→        a.download = `plantaohelp-${type}-${new Date().toISOString().slice(0, 10)}.csv`
+   343→        a.click()
+   344→        URL.revokeObjectURL(url)
+   345→        toast.success(`${type} exportados com sucesso!`)
+   346→      }
+   347→    } catch { toast.error('Erro ao exportar dados') }
+   348→  }
+   349→
+   350→  if (!user || user.role !== 'ADMIN') {
+   351→    return (
+   352→      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+   353→        <div className="flex flex-col items-center gap-3">
+   354→          <div className="w-12 h-12 rounded-2xl bg-emerald-900/30 flex items-center justify-center">
+   355→            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+   356→          </div>
+   357→          <p className="text-sm text-gray-400">Verificando acesso...</p>
+   358→        </div>
+   359→      </div>
+   360→    )
+   361→  }
+   362→
+   363→  const filteredUsers = users.filter(u =>
+   364→    u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+   365→    u.email.toLowerCase().includes(userSearch.toLowerCase())
+   366→  )
+   367→
+   368→  const filteredShifts = shifts.filter(s =>
+   369→    s.title.toLowerCase().includes(shiftSearch.toLowerCase()) ||
+   370→    s.city.toLowerCase().includes(shiftSearch.toLowerCase())
+   371→  )
+   372→
+   373→  return (
+   374→    <div className="min-h-screen bg-gray-950 flex">
+   375→      {/* Sidebar - Desktop */}
+   376→      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-gray-900 border-r border-white/[0.06]">
+   377→        {/* Logo */}
+   378→        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/[0.06]">
+   379→          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+   380→            <Shield className="w-5 h-5 text-white" />
+   381→          </div>
+   382→          <div>
+   383→            <p className="text-sm font-bold text-white">PlantãoHelp</p>
+   384→            <p className="text-[10px] text-emerald-400 font-medium">Painel Admin</p>
+   385→          </div>
+   386→        </div>
+   387→
+   388→        {/* Navigation */}
+   389→        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+   390→          {navItems.map(item => (
+   391→            <button
+   392→              key={item.key}
+   393→              onClick={() => setActiveTab(item.key)}
+   394→              className={cn(
+   395→                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+   396→                activeTab === item.key
+   397→                  ? 'bg-emerald-500/15 text-emerald-400 shadow-sm'
+   398→                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+   399→              )}
+   400→            >
+   401→              <item.icon className="w-5 h-5 shrink-0" />
+   402→              {item.label}
+   403→            </button>
+   404→          ))}
+   405→        </nav>
+   406→
+   407→        {/* User info & Logout */}
+   408→        <div className="px-4 py-4 border-t border-white/[0.06]">
+   409→          <div className="flex items-center gap-3 mb-3">
+   410→            <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">
+   411→              {user.name.charAt(0)}
+   412→            </div>
+   413→            <div className="flex-1 min-w-0">
+   414→              <p className="text-sm font-medium text-white truncate">{user.name}</p>
+   415→              <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+   416→            </div>
+   417→          </div>
+   418→          <Button
+   419→            variant="ghost"
+   420→            onClick={handleLogout}
+   421→            className="w-full text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl justify-start gap-2 text-sm"
+   422→          >
+   423→            <LogOut className="w-4 h-4" />
+   424→            Sair
+   425→          </Button>
+   426→        </div>
+   427→      </aside>
+   428→
+   429→      {/* Mobile sidebar overlay */}
+   430→      {sidebarOpen && (
+   431→        <div className="lg:hidden fixed inset-0 z-50">
+   432→          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+   433→          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-gray-900 border-r border-white/[0.06] flex flex-col">
+   434→            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+   435→              <div className="flex items-center gap-2">
+   436→                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+   437→                  <Shield className="w-4 h-4 text-white" />
+   438→                </div>
+   439→                <span className="text-sm font-bold text-white">Admin</span>
+   440→              </div>
+   441→              <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white">
+   442→                <X className="w-5 h-5" />
+   443→              </button>
+   444→            </div>
+   445→            <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+   446→              {navItems.map(item => (
+   447→                <button
+   448→                  key={item.key}
+   449→                  onClick={() => { setActiveTab(item.key); setSidebarOpen(false) }}
+   450→                  className={cn(
+   451→                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+   452→                    activeTab === item.key
+   453→                      ? 'bg-emerald-500/15 text-emerald-400'
+   454→                      : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+   455→                  )}
+   456→                >
+   457→                  <item.icon className="w-5 h-5 shrink-0" />
+   458→                  {item.label}
+   459→                </button>
+   460→              ))}
+   461→            </nav>
+   462→            <div className="px-4 py-4 border-t border-white/[0.06]">
+   463→              <Button variant="ghost" onClick={handleLogout} className="w-full text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl justify-start gap-2 text-sm">
+   464→                <LogOut className="w-4 h-4" />
+   465→                Sair
+   466→              </Button>
+   467→            </div>
+   468→          </aside>
+   469→        </div>
+   470→      )}
+   471→
+   472→      {/* Main content */}
+   473→      <div className="lg:pl-64 flex-1 min-h-screen">
+   474→        {/* Top bar */}
+   475→        <header className="sticky top-0 z-40 bg-gray-950/80 backdrop-blur-xl border-b border-white/[0.06]">
+   476→          <div className="flex items-center justify-between px-4 sm:px-6 py-3">
+   477→            <div className="flex items-center gap-3">
+   478→              <button
+   479→                onClick={() => setSidebarOpen(true)}
+   480→                className="lg:hidden w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+   481→              >
+   482→                <Settings className="w-5 h-5" />
+   483→              </button>
+   484→              <div>
+   485→                <h1 className="text-lg font-bold text-white">
+   486→                  {navItems.find(n => n.key === activeTab)?.label || 'Dashboard'}
+   487→                </h1>
+   488→                <p className="text-xs text-gray-500 hidden sm:block">Gerencie todos os dados do sistema</p>
+   489→              </div>
+   490→            </div>
+   491→            <div className="flex items-center gap-2">
+   492→              <Button
+   493→                variant="ghost"
+   494→                size="sm"
+   495→                onClick={() => exportData(activeTab)}
+   496→                className="text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 text-xs"
+   497→              >
+   498→                <Download className="w-4 h-4" />
+   499→                <span className="hidden sm:inline">Exportar</span>
+   500→              </Button>
+   501→              <Button
+   502→                variant="ghost"
+   503→                size="sm"
+   504→                onClick={() => router.push('/')}
+   505→                className="text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 text-xs"
+   506→              >
+   507→                <Eye className="w-4 h-4" />
+   508→                <span className="hidden sm:inline">Ver Site</span>
+   509→              </Button>
+   510→            </div>
+   511→          </div>
+   512→        </header>
+   513→
+   514→        {/* Content */}
+   515→        <main className="p-4 sm:p-6">
+   516→          {/* Dashboard Tab */}
+   517→          {activeTab === 'dashboard' && (
+   518→            <div className="space-y-6">
+   519→              {loading ? (
+   520→                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   521→                  {[1, 2, 3, 4].map(i => (
+   522→                    <Skeleton key={i} className="h-28 rounded-2xl bg-gray-800" />
+   523→                  ))}
+   524→                </div>
+   525→              ) : stats ? (
+   526→                <>
+   527→                  {/* Stat cards */}
+   528→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   529→                    {[
+   530→                      { label: 'Usuários', value: stats.totalUsers, icon: Users, color: 'emerald', change: '+12%' },
+   531→                      { label: 'Plantões', value: stats.totalShifts, icon: Calendar, color: 'teal', change: '+8%' },
+   532→                      { label: 'Receita Total', value: formatCurrency(stats.totalRevenue || 0), icon: Banknote, color: 'green', change: '+23%' },
+   533→                      { label: 'Avaliação Média', value: `${stats.averageRating?.toFixed(1) || '0'} ★`, icon: Star, color: 'lime', change: '+0.3' },
+   534→                    ].map((stat, i) => (
+   535→                      <Card key={i} className="bg-gray-900 border-white/[0.06] rounded-2xl overflow-hidden">
+   536→                        <CardContent className="p-5">
+   537→                          <div className="flex items-start justify-between">
+   538→                            <div>
+   539→                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.label}</p>
+   540→                              <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+   541→                              <div className="flex items-center gap-1 mt-2">
+   542→                                <ArrowUpRight className="w-3 h-3 text-emerald-400" />
+   543→                                <span className="text-xs text-emerald-400 font-medium">{stat.change}</span>
+   544→                              </div>
+   545→                            </div>
+   546→                            <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', `bg-${stat.color}-500/15`)}>
+   547→                              <stat.icon className={cn('w-5 h-5', `text-${stat.color}-400`)} />
+   548→                            </div>
+   549→                          </div>
+   550→                        </CardContent>
+   551→                      </Card>
+   552→                    ))}
+   553→                  </div>
+   554→
+   555→                  {/* Charts */}
+   556→                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   557→                    <Card className="bg-gray-900 border-white/[0.06] rounded-2xl">
+   558→                      <CardContent className="p-5">
+   559→                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+   560→                          <TrendingUp className="w-4 h-4 text-emerald-400" />
+   561→                          Receita Mensal
+   562→                        </h3>
+   563→                        <div className="h-64">
+   564→                          <ResponsiveContainer width="100%" height="100%">
+   565→                            <BarChart data={revenue}>
+   566→                              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+   567→                              <XAxis dataKey="month" stroke="#6b7280" fontSize={11} />
+   568→                              <YAxis stroke="#6b7280" fontSize={11} />
+   569→                              <Tooltip
+   570→                                contentStyle={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+   571→                                labelStyle={{ color: '#9ca3af' }}
+   572→                                itemStyle={{ color: '#10b981' }}
+   573→                              />
+   574→                              <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
+   575→                            </BarChart>
+   576→                          </ResponsiveContainer>
+   577→                        </div>
+   578→                      </CardContent>
+   579→                    </Card>
+   580→
+   581→                    <Card className="bg-gray-900 border-white/[0.06] rounded-2xl">
+   582→                      <CardContent className="p-5">
+   583→                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+   584→                          <BarChart3 className="w-4 h-4 text-teal-400" />
+   585→                          Plantões por Status
+   586→                        </h3>
+   587→                        <div className="h-64">
+   588→                          <ResponsiveContainer width="100%" height="100%">
+   589→                            <PieChart>
+   590→                              <Pie
+   591→                                data={[
+   592→                                  { name: 'Disponível', value: stats.availableShifts || 0 },
+   593→                                  { name: 'Vendido', value: stats.soldShifts || 0 },
+   594→                                  { name: 'Cancelado', value: stats.cancelledShifts || 0 },
+   595→                                ]}
+   596→                                cx="50%"
+   597→                                cy="50%"
+   598→                                innerRadius={60}
+   599→                                outerRadius={90}
+   600→                                paddingAngle={5}
+   601→                                dataKey="value"
+   602→                              >
+   603→                                {COLORS.map((color, i) => (
+   604→                                  <Cell key={i} fill={color} />
+   605→                                ))}
+   606→                              </Pie>
+   607→                              <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+   608→                              <Legend />
+   609→                            </PieChart>
+   610→                          </ResponsiveContainer>
+   611→                        </div>
+   612→                      </CardContent>
+   613→                    </Card>
+   614→                  </div>
+   615→
+   616→                  {/* Quick actions */}
+   617→                  <Card className="bg-gray-900 border-white/[0.06] rounded-2xl">
+   618→                    <CardContent className="p-5">
+   619→                      <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+   620→                        <Activity className="w-4 h-4 text-emerald-400" />
+   621→                        Ações Rápidas
+   622→                      </h3>
+   623→                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   624→                        {[
+   625→                          { label: 'Gerenciar Usuários', icon: Users, tab: 'users' as AdminSubTab },
+   626→                          { label: 'Ver Plantões', icon: Calendar, tab: 'shifts' as AdminSubTab },
+   627→                          { label: 'Hospitais', icon: Building2, tab: 'hospitals' as AdminSubTab },
+   628→                          { label: 'Concursos', icon: Trophy, tab: 'contests' as AdminSubTab },
+   629→                        ].map(action => (
+   630→                          <button
+   631→                            key={action.tab}
+   632→                            onClick={() => setActiveTab(action.tab)}
+   633→                            className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all text-left group"
+   634→                          >
+   635→                            <action.icon className="w-5 h-5 text-gray-500 group-hover:text-emerald-400 transition-colors" />
+   636→                            <span className="text-xs font-medium text-gray-400 group-hover:text-white transition-colors">{action.label}</span>
+   637→                            <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-emerald-400 ml-auto transition-colors" />
+   638→                          </button>
+   639→                        ))}
+   640→                      </div>
+   641→                    </CardContent>
+   642→                  </Card>
+   643→                </>
+   644→              ) : (
+   645→                <div className="text-center py-16 text-gray-500">Erro ao carregar dados do dashboard</div>
+   646→              )}
+   647→            </div>
+   648→          )}
+   649→
+   650→          {/* Users Tab */}
+   651→          {activeTab === 'users' && (
+   652→            <div className="space-y-4">
+   653→              <div className="flex items-center gap-3">
+   654→                <div className="relative flex-1 max-w-sm">
+   655→                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+   656→                  <Input
+   657→                    placeholder="Buscar por nome ou email..."
+   658→                    value={userSearch}
+   659→                    onChange={(e) => setUserSearch(e.target.value)}
+   660→                    className="pl-9 bg-gray-900 border-white/[0.06] text-white placeholder:text-gray-500 rounded-xl h-10 focus:ring-0 focus:border-emerald-500"
+   661→                  />
+   662→                </div>
+   663→              </div>
+   664→              <div className="bg-gray-900 border border-white/[0.06] rounded-2xl overflow-hidden">
+   665→                <div className="overflow-x-auto">
+   666→                  <table className="w-full">
+   667→                    <thead>
+   668→                      <tr className="border-b border-white/[0.06]">
+   669→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuário</th>
+   670→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</th>
+   671→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+   672→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Cidade</th>
+   673→                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+   674→                      </tr>
+   675→                    </thead>
+   676→                    <tbody className="divide-y divide-white/[0.04]">
+   677→                      {filteredUsers.map(u => (
+   678→                        <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+   679→                          <td className="px-4 py-3">
+   680→                            <div className="flex items-center gap-3">
+   681→                              <div className="w-9 h-9 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-xs font-bold shrink-0">
+   682→                                {u.name.charAt(0)}
+   683→                              </div>
+   684→                              <div className="min-w-0">
+   685→                                <p className="text-sm font-medium text-white truncate">{u.name}</p>
+   686→                                <p className="text-xs text-gray-500 truncate">{u.email}</p>
+   687→                              </div>
+   688→                            </div>
+   689→                          </td>
+   690→                          <td className="px-4 py-3">
+   691→                            <Badge className={cn('text-[10px]', getProfessionalTypeColor(u.role))}>
+   692→                              {getRoleLabel(u.role)}
+   693→                            </Badge>
+   694→                          </td>
+   695→                          <td className="px-4 py-3">
+   696→                            <Badge className={cn('text-[10px]', getStatusColor(u.registrationStatus))}>
+   697→                              {getStatusLabel(u.registrationStatus)}
+   698→                            </Badge>
+   699→                          </td>
+   700→                          <td className="px-4 py-3 text-sm text-gray-400">
+   701→                            {u.city ? `${u.city}/${u.state}` : '—'}
+   702→                          </td>
+   703→                          <td className="px-4 py-3">
+   704→                            <div className="flex items-center justify-end gap-1">
+   705→                              {u.registrationStatus === 'PENDING' && (
+   706→                                <button
+   707→                                  onClick={() => approveUser(u.id)}
+   708→                                  className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+   709→                                  title="Aprovar"
+   710→                                >
+   711→                                  <UserCheck className="w-4 h-4" />
+   712→                                </button>
+   713→                              )}
+   714→                              <button
+   715→                                onClick={() => deleteUser(u.id)}
+   716→                                className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+   717→                                title="Excluir"
+   718→                              >
+   719→                                <Trash2 className="w-4 h-4" />
+   720→                              </button>
+   721→                            </div>
+   722→                          </td>
+   723→                        </tr>
+   724→                      ))}
+   725→                      {filteredUsers.length === 0 && (
+   726→                        <tr>
+   727→                          <td colSpan={5} className="px-4 py-12 text-center text-gray-500 text-sm">
+   728→                            Nenhum usuário encontrado
+   729→                          </td>
+   730→                        </tr>
+   731→                      )}
+   732→                    </tbody>
+   733→                  </table>
+   734→                </div>
+   735→              </div>
+   736→            </div>
+   737→          )}
+   738→
+   739→          {/* Shifts Tab */}
+   740→          {activeTab === 'shifts' && (
+   741→            <div className="space-y-4">
+   742→              <div className="flex items-center gap-3">
+   743→                <div className="relative flex-1 max-w-sm">
+   744→                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+   745→                  <Input
+   746→                    placeholder="Buscar plantões..."
+   747→                    value={shiftSearch}
+   748→                    onChange={(e) => setShiftSearch(e.target.value)}
+   749→                    className="pl-9 bg-gray-900 border-white/[0.06] text-white placeholder:text-gray-500 rounded-xl h-10 focus:ring-0 focus:border-emerald-500"
+   750→                  />
+   751→                </div>
+   752→              </div>
+   753→              <div className="bg-gray-900 border border-white/[0.06] rounded-2xl overflow-hidden">
+   754→                <div className="overflow-x-auto">
+   755→                  <table className="w-full">
+   756→                    <thead>
+   757→                      <tr className="border-b border-white/[0.06]">
+   758→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Plantão</th>
+   759→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Valor</th>
+   760→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+   761→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+   762→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Data</th>
+   763→                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Ações</th>
+   764→                      </tr>
+   765→                    </thead>
+   766→                    <tbody className="divide-y divide-white/[0.04]">
+   767→                      {filteredShifts.map(s => (
+   768→                        <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
+   769→                          <td className="px-4 py-3">
+   770→                            <div>
+   771→                              <p className="text-sm font-medium text-white">{s.title}</p>
+   772→                              <p className="text-xs text-gray-500">{s.city}/{s.state}</p>
+   773→                            </div>
+   774→                          </td>
+   775→                          <td className="px-4 py-3 text-sm text-emerald-400 font-medium">{formatCurrency(s.value)}</td>
+   776→                          <td className="px-4 py-3">
+   777→                            <Badge className={cn('text-[10px]', getProfessionalTypeColor(s.professionalType))}>
+   778→                              {getRoleLabel(s.professionalType)}
+   779→                            </Badge>
+   780→                          </td>
+   781→                          <td className="px-4 py-3">
+   782→                            <Badge className={cn('text-[10px]', getStatusColor(s.status))}>
+   783→                              {getStatusLabel(s.status)}
+   784→                            </Badge>
+   785→                          </td>
+   786→                          <td className="px-4 py-3 text-sm text-gray-400">{formatDate(s.date)}</td>
+   787→                          <td className="px-4 py-3">
+   788→                            <div className="flex items-center justify-end gap-1">
+   789→                              {s.status !== 'CANCELLED' && (
+   790→                                <button
+   791→                                  onClick={() => cancelShift(s.id)}
+   792→                                  className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 hover:bg-amber-500/20 transition-colors"
+   793→                                  title="Cancelar"
+   794→                                >
+   795→                                  <X className="w-4 h-4" />
+   796→                                </button>
+   797→                              )}
+   798→                              <button
+   799→                                onClick={() => deleteShift(s.id)}
+   800→                                className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+   801→                                title="Excluir"
+   802→                              >
+   803→                                <Trash2 className="w-4 h-4" />
+   804→                              </button>
+   805→                            </div>
+   806→                          </td>
+   807→                        </tr>
+   808→                      ))}
+   809→                      {filteredShifts.length === 0 && (
+   810→                        <tr>
+   811→                          <td colSpan={6} className="px-4 py-12 text-center text-gray-500 text-sm">Nenhum plantão encontrado</td>
+   812→                        </tr>
+   813→                      )}
+   814→                    </tbody>
+   815→                  </table>
+   816→                </div>
+   817→              </div>
+   818→            </div>
+   819→          )}
+   820→
+   821→          {/* Hospitals Tab */}
+   822→          {activeTab === 'hospitals' && (
+   823→            <div className="space-y-4">
+   824→              <div className="flex items-center justify-between">
+   825→                <h3 className="text-sm font-semibold text-gray-400">Total: {hospitals.length} hospitais</h3>
+   826→                <Button
+   827→                  onClick={() => { setShowNewHospital(true); setHospitalForm({ name: '', address: '', city: '', state: '', phone: '' }) }}
+   828→                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 text-sm h-9"
+   829→                >
+   830→                  <Plus className="w-4 h-4" /> Novo Hospital
+   831→                </Button>
+   832→              </div>
+   833→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   834→                {hospitals.map(h => (
+   835→                  <Card key={h.id} className="bg-gray-900 border-white/[0.06] rounded-2xl hover:border-emerald-500/20 transition-colors">
+   836→                    <CardContent className="p-4">
+   837→                      <div className="flex items-start justify-between">
+   838→                        <div>
+   839→                          <p className="text-sm font-semibold text-white">{h.name}</p>
+   840→                          <p className="text-xs text-gray-500 mt-1">{h.city}/{h.state}</p>
+   841→                          {h.address && <p className="text-xs text-gray-600 mt-0.5">{h.address}</p>}
+   842→                        </div>
+   843→                        <div className="flex gap-1">
+   844→                          <button
+   845→                            onClick={() => { setEditingHospital(h); setHospitalForm({ name: h.name, address: h.address || '', city: h.city, state: h.state, phone: h.phone || '' }) }}
+   846→                            className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+   847→                          >
+   848→                            <Edit className="w-3.5 h-3.5" />
+   849→                          </button>
+   850→                          <button
+   851→                            onClick={() => deleteHospital(h.id)}
+   852→                            className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+   853→                          >
+   854→                            <Trash2 className="w-3.5 h-3.5" />
+   855→                          </button>
+   856→                        </div>
+   857→                      </div>
+   858→                    </CardContent>
+   859→                  </Card>
+   860→                ))}
+   861→              </div>
+   862→
+   863→              {/* Hospital edit/create dialog */}
+   864→              <Dialog open={showNewHospital || !!editingHospital} onOpenChange={(open) => { if (!open) { setShowNewHospital(false); setEditingHospital(null) } }}>
+   865→                <DialogContent className="bg-gray-900 border-white/[0.06] text-white rounded-2xl max-w-md" aria-describedby={undefined}>
+   866→                  <DialogHeader>
+   867→                    <DialogTitle className="text-white">{editingHospital ? 'Editar Hospital' : 'Novo Hospital'}</DialogTitle>
+   868→                  </DialogHeader>
+   869→                  <div className="space-y-4 mt-2">
+   870→                    <div>
+   871→                      <Label className="text-xs text-gray-400">Nome</Label>
+   872→                      <Input value={hospitalForm.name} onChange={e => setHospitalForm(f => ({ ...f, name: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   873→                    </div>
+   874→                    <div>
+   875→                      <Label className="text-xs text-gray-400">Endereço</Label>
+   876→                      <Input value={hospitalForm.address} onChange={e => setHospitalForm(f => ({ ...f, address: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   877→                    </div>
+   878→                    <div className="grid grid-cols-2 gap-3">
+   879→                      <div>
+   880→                        <Label className="text-xs text-gray-400">Cidade</Label>
+   881→                        <Input value={hospitalForm.city} onChange={e => setHospitalForm(f => ({ ...f, city: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   882→                      </div>
+   883→                      <div>
+   884→                        <Label className="text-xs text-gray-400">Estado</Label>
+   885→                        <Input value={hospitalForm.state} onChange={e => setHospitalForm(f => ({ ...f, state: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   886→                      </div>
+   887→                    </div>
+   888→                    <div>
+   889→                      <Label className="text-xs text-gray-400">Telefone</Label>
+   890→                      <Input value={hospitalForm.phone} onChange={e => setHospitalForm(f => ({ ...f, phone: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   891→                    </div>
+   892→                    <Button onClick={saveHospital} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+   893→                      {editingHospital ? 'Salvar Alterações' : 'Criar Hospital'}
+   894→                    </Button>
+   895→                  </div>
+   896→                </DialogContent>
+   897→              </Dialog>
+   898→            </div>
+   899→          )}
+   900→
+   901→          {/* Contests Tab */}
+   902→          {activeTab === 'contests' && (
+   903→            <div className="space-y-4">
+   904→              <div className="flex items-center justify-between">
+   905→                <h3 className="text-sm font-semibold text-gray-400">Total: {contests.length} concursos</h3>
+   906→                <Button
+   907→                  onClick={() => { setShowNewContest(true); setContestForm({ title: '', description: '', professionalType: 'MEDICO', city: '', state: '', deadline: '', link: '' }) }}
+   908→                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 text-sm h-9"
+   909→                >
+   910→                  <Plus className="w-4 h-4" /> Novo Concurso
+   911→                </Button>
+   912→              </div>
+   913→              <div className="bg-gray-900 border border-white/[0.06] rounded-2xl overflow-hidden">
+   914→                <div className="overflow-x-auto">
+   915→                  <table className="w-full">
+   916→                    <thead>
+   917→                      <tr className="border-b border-white/[0.06]">
+   918→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Concurso</th>
+   919→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+   920→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Local</th>
+   921→                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+   922→                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Ações</th>
+   923→                      </tr>
+   924→                    </thead>
+   925→                    <tbody className="divide-y divide-white/[0.04]">
+   926→                      {contests.map(c => (
+   927→                        <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+   928→                          <td className="px-4 py-3">
+   929→                            <p className="text-sm font-medium text-white">{c.title}</p>
+   930→                            {c.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{c.description}</p>}
+   931→                          </td>
+   932→                          <td className="px-4 py-3">
+   933→                            <Badge className={cn('text-[10px]', getProfessionalTypeColor(c.professionalType))}>
+   934→                              {getRoleLabel(c.professionalType)}
+   935→                            </Badge>
+   936→                          </td>
+   937→                          <td className="px-4 py-3 text-sm text-gray-400">{c.city}/{c.state}</td>
+   938→                          <td className="px-4 py-3">
+   939→                            <Badge className={cn('text-[10px]', getStatusColor(c.status))}>
+   940→                              {getStatusLabel(c.status)}
+   941→                            </Badge>
+   942→                          </td>
+   943→                          <td className="px-4 py-3">
+   944→                            <div className="flex items-center justify-end gap-1">
+   945→                              <button
+   946→                                onClick={() => { setEditingContest(c); setContestForm({ title: c.title, description: c.description || '', professionalType: c.professionalType, city: c.city, state: c.state, deadline: c.deadline ? new Date(c.deadline).toISOString().slice(0, 10) : '', link: c.link || '' }) }}
+   947→                                className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+   948→                              >
+   949→                                <Edit className="w-4 h-4" />
+   950→                              </button>
+   951→                              <button
+   952→                                onClick={() => deleteContest(c.id)}
+   953→                                className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+   954→                              >
+   955→                                <Trash2 className="w-4 h-4" />
+   956→                              </button>
+   957→                            </div>
+   958→                          </td>
+   959→                        </tr>
+   960→                      ))}
+   961→                    </tbody>
+   962→                  </table>
+   963→                </div>
+   964→              </div>
+   965→
+   966→              <Dialog open={showNewContest || !!editingContest} onOpenChange={(open) => { if (!open) { setShowNewContest(false); setEditingContest(null) } }}>
+   967→                <DialogContent className="bg-gray-900 border-white/[0.06] text-white rounded-2xl max-w-md" aria-describedby={undefined}>
+   968→                  <DialogHeader>
+   969→                    <DialogTitle className="text-white">{editingContest ? 'Editar Concurso' : 'Novo Concurso'}</DialogTitle>
+   970→                  </DialogHeader>
+   971→                  <div className="space-y-4 mt-2">
+   972→                    <div>
+   973→                      <Label className="text-xs text-gray-400">Título</Label>
+   974→                      <Input value={contestForm.title} onChange={e => setContestForm(f => ({ ...f, title: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   975→                    </div>
+   976→                    <div>
+   977→                      <Label className="text-xs text-gray-400">Descrição</Label>
+   978→                      <Textarea value={contestForm.description} onChange={e => setContestForm(f => ({ ...f, description: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   979→                    </div>
+   980→                    <div>
+   981→                      <Label className="text-xs text-gray-400">Tipo de Profissional</Label>
+   982→                      <Select value={contestForm.professionalType} onValueChange={v => setContestForm(f => ({ ...f, professionalType: v }))}>
+   983→                        <SelectTrigger className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1">
+   984→                          <SelectValue />
+   985→                        </SelectTrigger>
+   986→                        <SelectContent className="bg-gray-800 border-white/[0.06]">
+   987→                          <SelectItem value="MEDICO">Médico</SelectItem>
+   988→                          <SelectItem value="ENFERMEIRO">Enfermeiro</SelectItem>
+   989→                          <SelectItem value="TECNICO_ENFERMAGEM">Téc. Enfermagem</SelectItem>
+   990→                        </SelectContent>
+   991→                      </Select>
+   992→                    </div>
+   993→                    <div className="grid grid-cols-2 gap-3">
+   994→                      <div>
+   995→                        <Label className="text-xs text-gray-400">Cidade</Label>
+   996→                        <Input value={contestForm.city} onChange={e => setContestForm(f => ({ ...f, city: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+   997→                      </div>
+   998→                      <div>
+   999→                        <Label className="text-xs text-gray-400">Estado</Label>
+  1000→                        <Input value={contestForm.state} onChange={e => setContestForm(f => ({ ...f, state: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+  1001→                      </div>
+  1002→                    </div>
+  1003→                    <div>
+  1004→                      <Label className="text-xs text-gray-400">Prazo</Label>
+  1005→                      <Input type="date" value={contestForm.deadline} onChange={e => setContestForm(f => ({ ...f, deadline: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+  1006→                    </div>
+  1007→                    <div>
+  1008→                      <Label className="text-xs text-gray-400">Link</Label>
+  1009→                      <Input value={contestForm.link} onChange={e => setContestForm(f => ({ ...f, link: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+  1010→                    </div>
+  1011→                    <Button onClick={saveContest} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+  1012→                      {editingContest ? 'Salvar Alterações' : 'Criar Concurso'}
+  1013→                    </Button>
+  1014→                  </div>
+  1015→                </DialogContent>
+  1016→              </Dialog>
+  1017→            </div>
+  1018→          )}
+  1019→
+  1020→          {/* Locations Tab */}
+  1021→          {activeTab === 'locations' && (
+  1022→            <div className="space-y-4">
+  1023→              <div className="flex items-center justify-between">
+  1024→                <h3 className="text-sm font-semibold text-gray-400">Total: {locations.length} localizações</h3>
+  1025→                <Button
+  1026→                  onClick={() => { setShowNewLocation(true); setLocationForm({ city: '', state: '' }) }}
+  1027→                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-1.5 text-sm h-9"
+  1028→                >
+  1029→                  <Plus className="w-4 h-4" /> Nova Localização
+  1030→                </Button>
+  1031→              </div>
+  1032→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1033→                {locations.map((l: any) => (
+  1034→                  <Card key={l.id} className="bg-gray-900 border-white/[0.06] rounded-2xl">
+  1035→                    <CardContent className="p-4 flex items-center justify-between">
+  1036→                      <div className="flex items-center gap-3">
+  1037→                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+  1038→                          <MapPin className="w-5 h-5 text-emerald-400" />
+  1039→                        </div>
+  1040→                        <div>
+  1041→                          <p className="text-sm font-medium text-white">{l.city}</p>
+  1042→                          <p className="text-xs text-gray-500">{l.state}</p>
+  1043→                        </div>
+  1044→                      </div>
+  1045→                      <button
+  1046→                        onClick={() => deleteLocation(l.id)}
+  1047→                        className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors"
+  1048→                      >
+  1049→                        <Trash2 className="w-4 h-4" />
+  1050→                      </button>
+  1051→                    </CardContent>
+  1052→                  </Card>
+  1053→                ))}
+  1054→              </div>
+  1055→
+  1056→              <Dialog open={showNewLocation} onOpenChange={setShowNewLocation}>
+  1057→                <DialogContent className="bg-gray-900 border-white/[0.06] text-white rounded-2xl max-w-sm" aria-describedby={undefined}>
+  1058→                  <DialogHeader>
+  1059→                    <DialogTitle className="text-white">Nova Localização</DialogTitle>
+  1060→                  </DialogHeader>
+  1061→                  <div className="space-y-4 mt-2">
+  1062→                    <div>
+  1063→                      <Label className="text-xs text-gray-400">Cidade</Label>
+  1064→                      <Input value={locationForm.city} onChange={e => setLocationForm(f => ({ ...f, city: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+  1065→                    </div>
+  1066→                    <div>
+  1067→                      <Label className="text-xs text-gray-400">Estado</Label>
+  1068→                      <Input value={locationForm.state} onChange={e => setLocationForm(f => ({ ...f, state: e.target.value }))} className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1" />
+  1069→                    </div>
+  1070→                    <Button onClick={saveLocation} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+  1071→                      Criar Localização
+  1072→                    </Button>
+  1073→                  </div>
+  1074→                </DialogContent>
+  1075→              </Dialog>
+  1076→            </div>
+  1077→          )}
+  1078→
+  1079→          {/* Fees Tab */}
+  1080→          {activeTab === 'fees' && (
+  1081→            <div className="space-y-4">
+  1082→              <h3 className="text-sm font-semibold text-gray-400">Taxas de Cadastro</h3>
+  1083→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1084→                {fees.map((f: any) => (
+  1085→                  <Card key={f.id} className="bg-gray-900 border-white/[0.06] rounded-2xl hover:border-emerald-500/20 transition-colors">
+  1086→                    <CardContent className="p-4">
+  1087→                      <div className="flex items-start justify-between">
+  1088→                        <div>
+  1089→                          <Badge className={cn('text-[10px] mb-2', getProfessionalTypeColor(f.professionalType))}>
+  1090→                            {getRoleLabel(f.professionalType)}
+  1091→                          </Badge>
+  1092→                          <p className="text-2xl font-bold text-white">{formatCurrency(f.value)}</p>
+  1093→                          {f.description && <p className="text-xs text-gray-500 mt-1">{f.description}</p>}
+  1094→                        </div>
+  1095→                        <button
+  1096→                          onClick={() => setEditingFee({ ...f })}
+  1097→                          className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+  1098→                        >
+  1099→                          <Edit className="w-4 h-4" />
+  1100→                        </button>
+  1101→                      </div>
+  1102→                    </CardContent>
+  1103→                  </Card>
+  1104→                ))}
+  1105→              </div>
+  1106→
+  1107→              <Dialog open={!!editingFee} onOpenChange={(open) => { if (!open) setEditingFee(null) }}>
+  1108→                <DialogContent className="bg-gray-900 border-white/[0.06] text-white rounded-2xl max-w-sm" aria-describedby={undefined}>
+  1109→                  <DialogHeader>
+  1110→                    <DialogTitle className="text-white">Editar Taxa</DialogTitle>
+  1111→                  </DialogHeader>
+  1112→                  {editingFee && (
+  1113→                    <div className="space-y-4 mt-2">
+  1114→                      <div>
+  1115→                        <Label className="text-xs text-gray-400">Valor (R$)</Label>
+  1116→                        <Input
+  1117→                          type="number"
+  1118→                          value={editingFee.value}
+  1119→                          onChange={e => setEditingFee({ ...editingFee, value: parseFloat(e.target.value) })}
+  1120→                          className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1"
+  1121→                        />
+  1122→                      </div>
+  1123→                      <div>
+  1124→                        <Label className="text-xs text-gray-400">Descrição</Label>
+  1125→                        <Input
+  1126→                          value={editingFee.description || ''}
+  1127→                          onChange={e => setEditingFee({ ...editingFee, description: e.target.value })}
+  1128→                          className="bg-gray-800 border-white/[0.06] text-white rounded-xl mt-1"
+  1129→                        />
+  1130→                      </div>
+  1131→                      <Button onClick={saveFee} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+  1132→                        Salvar Alterações
+  1133→                      </Button>
+  1134→                    </div>
+  1135→                  )}
+  1136→                </DialogContent>
+  1137→              </Dialog>
+  1138→            </div>
+  1139→          )}
+  1140→        </main>
+  1141→      </div>
+  1142→    </div>
+  1143→  )
+  1144→}
+  1145→

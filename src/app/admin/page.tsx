@@ -104,8 +104,8 @@ export default function AdminPanelPage() {
     setLoading(true)
     try {
       const [statsRes, revenueRes] = await Promise.all([
-        fetch('/api/admin/stats'),
-        fetch('/api/admin/revenue'),
+        fetch(`/api/admin/stats?adminId=${user?.id}`),
+        fetch(`/api/admin/revenue?adminId=${user?.id}`),
       ])
       if (statsRes.ok) setStats(await statsRes.json())
       if (revenueRes.ok) setRevenue((await revenueRes.json()).monthly || [])
@@ -114,7 +114,7 @@ export default function AdminPanelPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
   const loadUsers = useCallback(async () => {
     try {
@@ -127,12 +127,12 @@ export default function AdminPanelPage() {
 
   const loadShifts = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/shifts')
+      const res = await fetch(`/api/admin/shifts?adminId=${user?.id}`)
       if (res.ok) setShifts(await res.json())
     } catch (e) {
       console.error('Failed to load shifts', e)
     }
-  }, [])
+  }, [user?.id])
 
   const loadHospitals = useCallback(async () => {
     try {
@@ -192,7 +192,11 @@ export default function AdminPanelPage() {
   // User actions
   const approveUser = async (userId: string) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/approve`, { method: 'PATCH' })
+      const res = await fetch(`/api/admin/users/${userId}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'APPROVED', adminId: user?.id }),
+      })
       if (res.ok) {
         toast.success('Usuário aprovado!')
         loadUsers()
@@ -214,7 +218,11 @@ export default function AdminPanelPage() {
   const cancelShift = async (shiftId: string) => {
     if (!confirm('Tem certeza que deseja cancelar este plantão?')) return
     try {
-      const res = await fetch(`/api/admin/shifts/${shiftId}/cancel`, { method: 'PATCH' })
+      const res = await fetch(`/api/admin/shifts/${shiftId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: user?.id }),
+      })
       if (res.ok) {
         toast.success('Plantão cancelado!')
         loadShifts()
@@ -295,7 +303,7 @@ export default function AdminPanelPage() {
       const res = await fetch('/api/admin/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(locationForm),
+        body: JSON.stringify({ ...locationForm, adminId: user?.id }),
       })
       if (res.ok) {
         toast.success('Localização criada!')
@@ -321,7 +329,7 @@ export default function AdminPanelPage() {
       const res = await fetch(`/api/admin/fees`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingFee),
+        body: JSON.stringify({ ...editingFee, adminId: user?.id }),
       })
       if (res.ok) {
         toast.success('Taxa atualizada!')
@@ -333,7 +341,7 @@ export default function AdminPanelPage() {
 
   const exportData = async (type: string) => {
     try {
-      const res = await fetch(`/api/admin/export?type=${type}`)
+      const res = await fetch(`/api/admin/export?type=${type}&adminId=${user?.id}`)
       if (res.ok) {
         const blob = await res.blob()
         const url = URL.createObjectURL(blob)
@@ -527,10 +535,10 @@ export default function AdminPanelPage() {
                   {/* Stat cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: 'Usuários', value: stats.totalUsers, icon: Users, color: 'emerald', change: '+12%' },
-                      { label: 'Plantões', value: stats.totalShifts, icon: Calendar, color: 'teal', change: '+8%' },
-                      { label: 'Receita Total', value: formatCurrency(stats.totalRevenue || 0), icon: Banknote, color: 'green', change: '+23%' },
-                      { label: 'Avaliação Média', value: `${stats.averageRating?.toFixed(1) || '0'} ★`, icon: Star, color: 'lime', change: '+0.3' },
+                      { label: 'Usuários', value: stats.totalUsers, icon: Users, bgColor: 'rgba(16,185,129,0.15)', iconColor: '#34d399', change: '+12%' },
+                      { label: 'Plantões', value: stats.totalShifts, icon: Calendar, bgColor: 'rgba(20,184,166,0.15)', iconColor: '#2dd4bf', change: '+8%' },
+                      { label: 'Receita Total', value: formatCurrency(stats.revenue || 0), icon: Banknote, bgColor: 'rgba(34,197,94,0.15)', iconColor: '#4ade80', change: '+23%' },
+                      { label: 'Avaliação Média', value: `${stats.averageShiftValue?.toFixed(0) || '0'} ★`, icon: Star, bgColor: 'rgba(132,204,22,0.15)', iconColor: '#a3e635', change: '+0.3' },
                     ].map((stat, i) => (
                       <Card key={i} className="bg-gray-900 border-white/[0.06] rounded-2xl overflow-hidden">
                         <CardContent className="p-5">
@@ -543,8 +551,8 @@ export default function AdminPanelPage() {
                                 <span className="text-xs text-emerald-400 font-medium">{stat.change}</span>
                               </div>
                             </div>
-                            <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', `bg-${stat.color}-500/15`)}>
-                              <stat.icon className={cn('w-5 h-5', `text-${stat.color}-400`)} />
+                            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: stat.bgColor }}>
+                              <stat.icon className="w-5 h-5" style={{ color: stat.iconColor }} />
                             </div>
                           </div>
                         </CardContent>
@@ -589,9 +597,9 @@ export default function AdminPanelPage() {
                             <PieChart>
                               <Pie
                                 data={[
-                                  { name: 'Disponível', value: stats.availableShifts || 0 },
-                                  { name: 'Vendido', value: stats.soldShifts || 0 },
-                                  { name: 'Cancelado', value: stats.cancelledShifts || 0 },
+                                  { name: 'Disponível', value: stats.shiftsByStatus?.AVAILABLE || 0 },
+                                  { name: 'Vendido', value: stats.shiftsByStatus?.SOLD || 0 },
+                                  { name: 'Cancelado', value: stats.shiftsByStatus?.CANCELLED || 0 },
                                 ]}
                                 cx="50%"
                                 cy="50%"
