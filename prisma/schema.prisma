@@ -1,9 +1,10 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "wasm"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -47,6 +48,7 @@ model User {
   avatar              String?
   bio                 String?
   companyName         String?             // For EMPRESA role
+  planId              String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -55,6 +57,7 @@ model User {
   ratingsGiven     Rating[]    @relation("RatingRater")
   ratingsReceived  Rating[]    @relation("RatingReceiver")
   alerts           ShiftAlert[]
+  plan             Plan?       @relation(fields: [planId], references: [id])
 }
 
 model Hospital {
@@ -172,4 +175,18 @@ model ShiftAlert {
   createdAt         DateTime @default(now())
   
   user User @relation(fields: [userId], references: [id])
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  price       Float
+  description String?
+  features    String?  // JSON string of features
+  maxShifts   Int      @default(0)   // 0 = unlimited
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
 }

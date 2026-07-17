@@ -25,10 +25,10 @@ export default function AdminLoginPage() {
   const [error, setError] = useState(false)
   const [shakeError, setShakeError] = useState('')
 
-  // If already logged in as admin, redirect to admin panel
+  // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (user?.role === 'ADMIN') {
-      router.replace('/admin')
+      router.replace('/admin/dashboard')
     } else if (user && user.role !== 'ADMIN') {
       // Logged in but not admin
       setShakeError('Esta conta não tem permissões de administrador.')
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
       toast.success(`Bem-vindo, ${data.name}!`)
 
       setTimeout(() => {
-        router.replace('/admin')
+        router.replace('/admin/dashboard')
       }, 800)
     } catch {
       toast.error('Erro ao conectar com o servidor')
